@@ -1,15 +1,8 @@
-export type StandardGrantTypes =
-  | 'password'
-  | 'client_credentials'
-  | 'authorization_code'
-  | 'refresh_token';
-
 export type AccessTokenRequest = {
   grant_type: string;
   client_id?: string;
   client_secret?: string;
   state?: string;
-  [param: string]: string | undefined;
 };
 
 export type PasswordGrantAccessTokenRequest = AccessTokenRequest & {
@@ -37,11 +30,16 @@ export type RefreshTokenGrantAccessTokenRequest = AccessTokenRequest & {
   scope?: string;
 };
 
+export type CustomGrantAccessTokenRequest = AccessTokenRequest & {
+  grant_type: `urn:${string}`;
+};
+
 export type StandardGrantsAccesTokenRequest =
   | PasswordGrantAccessTokenRequest
   | ClientGrantAccessTokenRequest
   | AuthorizationCodeGrantAccessTokenRequest
-  | RefreshTokenGrantAccessTokenRequest;
+  | RefreshTokenGrantAccessTokenRequest
+  | CustomGrantAccessTokenRequest;
 
 export type AuthorizationCodeRequest = {
   response_type: 'code';
@@ -52,7 +50,6 @@ export type AuthorizationCodeRequest = {
   code_challenge_method?: 'S256' | 'plain';
   redirect_uri: string;
   state: string;
-  [param: string]: string | undefined;
 };
 
 export type AccessToken = {
@@ -61,3 +58,5 @@ export type AccessToken = {
   expires_in?: number;
   refresh_token?: string;
 };
+
+export type StandardGrantTypes = StandardGrantsAccesTokenRequest['grant_type'];

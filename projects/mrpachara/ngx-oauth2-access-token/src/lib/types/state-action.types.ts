@@ -6,11 +6,11 @@ export type StateAction = {
   action?: StateActionType;
 };
 
-export type StateActionHandler = (
+export type StateActionHandler<T> = (
   value: string,
   accessToken: AccessToken,
-) => unknown;
+) => T;
 
 export type StateActionHandlers = {
-  [action: string]: StateActionHandler;
+  [action: string]: StateActionHandler<unknown>;
 };

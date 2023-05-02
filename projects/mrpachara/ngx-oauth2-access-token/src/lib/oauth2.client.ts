@@ -3,12 +3,7 @@ import {
   HttpContext,
   HttpErrorResponse,
 } from '@angular/common/http';
-import {
-  FactoryProvider,
-  Inject,
-  Injectable,
-  InjectionToken,
-} from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { catchError, Observable, of, throwError } from 'rxjs';
 
 import { OAUTH2_CLIENT_CONFIG, SKIP_ASSIGNING_ACCESS_TOKEN } from './tokens';
@@ -19,18 +14,6 @@ import {
   StandardGrantsParams,
 } from './types';
 
-export function createOauth2Client(
-  providedToken: InjectionToken<Oauth2Client> | typeof Oauth2Client,
-  config: Oauth2ClientConfig,
-): FactoryProvider {
-  return {
-    provide: providedToken,
-    useFactory: (httpClient: HttpClient): Oauth2Client =>
-      new Oauth2Client(config, httpClient),
-    deps: [HttpClient],
-  };
-}
-
 @Injectable()
 export class Oauth2Client {
   constructor(
@@ -40,7 +23,7 @@ export class Oauth2Client {
 
   private generateClientHeader(): { Authorization: string } {
     const authData = btoa(
-      `${this.config.clientId}:${this.config.clientSecret}`,
+      `${this.config.clientId}:${this.config.clientSecret ?? ''}`,
     );
 
     return {
@@ -60,7 +43,7 @@ export class Oauth2Client {
     };
   }
 
-  public requestAccessToken<T = StandardGrantsParams>(
+  public requestAccessToken<T extends StandardGrantsParams>(
     params: T,
   ): Observable<AccessToken> {
     return this.http
@@ -92,14 +75,17 @@ export class Oauth2Client {
       );
   }
 
-  public generateAuthorizationCodeUrl<T = AuthorizationCodeParams>(
+  public generateAuthorizationCodeUrl<T extends AuthorizationCodeParams>(
     params: T,
   ): Observable<URL> {
-    const httpParams = new URLSearchParams({
+    const url = new URL(this.config.authorizationCodeUrl);
+    Object.entries({
       ...params,
       ...this.generateClientParam(),
+    }).forEach(([key, value]) => {
+      url.searchParams.set(key, `${value}`);
     });
 
-    return of(new URL(`${this.config.authorizationCodeUrl}?${httpParams}`));
+    return of(url);
   }
 }

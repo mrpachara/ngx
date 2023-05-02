@@ -1,46 +1,44 @@
-export type GrantParams = {
-  grant_type: string;
-  state?: string;
-};
+import {
+  AccessTokenRequest,
+  AuthorizationCodeGrantAccessTokenRequest,
+  AuthorizationCodeRequest,
+  ClientGrantAccessTokenRequest,
+  CustomGrantAccessTokenRequest,
+  PasswordGrantAccessTokenRequest,
+  RefreshTokenGrantAccessTokenRequest,
+  StandardGrantsAccesTokenRequest,
+} from './standard.types';
 
-export type PasswordGrantParams = GrantParams & {
-  grant_type: 'password';
-  username: string;
-  password: string;
-  scope: string;
-};
+type OmitClientDetails<
+  T extends
+    | AccessTokenRequest
+    | StandardGrantsAccesTokenRequest
+    | AuthorizationCodeRequest,
+> = Omit<T, 'client_id' | 'client_secret'>;
 
-export type ClientGrantParams = GrantParams & {
-  grant_type: 'client_credentials';
-  scope: string;
-};
+export type GrantParams = OmitClientDetails<AccessTokenRequest>;
 
-export type AuthorizationCodeGrantParams = GrantParams & {
-  grant_type: 'authorization_code';
-  code: string;
-  code_verifier?: string;
-  redirect_uri: string;
-  [param: string]: string | undefined;
-};
+export type PasswordGrantParams =
+  OmitClientDetails<PasswordGrantAccessTokenRequest>;
 
-export type RefreshTokenGrantParams = GrantParams & {
-  grant_type: 'refresh_token';
-  refresh_token: string;
-  scope?: string;
-};
+export type ClientGrantParams =
+  OmitClientDetails<ClientGrantAccessTokenRequest>;
+
+export type AuthorizationCodeGrantParams =
+  OmitClientDetails<AuthorizationCodeGrantAccessTokenRequest>;
+
+export type RefreshTokenGrantParams =
+  OmitClientDetails<RefreshTokenGrantAccessTokenRequest>;
+
+export type CustomGrantParams =
+  OmitClientDetails<CustomGrantAccessTokenRequest>;
 
 export type StandardGrantsParams =
   | PasswordGrantParams
   | ClientGrantParams
   | AuthorizationCodeGrantParams
-  | RefreshTokenGrantParams;
+  | RefreshTokenGrantParams
+  | CustomGrantParams;
 
-export type AuthorizationCodeParams = {
-  response_type: 'code';
-  scope: string;
-  code_challenge?: string;
-  code_challenge_method?: 'S256' | 'plain';
-  redirect_uri: string;
-  state?: string;
-  [param: string]: string | undefined;
-};
+export type AuthorizationCodeParams =
+  OmitClientDetails<AuthorizationCodeRequest>;

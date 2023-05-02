@@ -3,12 +3,12 @@ export type NameableConfig = {
 };
 
 export type DebugableConfig = {
-  debug: boolean;
+  debug?: boolean;
 };
 
-export type Oauth2ClientConfig = {
+export type Oauth2ClientConfig = DebugableConfig & {
   clientId: string;
-  clientSecret: string | null;
+  clientSecret?: string;
   authorizationCodeUrl: string;
   accessTokenUrl: string;
   clientCredentialsInParams: boolean;

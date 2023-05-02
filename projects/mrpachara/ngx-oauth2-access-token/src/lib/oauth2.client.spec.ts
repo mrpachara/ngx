@@ -22,7 +22,6 @@ export const http401 = {
 
 export const oauth2ClientConfig: Oauth2ClientConfig = {
   clientId: 'web-app',
-  clientSecret: null,
   accessTokenUrl: 'http://localhost:8080/v2/token',
   authorizationCodeUrl: 'http://localhost:8080/authorize/consent',
   clientCredentialsInParams: false,
@@ -57,6 +56,7 @@ export const expectAccessToken = (
   expect(req.request.headers.get('Authorization'))
     .withContext('has Authorization header')
     .toBeTruthy();
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const [authzType, authzValue] = req.request.headers
     .get('Authorization')!
     .split(' ', 2);
@@ -94,8 +94,7 @@ describe('Oauth2Client', () => {
         expect(accessToken)
           .withContext('access-token')
           .toEqual(expectedAccesToken),
-      error: (err: unknown) =>
-        fail('should respond access token without error'),
+      error: () => fail('should respond access token without error'),
     });
 
     const req = httpTestingController.expectOne(

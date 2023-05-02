@@ -1,8 +1,16 @@
 import { ScopesType } from '../types';
 
 export class InvalidScopeError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+
+    if (typeof this.stack === 'undefined') {
+      if (Error.captureStackTrace) {
+        Error.captureStackTrace(this, InvalidScopeError);
+      } else {
+        this.stack = new Error().stack;
+      }
+    }
 
     this.name = this.constructor.name;
   }

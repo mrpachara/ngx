@@ -1,24 +1,25 @@
-import { ActivatedRoute } from '@angular/router';
+import { ParamMap } from '@angular/router';
 import { defer, map, Observable, of, switchMap, throwError } from 'rxjs';
 
 import { AuthorizationCodeService } from '../authorization-code.service';
-import { BadRequestCallbackError } from '../errors';
+import {
+  BadResponseCallbackError,
+  ErrorResponseCallbackError,
+} from '../errors';
 import { StateActionService } from '../state-action.service';
 
 export function oauth2Callback(
-  route: ActivatedRoute,
+  queryParamMap: ParamMap,
   authorizationCodeService: AuthorizationCodeService,
   stateActionService: StateActionService,
-): Observable<any> {
-  const queryParamMap = route.snapshot.queryParamMap;
-
+): Observable<unknown> {
   return defer(() => {
     const stateId = queryParamMap.get('state');
 
     if (stateId === null) {
       return throwError(
         () =>
-          new BadRequestCallbackError(
+          new BadResponseCallbackError(
             `The 'state' is required for callback. The oauth2 server must reply with 'state' query string.`,
           ),
       );
@@ -29,22 +30,22 @@ export function oauth2Callback(
     switchMap((stateId) => {
       return authorizationCodeService
         .verifyState(stateId)
-        .pipe(map((stateData) => [stateId, stateData] as const));
+        .pipe(map((stateData) => ({ stateId, stateData })));
     }),
-    switchMap(([stateId, stateData]) => {
+    switchMap(({ stateId, stateData }) => {
       if (queryParamMap.has('error')) {
-        const errorObject = {
-          error: queryParamMap.get('error'),
-          error_description: queryParamMap.get('error_description'),
-        };
-
-        if (queryParamMap.get('error') === 'access_denied') {
-          return authorizationCodeService
-            .clearState(stateId)
-            .pipe(switchMap(() => throwError(() => errorObject)));
-        }
-
-        return throwError(() => errorObject);
+        return authorizationCodeService.clearState(stateId).pipe(
+          switchMap(() =>
+            throwError(() => {
+              const error = queryParamMap.get('error');
+              const error_description = queryParamMap.get('error_description');
+              return new ErrorResponseCallbackError({
+                ...(error ? { error } : {}),
+                ...(error_description ? { error_description } : {}),
+              });
+            }),
+          ),
+        );
       }
 
       const code = queryParamMap.get('code');
@@ -52,7 +53,7 @@ export function oauth2Callback(
       if (code === null) {
         return throwError(
           () =>
-            new BadRequestCallbackError(
+            new BadResponseCallbackError(
               `The 'code' is required for callback. No 'code' was replied from oauth server in query string.`,
             ),
         );
@@ -60,9 +61,9 @@ export function oauth2Callback(
 
       return authorizationCodeService
         .exchangeAuthorizationCode(stateId, stateData, code)
-        .pipe(map((accessToken) => [stateData, accessToken] as const));
+        .pipe(map((accessToken) => ({ stateData, accessToken })));
     }),
-    switchMap(([stateData, accessToken]) =>
+    switchMap(({ stateData, accessToken }) =>
       stateActionService.dispatch(stateData, accessToken),
     ),
   );
