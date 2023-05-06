@@ -1,5 +1,3 @@
-import { from, map, Observable } from 'rxjs';
-
 export function randomString(length: number): string {
   const alloc = new Uint32Array(length / 2);
   crypto.getRandomValues(alloc);
@@ -12,21 +10,31 @@ export function randomString(length: number): string {
   ).join('');
 }
 
-export function sha256(plain: string): Observable<string> {
+// export function sha256(plain: string): Observable<string> {
+//   const encoder = new TextEncoder();
+//   const data = encoder.encode(plain);
+//   return from(crypto.subtle.digest('SHA-256', data)).pipe(
+//     map((hashed) => {
+//       let str = '';
+//       const bytes = new Uint8Array(hashed);
+//       const len = bytes.byteLength;
+//       for (let i = 0; i < len; i++) {
+//         str += String.fromCharCode(bytes[i]);
+//       }
+
+//       return str;
+//     }),
+//   );
+// }
+
+export async function sha256(plain: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(plain);
-  return from(crypto.subtle.digest('SHA-256', data)).pipe(
-    map((hashed) => {
-      let str = '';
-      const bytes = new Uint8Array(hashed);
-      const len = bytes.byteLength;
-      for (let i = 0; i < len; i++) {
-        str += String.fromCharCode(bytes[i]);
-      }
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
 
-      return str;
-    }),
-  );
+  // NOTE: String.fromCharCode(...bytes) has a limit number of characters.
+  //       So we use reduce() instead.
+  return bytes.reduce((carry, byte) => carry + String.fromCharCode(byte), '');
 }
 
 export function base64UrlEncode(plain: string): string {

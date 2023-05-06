@@ -4,7 +4,7 @@ import {
   Injectable,
   InjectionToken,
 } from '@angular/core';
-import { map, Observable, switchMap, throwError } from 'rxjs';
+import { defer, map, Observable, switchMap, throwError } from 'rxjs';
 
 import {
   base64UrlEncode,
@@ -73,7 +73,7 @@ export class AuthorizationCodeService {
   }> => {
     const codeVerifier = randomString(codeVerifierLength);
 
-    return sha256(codeVerifier).pipe(
+    return defer(() => sha256(codeVerifier)).pipe(
       map(base64UrlEncode),
       map((codeChallenge) => {
         return {
