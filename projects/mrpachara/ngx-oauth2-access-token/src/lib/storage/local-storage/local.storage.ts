@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { filter, map, Observable, pipe, Subject, UnaryFunction } from 'rxjs';
+import { KeyValuePairStorage } from '../../types';
 
-@Injectable()
-export class LocalStorage {
+@Injectable({ providedIn: 'root' })
+export class LocalStorage implements KeyValuePairStorage {
   private readonly transToStorage = <T>(value: T | null): string => {
     return JSON.stringify(value);
   };
@@ -39,25 +40,28 @@ export class LocalStorage {
     });
   }
 
-  loadItem<T = unknown>(key: string): T | null {
+  async loadItem<T = unknown>(key: string): Promise<T | null> {
     return this.transToValue(localStorage.getItem(key));
   }
 
-  storeItem<T = unknown>(key: string, value: T): T {
+  async storeItem<T = unknown>(key: string, value: T): Promise<T> {
     localStorage.setItem(key, this.transToStorage(value));
 
     return value;
   }
 
-  removeItem(key: string): void {
+  async removeItem<T = unknown>(key: string): Promise<T | null> {
+    const value = await this.loadItem<T>(key);
     localStorage.removeItem(key);
+
+    return value;
   }
 
   watchItem<T = unknown>(key: string): Observable<T | null> {
     if (!this.keyObservableMap.has(key)) {
       this.keyObservableMap.set(
         key,
-        this.storageEvent$.pipe(this.newTransformerPipe(key)),
+        this.storageEvent$.pipe(this.newTransformerPipe<T>(key)),
       );
     }
 
@@ -70,7 +74,7 @@ export class LocalStorage {
     throw new Error(`Cannot find or create observable for '${key}'!`);
   }
 
-  keys(): string[] {
+  async keys(): Promise<string[]> {
     return Object.keys(localStorage);
   }
 }

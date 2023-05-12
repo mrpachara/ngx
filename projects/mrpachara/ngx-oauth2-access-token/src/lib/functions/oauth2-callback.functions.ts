@@ -1,5 +1,5 @@
 import { ParamMap } from '@angular/router';
-import { defer, map, Observable, of, switchMap, throwError } from 'rxjs';
+import { defer, from, Observable, of, switchMap, throwError } from 'rxjs';
 
 import { AuthorizationCodeService } from '../authorization-code.service';
 import {
@@ -16,6 +16,26 @@ export function oauth2Callback(
   return defer(() => {
     const stateId = queryParamMap.get('state');
 
+    // NOTE: In the case of error, server may return without stateId. So check it first.
+    if (queryParamMap.has('error')) {
+      return from(
+        stateId
+          ? authorizationCodeService.clearState(stateId)
+          : new Promise<void>((resolve) => resolve()),
+      ).pipe(
+        switchMap(() =>
+          throwError(() => {
+            const error = queryParamMap.get('error') ?? '';
+            const error_description = queryParamMap.get('error_description');
+            return new ErrorResponseCallbackError({
+              ...{ error },
+              ...(error_description ? { error_description } : {}),
+            });
+          }),
+        ),
+      );
+    }
+
     if (stateId === null) {
       return throwError(
         () =>
@@ -25,45 +45,26 @@ export function oauth2Callback(
       );
     }
 
-    return of(stateId);
-  }).pipe(
-    switchMap((stateId) => {
-      return authorizationCodeService
-        .verifyState(stateId)
-        .pipe(map((stateData) => ({ stateId, stateData })));
-    }),
-    switchMap(({ stateId, stateData }) => {
-      if (queryParamMap.has('error')) {
-        return authorizationCodeService.clearState(stateId).pipe(
-          switchMap(() =>
-            throwError(() => {
-              const error = queryParamMap.get('error');
-              const error_description = queryParamMap.get('error_description');
-              return new ErrorResponseCallbackError({
-                ...(error ? { error } : {}),
-                ...(error_description ? { error_description } : {}),
-              });
-            }),
+    const code = queryParamMap.get('code');
+
+    if (code === null) {
+      return throwError(
+        () =>
+          new BadResponseCallbackError(
+            `The 'code' is required for callback. No 'code' was replied from oauth server in query string.`,
           ),
-        );
-      }
+      );
+    }
 
-      const code = queryParamMap.get('code');
-
-      if (code === null) {
-        return throwError(
-          () =>
-            new BadResponseCallbackError(
-              `The 'code' is required for callback. No 'code' was replied from oauth server in query string.`,
-            ),
-        );
-      }
-
-      return authorizationCodeService
-        .exchangeAuthorizationCode(stateId, stateData, code)
-        .pipe(map((accessToken) => ({ stateData, accessToken })));
+    return of({
+      stateId,
+      code,
+    });
+  }).pipe(
+    switchMap(({ stateId, code }) => {
+      return authorizationCodeService.exchangeAuthorizationCode(stateId, code);
     }),
-    switchMap(({ stateData, accessToken }) =>
+    switchMap(({ accessToken, stateData }) =>
       stateActionService.dispatch(stateData, accessToken),
     ),
   );

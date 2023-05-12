@@ -1,47 +1,27 @@
 export class AccessTokenNotFoundError extends Error {
-  constructor(message = 'Access token is not found.', options?: ErrorOptions) {
-    super(message, options);
-
-    if (typeof this.stack === 'undefined') {
-      if (Error.captureStackTrace) {
-        Error.captureStackTrace(this, AccessTokenNotFoundError);
-      } else {
-        this.stack = new Error().stack;
-      }
-    }
-
+  constructor(name: string, options?: ErrorOptions) {
+    super(`Access token pf '${name}' is not found.`, options);
     this.name = this.constructor.name;
   }
 }
 
 export class AccessTokenExpiredError extends Error {
-  constructor(message = 'Access token has expired.', options?: ErrorOptions) {
-    super(message, options);
-
-    if (typeof this.stack === 'undefined') {
-      if (Error.captureStackTrace) {
-        Error.captureStackTrace(this, AccessTokenExpiredError);
-      } else {
-        this.stack = new Error().stack;
-      }
-    }
-
+  constructor(name: string, options?: ErrorOptions) {
+    super(`Access token of '${name}' has expired.`, options);
     this.name = this.constructor.name;
   }
 }
 
 export class RefreshTokenNotFoundError extends Error {
-  constructor(message = 'Refresh token is not found.', options?: ErrorOptions) {
-    super(message, options);
+  constructor(name: string, options?: ErrorOptions) {
+    super(`Refresh token of '${name}' is not found.`, options);
+    this.name = this.constructor.name;
+  }
+}
 
-    if (typeof this.stack === 'undefined') {
-      if (Error.captureStackTrace) {
-        Error.captureStackTrace(this, RefreshTokenNotFoundError);
-      } else {
-        this.stack = new Error().stack;
-      }
-    }
-
+export class RefreshTokenExpiredError extends Error {
+  constructor(name: string, options?: ErrorOptions) {
+    super(`Refresh token of '${name}' has expired.`, options);
     this.name = this.constructor.name;
   }
 }
@@ -49,15 +29,6 @@ export class RefreshTokenNotFoundError extends Error {
 export class StateNotFoundError extends Error {
   constructor(message = 'State not found.', options?: ErrorOptions) {
     super(message, options);
-
-    if (typeof this.stack === 'undefined') {
-      if (Error.captureStackTrace) {
-        Error.captureStackTrace(this, StateNotFoundError);
-      } else {
-        this.stack = new Error().stack;
-      }
-    }
-
     this.name = this.constructor.name;
   }
 }
@@ -65,15 +36,6 @@ export class StateNotFoundError extends Error {
 export class StateExpiredError extends Error {
   constructor(message = 'State has expired.', options?: ErrorOptions) {
     super(message, options);
-
-    if (typeof this.stack === 'undefined') {
-      if (Error.captureStackTrace) {
-        Error.captureStackTrace(this, StateExpiredError);
-      } else {
-        this.stack = new Error().stack;
-      }
-    }
-
     this.name = this.constructor.name;
   }
 }

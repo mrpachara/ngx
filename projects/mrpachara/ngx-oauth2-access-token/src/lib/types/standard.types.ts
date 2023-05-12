@@ -22,6 +22,7 @@ export type AuthorizationCodeGrantAccessTokenRequest = AccessTokenRequest & {
   code: string;
   code_verifier?: string;
   redirect_uri: string;
+  scope?: never;
 };
 
 export type RefreshTokenGrantAccessTokenRequest = AccessTokenRequest & {
@@ -41,13 +42,15 @@ export type StandardGrantsAccesTokenRequest =
   | RefreshTokenGrantAccessTokenRequest
   | CustomGrantAccessTokenRequest;
 
+export type CodeChallengeMethod = 'S256' | 'plain';
+
 export type AuthorizationCodeRequest = {
   response_type: 'code';
   client_id: string;
-  client_secret?: string;
+  client_secret?: never;
   scope: string;
   code_challenge?: string;
-  code_challenge_method?: 'S256' | 'plain';
+  code_challenge_method?: CodeChallengeMethod;
   redirect_uri: string;
   state: string;
 };
@@ -60,3 +63,8 @@ export type AccessToken = {
 };
 
 export type StandardGrantTypes = StandardGrantsAccesTokenRequest['grant_type'];
+
+export type Oauth2ErrorResponse = {
+  error: string;
+  error_description: string;
+};

@@ -1,9 +1,14 @@
 import { InjectionToken } from '@angular/core';
 
+import { KeyValuePairStorage } from '../types';
 import {
   AccessTokenStorageFactory,
   AuthorizationCodeStorageFactory,
-} from '../types';
+} from '../storage';
+
+export const KEY_VALUE_PAIR_STORAGE = new InjectionToken<KeyValuePairStorage>(
+  'key-value-pair-storage',
+);
 
 export const ACCESS_TOKEN_STORAGE_FACTORY =
   new InjectionToken<AccessTokenStorageFactory>('access-token-storage-factory');

@@ -3,25 +3,53 @@ import {
   HttpContext,
   HttpErrorResponse,
 } from '@angular/common/http';
-import { Inject, Injectable } from '@angular/core';
-import { catchError, Observable, of, throwError } from 'rxjs';
+import { Inject, Injectable, inject } from '@angular/core';
+import { catchError, Observable, throwError } from 'rxjs';
 
-import { OAUTH2_CLIENT_CONFIG, SKIP_ASSIGNING_ACCESS_TOKEN } from './tokens';
+import {
+  OAUTH2_CLIENT_CONFIG,
+  OAUTH2_CLIENT_ERROR_TRANSFORMER,
+  SKIP_ASSIGNING_ACCESS_TOKEN,
+} from './tokens';
 import {
   AccessToken,
-  AuthorizationCodeParams,
   Oauth2ClientConfig,
+  Oauth2ClientErrorTransformer,
+  PickOptional,
+  RequiredExcept,
   StandardGrantsParams,
 } from './types';
+import { Oauth2ClientResponseError } from './errors';
 
-@Injectable()
+const defaultConfig: PickOptional<Omit<Oauth2ClientConfig, 'clientSecret'>> = {
+  debug: false,
+  clientCredentialsInParams: false,
+};
+
+@Injectable({ providedIn: 'root' })
 export class Oauth2Client {
-  constructor(
-    @Inject(OAUTH2_CLIENT_CONFIG) private readonly config: Oauth2ClientConfig,
-    private readonly http: HttpClient,
-  ) {}
+  private readonly http = inject(HttpClient);
 
-  private generateClientHeader(): { Authorization: string } {
+  private readonly config: RequiredExcept<Oauth2ClientConfig, 'clientSecret'>;
+
+  constructor(
+    @Inject(OAUTH2_CLIENT_CONFIG) config: Oauth2ClientConfig,
+    @Inject(OAUTH2_CLIENT_ERROR_TRANSFORMER)
+    private readonly errorTransformer: Oauth2ClientErrorTransformer,
+  ) {
+    this.config = {
+      ...defaultConfig,
+      ...config,
+    };
+  }
+
+  private generateClientHeaderIfNeeded():
+    | { Authorization: string }
+    | undefined {
+    if (this.config.clientCredentialsInParams) {
+      return undefined;
+    }
+
     const authData = btoa(
       `${this.config.clientId}:${this.config.clientSecret ?? ''}`,
     );
@@ -31,19 +59,36 @@ export class Oauth2Client {
     };
   }
 
-  private generateClientParam(): {
-    client_id: string;
-    client_secret?: string;
-  } {
+  private generateClientParamIfNeeded(withSecret = false):
+    | {
+        client_id: string;
+        client_secret?: string;
+      }
+    | undefined {
+    if (!this.config.clientCredentialsInParams) {
+      return undefined;
+    }
+
+    return this.generateClientParams(withSecret);
+  }
+
+  private generateClientParams<T extends boolean>(
+    withSecret: T,
+  ): true extends T
+    ? {
+        client_id: string;
+        client_secret?: string;
+      }
+    : { client_id: string } {
     return {
       client_id: this.config.clientId,
-      ...(this.config.clientSecret
+      ...(withSecret && this.config.clientSecret
         ? { client_secret: this.config.clientSecret }
         : {}),
     };
   }
 
-  public requestAccessToken<T extends StandardGrantsParams>(
+  requestAccessToken<T extends StandardGrantsParams>(
     params: T,
   ): Observable<AccessToken> {
     return this.http
@@ -51,23 +96,24 @@ export class Oauth2Client {
         this.config.accessTokenUrl,
         {
           ...params,
-          ...(this.config.clientCredentialsInParams
-            ? this.generateClientParam()
-            : {}),
+          ...this.generateClientParamIfNeeded(true),
         },
         {
           context: new HttpContext().set(SKIP_ASSIGNING_ACCESS_TOKEN, true),
           headers: {
-            ...(!this.config.clientCredentialsInParams
-              ? this.generateClientHeader()
-              : {}),
+            ...this.generateClientHeaderIfNeeded(),
           },
         },
       )
       .pipe(
         catchError((err: unknown) => {
-          if (err instanceof HttpErrorResponse && err.error) {
-            return throwError(() => err.error);
+          if (err instanceof HttpErrorResponse) {
+            return throwError(
+              () =>
+                new Oauth2ClientResponseError(this.errorTransformer(err), {
+                  cause: err,
+                }),
+            );
           }
 
           return throwError(() => err);
@@ -75,17 +121,7 @@ export class Oauth2Client {
       );
   }
 
-  public generateAuthorizationCodeUrl<T extends AuthorizationCodeParams>(
-    params: T,
-  ): Observable<URL> {
-    const url = new URL(this.config.authorizationCodeUrl);
-    Object.entries({
-      ...params,
-      ...this.generateClientParam(),
-    }).forEach(([key, value]) => {
-      url.searchParams.set(key, `${value}`);
-    });
-
-    return of(url);
+  getClientParams(): { client_id: string } {
+    return this.generateClientParams(false);
   }
 }

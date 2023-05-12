@@ -1,60 +1,45 @@
-import {
-  FactoryProvider,
-  Inject,
-  Injectable,
-  InjectionToken,
-} from '@angular/core';
-import { defer, map, Observable, switchMap, throwError } from 'rxjs';
+import { Inject, Injectable, inject } from '@angular/core';
+import { defer, from, map, Observable, switchMap } from 'rxjs';
 
+import { InvalidScopeError } from './errors';
 import {
   base64UrlEncode,
-  InvalidScopeError,
   randomString,
   sha256,
   validateAndTransformScopes,
 } from './functions';
 import { Oauth2Client } from './oauth2.client';
 import {
-  AUTHORIZATION_CODE_SERVICE_CONFIG,
-  AUTHORIZATION_CODE_STORAGE_FACTORY,
-} from './tokens';
-import {
-  AccessToken,
-  AuthorizationCodeServiceConfig,
-  AuthorizationCodeGrantParams,
-  AuthorizationCodeParams,
   AuthorizationCodeStorage,
   AuthorizationCodeStorageFactory,
-  ScopesType,
+} from './storage';
+import { AUTHORIZATION_CODE_CONFIG } from './tokens';
+import {
+  AccessToken,
+  AuthorizationCodeConfig,
+  AuthorizationCodeGrantParams,
+  AuthorizationCodeParams,
+  CodeChallengeMethod,
+  PickOptional,
+  Scopes,
+  StateAction,
   StateData,
 } from './types';
 
-const codeVerifierLength = 56;
 const stateIdLength = 32;
 
-export function createAuthorizationCodeServiceProvider(
-  providedToken:
-    | InjectionToken<AuthorizationCodeService>
-    | typeof AuthorizationCodeService,
-  config: AuthorizationCodeServiceConfig,
-  clientToken: InjectionToken<Oauth2Client> | typeof Oauth2Client,
-  storageFactoryToken?: InjectionToken<AuthorizationCodeStorageFactory>,
-): FactoryProvider {
-  return {
-    provide: providedToken,
-    useFactory: (
-      client: Oauth2Client,
-      storageFactory: AuthorizationCodeStorageFactory,
-    ): AuthorizationCodeService =>
-      new AuthorizationCodeService(config, client, storageFactory),
-    deps: [
-      clientToken,
-      storageFactoryToken
-        ? storageFactoryToken
-        : AUTHORIZATION_CODE_STORAGE_FACTORY,
-    ],
-  };
-}
+const defaultStateTTL = 10 * 60 * 1000;
+const defaultCodeVerifierLength = 56;
+
+type GenUrlParams = Omit<AuthorizationCodeParams, 'state'>;
+
+const defaultConfig: PickOptional<AuthorizationCodeConfig> = {
+  debug: false,
+  pkce: 'none',
+  stateTTL: defaultStateTTL,
+  codeVerifierLength: defaultCodeVerifierLength,
+  additionalParams: {},
+};
 
 @Injectable()
 export class AuthorizationCodeService {
@@ -67,56 +52,83 @@ export class AuthorizationCodeService {
   private readonly removeStateData = (stateId: string) =>
     this.storage.removeStateData(stateId);
 
-  private readonly generateCodeChallenge = (): Observable<{
-    codeChallenge: string;
-    codeVerifier: string;
-  }> => {
-    const codeVerifier = randomString(codeVerifierLength);
+  private readonly generateCodeChallenge = async (
+    stateData: StateData,
+  ): Promise<
+    | {
+        code_challenge: string;
+        code_challenge_method: CodeChallengeMethod;
+      }
+    | undefined
+  > => {
+    if (this.config.pkce === 'none') {
+      return undefined;
+    }
 
-    return defer(() => sha256(codeVerifier)).pipe(
-      map(base64UrlEncode),
-      map((codeChallenge) => {
-        return {
-          codeChallenge: codeChallenge,
-          codeVerifier: codeVerifier,
-        };
-      }),
-    );
+    const codeVerifier = randomString(this.config.codeVerifierLength);
+    const codeChallenge =
+      this.config.pkce === 'plain'
+        ? codeVerifier
+        : base64UrlEncode(await sha256(codeVerifier));
+    stateData['codeVerifier'] = codeVerifier;
+
+    return {
+      code_challenge: codeChallenge,
+      code_challenge_method: this.config.pkce,
+    };
   };
 
-  private readonly generateAuthorizationCodeUrl = (
+  private readonly generateAuthorizationCodeUrl = async (
     stateId: string,
     stateData: StateData,
-    authorizationCodeParams: AuthorizationCodeParams,
-  ): Observable<URL> => {
-    return this.storeStateData(stateId, stateData).pipe(
-      switchMap(() =>
-        this.client.generateAuthorizationCodeUrl(authorizationCodeParams),
-      ),
-    );
+    authorizationCodeParams: GenUrlParams,
+  ): Promise<URL> => {
+    await this.storeStateData(stateId, stateData);
+
+    const url = new URL(this.config.authorizationCodeUrl);
+
+    Object.entries({
+      ...this.config.additionalParams,
+      ...authorizationCodeParams,
+      state: stateId,
+      ...this.client.getClientParams(),
+    }).forEach(([key, value]) => {
+      if (typeof value !== 'undefined') {
+        url.searchParams.set(key, `${value}`);
+      }
+    });
+
+    return url;
   };
 
+  protected readonly config: Required<AuthorizationCodeConfig>;
+  private readonly storageFactory = inject(AuthorizationCodeStorageFactory);
   private readonly storage: AuthorizationCodeStorage;
 
   constructor(
-    @Inject(AUTHORIZATION_CODE_SERVICE_CONFIG)
-    private readonly config: AuthorizationCodeServiceConfig,
-    private readonly client: Oauth2Client,
-    @Inject(AUTHORIZATION_CODE_STORAGE_FACTORY)
-    storageFactory: AuthorizationCodeStorageFactory,
+    @Inject(AUTHORIZATION_CODE_CONFIG)
+    config: AuthorizationCodeConfig,
+    protected readonly client: Oauth2Client,
   ) {
-    this.storage = storageFactory.create(this.config.name);
+    this.config = {
+      ...defaultConfig,
+      ...config,
+    };
+    this.storage = this.storageFactory.create(
+      this.config.name,
+      this.config.stateTTL,
+    );
   }
 
-  fetchAuthorizationCodeUrl(
-    scopes: ScopesType,
+  async fetchAuthorizationCodeUrl(
+    scopes: Scopes,
     stateData?: StateData,
     additionalParams?: { [param: string]: string },
-  ): Observable<URL> {
+  ): Promise<URL> {
     const scope = validateAndTransformScopes(scopes);
 
     if (scope instanceof InvalidScopeError) {
-      return throwError(() => scope);
+      throw scope;
     }
 
     const stateId = randomString(stateIdLength);
@@ -124,63 +136,53 @@ export class AuthorizationCodeService {
       ...stateData,
     };
 
-    const authorizationCodeParams: AuthorizationCodeParams = {
+    const params: GenUrlParams = {
       ...additionalParams,
       response_type: 'code',
       redirect_uri: this.config.redirectUri,
       scope: scope,
-      state: stateId,
+      ...(await this.generateCodeChallenge(storedStateData)),
     };
 
-    if (!this.config.pkce) {
-      return this.generateAuthorizationCodeUrl(
-        stateId,
-        storedStateData,
-        authorizationCodeParams,
-      );
-    }
+    return this.generateAuthorizationCodeUrl(stateId, storedStateData, params);
+  }
 
-    return this.generateCodeChallenge().pipe(
-      switchMap((codePair) => {
-        storedStateData['codeVerifier'] = codePair.codeVerifier;
-        authorizationCodeParams.code_challenge = codePair.codeChallenge;
-        authorizationCodeParams.code_challenge_method = 'S256';
-
-        return this.generateAuthorizationCodeUrl(
-          stateId,
-          storedStateData,
-          authorizationCodeParams,
-        );
-      }),
-    );
+  async clearState(stateId: string): Promise<void> {
+    await this.removeStateData(stateId);
   }
 
   verifyState(stateId: string): Observable<StateData> {
-    return this.loadStateData(stateId);
-  }
-
-  clearState(stateId: string): Observable<true> {
-    return this.removeStateData(stateId);
+    return defer(() => this.loadStateData(stateId));
   }
 
   exchangeAuthorizationCode(
     stateId: string,
-    stateData: StateData,
     authorizationCode: string,
-  ): Observable<AccessToken> {
-    const params: AuthorizationCodeGrantParams = {
-      grant_type: 'authorization_code',
-      code: authorizationCode,
-      redirect_uri: this.config.redirectUri,
+  ): Observable<{
+    accessToken: AccessToken;
+    stateData: StateAction & {
+      [prop: string]: string;
     };
+  }> {
+    return this.verifyState(stateId).pipe(
+      switchMap((stateData) => {
+        const params: AuthorizationCodeGrantParams = {
+          grant_type: 'authorization_code',
+          code: authorizationCode,
+          redirect_uri: this.config.redirectUri,
+        };
 
-    if (stateData['codeVerifier']) {
-      params.code_verifier = stateData['codeVerifier'];
-    }
+        if (stateData['codeVerifier']) {
+          params.code_verifier = stateData['codeVerifier'];
+        }
 
-    return this.client.requestAccessToken(params).pipe(
-      switchMap((accessToken) => {
-        return this.clearState(stateId).pipe(map(() => accessToken));
+        return this.client.requestAccessToken(params).pipe(
+          switchMap((accessToken) => {
+            return from(this.clearState(stateId)).pipe(
+              map(() => ({ accessToken, stateData })),
+            );
+          }),
+        );
       }),
     );
   }

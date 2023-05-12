@@ -1,9 +1,11 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   AccessTokenRequest,
   AuthorizationCodeGrantAccessTokenRequest,
   AuthorizationCodeRequest,
   ClientGrantAccessTokenRequest,
   CustomGrantAccessTokenRequest,
+  Oauth2ErrorResponse,
   PasswordGrantAccessTokenRequest,
   RefreshTokenGrantAccessTokenRequest,
   StandardGrantsAccesTokenRequest,
@@ -42,3 +44,7 @@ export type StandardGrantsParams =
 
 export type AuthorizationCodeParams =
   OmitClientDetails<AuthorizationCodeRequest>;
+
+export type Oauth2ClientErrorTransformer = (
+  err: HttpErrorResponse,
+) => Oauth2ErrorResponse;

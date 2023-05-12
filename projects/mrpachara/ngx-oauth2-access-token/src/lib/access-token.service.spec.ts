@@ -6,25 +6,24 @@ import { TestBed } from '@angular/core/testing';
 
 import { AccessTokenService } from './access-token.service';
 import { NGX_OAUTH2_ACCESS_TOKEN_PROVIDERS } from './ngx-oauth2-access-token.module';
-import { ACCESS_TOKEN_SERVICE_CONFIG, OAUTH2_CLIENT_CONFIG } from './tokens';
+import { ACCESS_TOKEN_CONFIG, OAUTH2_CLIENT_CONFIG } from './tokens';
 import {
   AccessToken,
-  AccessTokenServiceConfig,
+  AccessTokenConfig,
   Oauth2ClientConfig,
   PasswordGrantParams,
 } from './types';
 
 const oauth2ClientConfig: Oauth2ClientConfig = {
+  name: 'test',
   clientId: 'web-app',
-  clientSecret: null,
   accessTokenUrl: 'http://localhost:8080/v2/token',
   authorizationCodeUrl: 'http://localhost:8080/authorize/consent',
   clientCredentialsInParams: false,
 };
 
-const accessTokenServiceConfig: AccessTokenServiceConfig = {
+const accessTokenServiceConfig: AccessTokenConfig = {
   name: 'oauth2',
-  additionalParams: null,
   debug: false,
 };
 
@@ -39,7 +38,7 @@ describe('AccessTokenService', () => {
         ...NGX_OAUTH2_ACCESS_TOKEN_PROVIDERS,
         { provide: OAUTH2_CLIENT_CONFIG, useValue: oauth2ClientConfig },
         {
-          provide: ACCESS_TOKEN_SERVICE_CONFIG,
+          provide: ACCESS_TOKEN_CONFIG,
           useValue: accessTokenServiceConfig,
         },
       ],

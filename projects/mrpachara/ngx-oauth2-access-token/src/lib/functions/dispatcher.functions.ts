@@ -1,23 +1,8 @@
-import { ScopesType } from '../types';
-
-export class InvalidScopeError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-
-    if (typeof this.stack === 'undefined') {
-      if (Error.captureStackTrace) {
-        Error.captureStackTrace(this, InvalidScopeError);
-      } else {
-        this.stack = new Error().stack;
-      }
-    }
-
-    this.name = this.constructor.name;
-  }
-}
+import { InvalidScopeError } from '../errors';
+import { Scopes } from '../types';
 
 export function validateAndTransformScopes(
-  scopes: ScopesType,
+  scopes: Scopes,
 ): string | InvalidScopeError {
   try {
     const result = scopes

@@ -5,15 +5,6 @@ export class StateActionNotFoundError extends Error {
     options?: ErrorOptions,
   ) {
     super(message.replace(/%s/, actionName), options);
-
-    if (typeof this.stack === 'undefined') {
-      if (Error.captureStackTrace) {
-        Error.captureStackTrace(this, StateActionNotFoundError);
-      } else {
-        this.stack = new Error().stack;
-      }
-    }
-
     this.name = this.constructor.name;
   }
 }

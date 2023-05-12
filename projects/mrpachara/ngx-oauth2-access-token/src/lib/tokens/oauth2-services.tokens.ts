@@ -3,6 +3,6 @@ import { Observable } from 'rxjs';
 
 import { AccessToken } from '../types';
 
-export const EXTERNAL_SOURCE_ACCESS_TOKEN = new InjectionToken<
+export const RENEW_ACCESS_TOKEN_SOURCE = new InjectionToken<
   Observable<AccessToken>
->('external-source-access-token');
+>('renew-access-token-source');

@@ -1,26 +1,38 @@
-export type NameableConfig = {
-  name: string;
+import { CodeChallengeMethod } from './standard.types';
+
+type NameableConfig = {
+  readonly name: string;
 };
 
-export type DebugableConfig = {
-  debug?: boolean;
+type DebugableConfig = {
+  readonly debug: boolean;
 };
 
-export type Oauth2ClientConfig = DebugableConfig & {
-  clientId: string;
-  clientSecret?: string;
-  authorizationCodeUrl: string;
-  accessTokenUrl: string;
-  clientCredentialsInParams: boolean;
+type AdditionalParams = {
+  readonly additionalParams: { readonly [param: string]: string };
 };
 
-export type AccessTokenServiceConfig = NameableConfig &
-  DebugableConfig & {
-    additionalParams: { [param: string]: string } | null;
+export type Oauth2ClientConfig = NameableConfig &
+  Partial<DebugableConfig> & {
+    readonly clientId: string;
+    readonly clientSecret?: string;
+    readonly accessTokenUrl: string;
+    readonly clientCredentialsInParams?: boolean;
   };
 
-export type AuthorizationCodeServiceConfig = NameableConfig &
-  DebugableConfig & {
-    redirectUri: string;
-    pkce: boolean;
+export type AccessTokenConfig = NameableConfig &
+  Partial<DebugableConfig> &
+  Partial<AdditionalParams> & {
+    readonly accessTokenTTL?: number;
+    readonly refreshTokenTTL?: number;
+  };
+
+export type AuthorizationCodeConfig = NameableConfig &
+  Partial<DebugableConfig> &
+  Partial<AdditionalParams> & {
+    readonly authorizationCodeUrl: string;
+    readonly redirectUri: string;
+    readonly pkce?: 'none' | CodeChallengeMethod;
+    readonly stateTTL?: number;
+    readonly codeVerifierLength?: number;
   };

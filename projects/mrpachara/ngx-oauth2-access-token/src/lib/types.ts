@@ -1,3 +1,4 @@
+export * from './types/utils.type';
 export * from './types/client.types';
 export * from './types/config.types';
 export * from './types/error.types';

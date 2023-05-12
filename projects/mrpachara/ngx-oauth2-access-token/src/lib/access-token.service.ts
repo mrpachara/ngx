@@ -1,13 +1,9 @@
-import {
-  FactoryProvider,
-  Inject,
-  Injectable,
-  InjectionToken,
-  Optional,
-} from '@angular/core';
+import { Inject, Injectable, Optional, inject } from '@angular/core';
 import {
   catchError,
+  defer,
   filter,
+  firstValueFrom,
   forkJoin,
   map,
   Observable,
@@ -21,50 +17,37 @@ import {
   throwError,
 } from 'rxjs';
 
-import { RefreshTokenNotFoundError } from './errors';
-import { InvalidScopeError, validateAndTransformScopes } from './functions';
-import { Oauth2Client } from './oauth2.client';
 import {
-  ACCESS_TOKEN_SERVICE_CONFIG,
-  ACCESS_TOKEN_STORAGE_FACTORY,
-  EXTERNAL_SOURCE_ACCESS_TOKEN,
-} from './tokens';
+  InvalidScopeError,
+  RefreshTokenExpiredError,
+  RefreshTokenNotFoundError,
+} from './errors';
+import { validateAndTransformScopes } from './functions';
+import { Oauth2Client } from './oauth2.client';
+import { AccessTokenStorage, AccessTokenStorageFactory } from './storage';
+import { ACCESS_TOKEN_CONFIG, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
 import {
   AccessToken,
-  AccessTokenServiceConfig,
-  AccessTokenStorage,
-  AccessTokenStorageFactory,
+  AccessTokenConfig,
   AccessTokenWithType,
-  ScopesType,
+  PickOptional,
+  Scopes,
   StandardGrantsParams,
   StoredAccessToken,
+  StoredRefreshToken,
 } from './types';
 
-export function createAccessTokenServiceProvider(
-  providedToken: InjectionToken<AccessTokenService> | typeof AccessTokenService,
-  config: AccessTokenServiceConfig,
-  clientToken: InjectionToken<Oauth2Client> | typeof Oauth2Client,
-  externalSourceToken?: InjectionToken<Observable<AccessToken>>,
-  storageFactoryToken?: InjectionToken<AccessTokenStorageFactory>,
-): FactoryProvider {
-  return {
-    provide: providedToken,
-    useFactory: (
-      client: Oauth2Client,
-      storageFactory: AccessTokenStorageFactory,
-      externalSource: Observable<AccessToken> | null = null,
-    ): AccessTokenService =>
-      new AccessTokenService(config, client, storageFactory, externalSource),
-    deps: [
-      clientToken,
-      storageFactoryToken ? storageFactoryToken : ACCESS_TOKEN_STORAGE_FACTORY,
-      ...(externalSourceToken ? [externalSourceToken] : []),
-    ],
-  };
-}
+const latencyTime = 2 * 5 * 1000;
 
-const latencyTime = 30 * 1000;
 const defaultAccessTokenTTL = 10 * 60 * 1000;
+const defaultRefreshTokenTTL = 30 * 24 * 60 * 60 * 1000;
+
+const defaultConfig: PickOptional<AccessTokenConfig> = {
+  debug: false,
+  additionalParams: {},
+  accessTokenTTL: defaultAccessTokenTTL,
+  refreshTokenTTL: defaultRefreshTokenTTL,
+};
 
 @Injectable()
 export class AccessTokenService {
@@ -75,12 +58,10 @@ export class AccessTokenService {
   private readonly storeStoringAccessToken = (accessToken: StoredAccessToken) =>
     this.storage.storeAccessToken(accessToken);
 
-  private readonly storeRefreshToken = (refreshToken: string) =>
+  private readonly storeRefreshToken = (refreshToken: StoredRefreshToken) =>
     this.storage.storeRefreshToken(refreshToken);
 
-  private readonly transformToken = (
-    accessToken: AccessToken,
-  ): [StoredAccessToken, string | undefined] => {
+  private readonly transformToken = (accessToken: AccessToken) => {
     const currentTime = Date.now();
 
     const { expires_in, refresh_token, ...extractedAccessToken } = accessToken;
@@ -89,25 +70,39 @@ export class AccessTokenService {
       ...extractedAccessToken,
       expires_at:
         currentTime +
-        (expires_in ? expires_in * 1000 - latencyTime : defaultAccessTokenTTL),
+        (expires_in ? expires_in * 1000 : this.config.accessTokenTTL) -
+        latencyTime,
     };
 
-    return [storingAccessToken, refresh_token];
+    const storingRefreshToken: StoredRefreshToken | undefined = refresh_token
+      ? {
+          refresh_token: refresh_token,
+          expires_at: currentTime + this.config.refreshTokenTTL - latencyTime,
+        }
+      : undefined;
+
+    return { storingAccessToken, storingRefreshToken };
   };
 
-  private readonly storeStoringToken = ([storingAccessToken, refreshToken]: [
-    StoredAccessToken,
-    string | undefined,
-  ]) => {
+  private readonly storeStoringToken = ({
+    storingAccessToken,
+    storingRefreshToken,
+  }: {
+    storingAccessToken: StoredAccessToken;
+    storingRefreshToken: StoredRefreshToken | undefined;
+  }) => {
     return forkJoin([
       this.storeStoringAccessToken(storingAccessToken),
-      refreshToken ? this.storeRefreshToken(refreshToken) : of(undefined),
-    ]).pipe(map(([storedAccessToken]) => storedAccessToken));
+      ...(storingRefreshToken
+        ? [this.storeRefreshToken(storingRefreshToken)]
+        : []),
+    ]);
   };
 
   private readonly storeTokenPipe = pipe(
     map(this.transformToken),
     switchMap(this.storeStoringToken),
+    map(([storedAccessToken]) => storedAccessToken),
   );
 
   private readonly requestAccessToken = (
@@ -121,28 +116,36 @@ export class AccessTokenService {
 
   private readonly accessToken$: Observable<AccessTokenWithType>;
 
+  protected readonly config: Required<AccessTokenConfig>;
+  private readonly storageFactory = inject(AccessTokenStorageFactory);
   private readonly storage: AccessTokenStorage;
+
   constructor(
-    @Inject(ACCESS_TOKEN_SERVICE_CONFIG)
-    private readonly config: AccessTokenServiceConfig,
-    private readonly client: Oauth2Client,
-    @Inject(ACCESS_TOKEN_STORAGE_FACTORY)
-    storageFactory: AccessTokenStorageFactory,
+    @Inject(ACCESS_TOKEN_CONFIG)
+    config: AccessTokenConfig,
+    protected readonly client: Oauth2Client,
     @Optional()
-    @Inject(EXTERNAL_SOURCE_ACCESS_TOKEN)
-    private readonly externalSource: Observable<AccessToken> | null = null,
+    @Inject(RENEW_ACCESS_TOKEN_SOURCE)
+    protected readonly renewAccessToken$: Observable<AccessToken> | null = null,
   ) {
-    this.storage = storageFactory.create(this.config.name);
+    this.config = {
+      ...defaultConfig,
+      ...config,
+    };
+    this.storage = this.storageFactory.create(this.config.name);
 
     // NOTE: multiple tabs can request refresh_token at the same time
     //       so use race() for finding the winner.
     this.accessToken$ = race(
-      this.loadStoredAccessToken().pipe(
+      defer(() => this.loadStoredAccessToken()).pipe(
         catchError((accessTokenErr: unknown) => {
           return this.exchangeRefreshToken().pipe(
             this.storeTokenPipe,
             catchError((refreshTokenErr: unknown) => {
-              if (refreshTokenErr instanceof RefreshTokenNotFoundError) {
+              if (
+                refreshTokenErr instanceof RefreshTokenNotFoundError ||
+                refreshTokenErr instanceof RefreshTokenExpiredError
+              ) {
                 return throwError(() => accessTokenErr);
               }
 
@@ -151,9 +154,9 @@ export class AccessTokenService {
           );
         }),
         catchError((err) => {
-          if (this.externalSource) {
+          if (this.renewAccessToken$) {
             console.log(err);
-            return this.externalSource.pipe(this.storeTokenPipe);
+            return this.renewAccessToken$.pipe(this.storeTokenPipe);
           } else {
             return throwError(() => err);
           }
@@ -181,8 +184,8 @@ export class AccessTokenService {
     ).pipe(
       map(
         (storedAccessToken): AccessTokenWithType => ({
-          token_type: storedAccessToken.token_type,
-          access_token: storedAccessToken.access_token,
+          type: storedAccessToken.token_type,
+          token: storedAccessToken.access_token,
         }),
       ),
       share(),
@@ -193,9 +196,9 @@ export class AccessTokenService {
     return this.accessToken$;
   }
 
-  exchangeRefreshToken(scopes?: ScopesType): Observable<AccessToken> {
-    return this.loadRefreshToken().pipe(
-      switchMap((refreshToken) => {
+  exchangeRefreshToken(scopes?: Scopes): Observable<AccessToken> {
+    return defer(() => this.loadRefreshToken()).pipe(
+      switchMap((storedRefreshToken) => {
         const scope = scopes ? validateAndTransformScopes(scopes) : null;
 
         if (scope instanceof InvalidScopeError) {
@@ -204,25 +207,27 @@ export class AccessTokenService {
 
         return this.requestAccessToken({
           grant_type: 'refresh_token',
-          refresh_token: refreshToken,
+          refresh_token: storedRefreshToken.refresh_token,
           ...(scope ? { scope: scope } : {}),
         });
       }),
     );
   }
 
-  setAccessToken(accessToken: AccessToken): Observable<AccessToken> {
-    return of(accessToken).pipe(
-      this.storeTokenPipe,
-      map(() => accessToken),
+  async setAccessToken(accessToken: AccessToken): Promise<AccessToken> {
+    return firstValueFrom(
+      of(accessToken).pipe(
+        this.storeTokenPipe,
+        map(() => accessToken),
+      ),
     );
   }
 
-  removeAccessToken(): Observable<true> {
-    return this.storage.removeAccessToken();
+  async removeAccessToken(): Promise<void> {
+    return await this.storage.removeAccessToken();
   }
 
-  clearToken() {
-    this.storage.clearToken();
+  async clearToken(): Promise<void> {
+    return await this.storage.clearToken();
   }
 }
