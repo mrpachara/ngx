@@ -5,15 +5,35 @@ import {
 } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { ACCESS_TOKEN_CONFIG, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
-import { AccessToken, AccessTokenConfig } from './types';
+import { ACCESS_TOKEN_FULL_CONFIG, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
+import {
+  AccessToken,
+  AccessTokenConfig,
+  AccessTokenFullConfig,
+  PickOptional,
+} from './types';
+
+const defaultAccessTokenTTL = 10 * 60 * 1000;
+const defaultRefreshTokenTTL = 30 * 24 * 60 * 60 * 1000;
+
+const defaultConfig: PickOptional<AccessTokenConfig> = {
+  debug: false,
+  additionalParams: {},
+  accessTokenTTL: defaultAccessTokenTTL,
+  refreshTokenTTL: defaultRefreshTokenTTL,
+};
 
 export function provideAccessToken(
   config: AccessTokenConfig,
   ...features: AccessTokenFeatures[]
 ): EnvironmentProviders {
+  const fullConfig: AccessTokenFullConfig = {
+    ...defaultConfig,
+    ...config,
+  };
+
   return makeEnvironmentProviders([
-    { provide: ACCESS_TOKEN_CONFIG, useValue: config },
+    { provide: ACCESS_TOKEN_FULL_CONFIG, useValue: fullConfig },
     features.map((feature) => feature.providers),
   ]);
 }

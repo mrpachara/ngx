@@ -25,12 +25,11 @@ import {
 import { validateAndTransformScopes } from './functions';
 import { Oauth2Client } from './oauth2.client';
 import { AccessTokenStorage, AccessTokenStorageFactory } from './storage';
-import { ACCESS_TOKEN_CONFIG, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
+import { ACCESS_TOKEN_FULL_CONFIG, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
 import {
   AccessToken,
-  AccessTokenConfig,
+  AccessTokenFullConfig,
   AccessTokenWithType,
-  PickOptional,
   Scopes,
   StandardGrantsParams,
   StoredAccessToken,
@@ -38,16 +37,6 @@ import {
 } from './types';
 
 const latencyTime = 2 * 5 * 1000;
-
-const defaultAccessTokenTTL = 10 * 60 * 1000;
-const defaultRefreshTokenTTL = 30 * 24 * 60 * 60 * 1000;
-
-const defaultConfig: PickOptional<AccessTokenConfig> = {
-  debug: false,
-  additionalParams: {},
-  accessTokenTTL: defaultAccessTokenTTL,
-  refreshTokenTTL: defaultRefreshTokenTTL,
-};
 
 @Injectable()
 export class AccessTokenService {
@@ -116,22 +105,17 @@ export class AccessTokenService {
 
   private readonly accessToken$: Observable<AccessTokenWithType>;
 
-  protected readonly config: Required<AccessTokenConfig>;
-  private readonly storageFactory = inject(AccessTokenStorageFactory);
-  private readonly storage: AccessTokenStorage;
+  protected readonly storageFactory = inject(AccessTokenStorageFactory);
+  protected readonly storage: AccessTokenStorage;
 
   constructor(
-    @Inject(ACCESS_TOKEN_CONFIG)
-    config: AccessTokenConfig,
+    @Inject(ACCESS_TOKEN_FULL_CONFIG)
+    protected readonly config: AccessTokenFullConfig,
     protected readonly client: Oauth2Client,
     @Optional()
     @Inject(RENEW_ACCESS_TOKEN_SOURCE)
     protected readonly renewAccessToken$: Observable<AccessToken> | null = null,
   ) {
-    this.config = {
-      ...defaultConfig,
-      ...config,
-    };
     this.storage = this.storageFactory.create(this.config.name);
 
     // NOTE: multiple tabs can request refresh_token at the same time

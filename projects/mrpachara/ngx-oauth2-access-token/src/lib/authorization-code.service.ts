@@ -13,14 +13,13 @@ import {
   AuthorizationCodeStorage,
   AuthorizationCodeStorageFactory,
 } from './storage';
-import { AUTHORIZATION_CODE_CONFIG } from './tokens';
+import { AUTHORIZATION_CODE_FULL_CONFIG } from './tokens';
 import {
   AccessToken,
-  AuthorizationCodeConfig,
+  AuthorizationCodeFullConfig,
   AuthorizationCodeGrantParams,
   AuthorizationCodeParams,
   CodeChallengeMethod,
-  PickOptional,
   Scopes,
   StateAction,
   StateData,
@@ -28,18 +27,7 @@ import {
 
 const stateIdLength = 32;
 
-const defaultStateTTL = 10 * 60 * 1000;
-const defaultCodeVerifierLength = 56;
-
 type GenUrlParams = Omit<AuthorizationCodeParams, 'state'>;
-
-const defaultConfig: PickOptional<AuthorizationCodeConfig> = {
-  debug: false,
-  pkce: 'none',
-  stateTTL: defaultStateTTL,
-  codeVerifierLength: defaultCodeVerifierLength,
-  additionalParams: {},
-};
 
 @Injectable()
 export class AuthorizationCodeService {
@@ -101,19 +89,14 @@ export class AuthorizationCodeService {
     return url;
   };
 
-  protected readonly config: Required<AuthorizationCodeConfig>;
-  private readonly storageFactory = inject(AuthorizationCodeStorageFactory);
-  private readonly storage: AuthorizationCodeStorage;
+  protected readonly storageFactory = inject(AuthorizationCodeStorageFactory);
+  protected readonly storage: AuthorizationCodeStorage;
 
   constructor(
-    @Inject(AUTHORIZATION_CODE_CONFIG)
-    config: AuthorizationCodeConfig,
+    @Inject(AUTHORIZATION_CODE_FULL_CONFIG)
+    protected readonly config: AuthorizationCodeFullConfig,
     protected readonly client: Oauth2Client,
   ) {
-    this.config = {
-      ...defaultConfig,
-      ...config,
-    };
     this.storage = this.storageFactory.create(
       this.config.name,
       this.config.stateTTL,

@@ -5,7 +5,7 @@ import { StateActionNotFoundError } from './errors';
 import { STATE_ACTION_HANDLERS } from './tokens';
 import { AccessToken, StateAction, StateActionHandlers } from './types';
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class StateActionService {
   private readonly extract = (actionValue: string) => actionValue.split(':', 2);
 

@@ -7,41 +7,28 @@ import { Inject, Injectable, inject } from '@angular/core';
 import { catchError, Observable, throwError } from 'rxjs';
 
 import {
-  OAUTH2_CLIENT_CONFIG,
   OAUTH2_CLIENT_ERROR_TRANSFORMER,
+  OAUTH2_CLIENT_FULL_CONFIG,
   SKIP_ASSIGNING_ACCESS_TOKEN,
 } from './tokens';
 import {
   AccessToken,
-  Oauth2ClientConfig,
   Oauth2ClientErrorTransformer,
-  PickOptional,
-  RequiredExcept,
+  Oauth2ClientFullConfig,
   StandardGrantsParams,
 } from './types';
 import { Oauth2ClientResponseError } from './errors';
 
-const defaultConfig: PickOptional<Omit<Oauth2ClientConfig, 'clientSecret'>> = {
-  debug: false,
-  clientCredentialsInParams: false,
-};
-
 @Injectable({ providedIn: 'root' })
 export class Oauth2Client {
-  private readonly http = inject(HttpClient);
-
-  private readonly config: RequiredExcept<Oauth2ClientConfig, 'clientSecret'>;
+  protected readonly http = inject(HttpClient);
 
   constructor(
-    @Inject(OAUTH2_CLIENT_CONFIG) config: Oauth2ClientConfig,
+    @Inject(OAUTH2_CLIENT_FULL_CONFIG)
+    protected readonly config: Oauth2ClientFullConfig,
     @Inject(OAUTH2_CLIENT_ERROR_TRANSFORMER)
-    private readonly errorTransformer: Oauth2ClientErrorTransformer,
-  ) {
-    this.config = {
-      ...defaultConfig,
-      ...config,
-    };
-  }
+    protected readonly errorTransformer: Oauth2ClientErrorTransformer,
+  ) {}
 
   private generateClientHeaderIfNeeded():
     | { Authorization: string }
@@ -107,16 +94,28 @@ export class Oauth2Client {
       )
       .pipe(
         catchError((err: unknown) => {
-          if (err instanceof HttpErrorResponse) {
-            return throwError(
-              () =>
-                new Oauth2ClientResponseError(this.errorTransformer(err), {
+          return throwError(
+            () =>
+              new Oauth2ClientResponseError(
+                this.config.name,
+                err instanceof HttpErrorResponse
+                  ? this.errorTransformer(err)
+                  : err instanceof Error
+                  ? {
+                      error: err.name,
+                      error_description: err.message,
+                    }
+                  : {
+                      error: 'Unknown',
+                      error_description: `${
+                        typeof err === 'object' ? JSON.stringify(err) : err
+                      }`,
+                    },
+                {
                   cause: err,
-                }),
-            );
-          }
-
-          return throwError(() => err);
+                },
+              ),
+          );
         }),
       );
   }

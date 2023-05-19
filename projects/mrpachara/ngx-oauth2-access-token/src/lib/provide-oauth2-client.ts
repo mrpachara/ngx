@@ -3,20 +3,35 @@ import {
   Provider,
   makeEnvironmentProviders,
 } from '@angular/core';
-import { Oauth2ClientConfig, Oauth2ClientErrorTransformer } from './types';
 import {
-  OAUTH2_CLIENT_CONFIG,
+  Oauth2ClientConfig,
+  Oauth2ClientErrorTransformer,
+  Oauth2ClientFullConfig,
+  PickOptional,
+} from './types';
+import {
   OAUTH2_CLIENT_ERROR_TRANSFORMER,
+  OAUTH2_CLIENT_FULL_CONFIG,
 } from './tokens';
+
+const defaultConfig: PickOptional<Omit<Oauth2ClientConfig, 'clientSecret'>> = {
+  debug: false,
+  clientCredentialsInParams: false,
+};
 
 export function provideOauth2Client(
   config: Oauth2ClientConfig,
   ...features: Oauth2ClientFeatures[]
 ): EnvironmentProviders {
+  const fullConfig: Oauth2ClientFullConfig = {
+    ...defaultConfig,
+    ...config,
+  };
+
   return makeEnvironmentProviders([
     {
-      provide: OAUTH2_CLIENT_CONFIG,
-      useValue: config,
+      provide: OAUTH2_CLIENT_FULL_CONFIG,
+      useValue: fullConfig,
     },
     features.map((feature) => feature.providers),
   ]);

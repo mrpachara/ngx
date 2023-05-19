@@ -1,4 +1,5 @@
 import { CodeChallengeMethod } from './standard.types';
+import { RequiredExcept } from './utils.type';
 
 type NameableConfig = {
   readonly name: string;
@@ -20,12 +21,18 @@ export type Oauth2ClientConfig = NameableConfig &
     readonly clientCredentialsInParams?: boolean;
   };
 
+export type Oauth2ClientFullConfig = RequiredExcept<
+  Oauth2ClientConfig,
+  'clientSecret'
+>;
+
 export type AccessTokenConfig = NameableConfig &
   Partial<DebugableConfig> &
   Partial<AdditionalParams> & {
     readonly accessTokenTTL?: number;
     readonly refreshTokenTTL?: number;
   };
+export type AccessTokenFullConfig = Required<AccessTokenConfig>;
 
 export type AuthorizationCodeConfig = NameableConfig &
   Partial<DebugableConfig> &
@@ -36,3 +43,5 @@ export type AuthorizationCodeConfig = NameableConfig &
     readonly stateTTL?: number;
     readonly codeVerifierLength?: number;
   };
+
+export type AuthorizationCodeFullConfig = Required<AuthorizationCodeConfig>;
