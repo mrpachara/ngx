@@ -24,6 +24,6 @@ jobs:
         run: npx ng build @mrpachara/ngx-oauth2-access-token -c production
       - name: Publish package
         working-directory: ./dist/mrpachara/ngx-oauth2-access-token
-        run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo -e "${{ github.actor }}\n${{ secrets.GITHUB_TOKEN }}" | npm login --scope=@NAMESPACE --auth-type=legacy --registry=https://npm.pkg.github.com
+          npm publish
