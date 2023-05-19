@@ -3,11 +3,10 @@ name: Create and publish ngx-oauth2-access-token
 on:
   release:
     types: [published]
-    tags:
-      - 'ngx-oauth2-access-token_v*'
 
 jobs:
   build-and-release-package:
+    if: ${{ startsWith(github.event.release.tag_name, 'ngx-oauth2-access-token_v') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -18,17 +17,13 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '18.x'
-          registry-url: 'https://npm.pkg.github.com'
-          # Defaults to the user or organization that owns the workflow file
-          scope: '@mrpachara'
+          cache: 'yarn'
       - name: Install dependcies
         run: yarn install --frozen-lockfile
       - name: Build package
         run: npx ng build @mrpachara/ngx-oauth2-access-token -c production
       - name: Publish package
         working-directory: ./dist/mrpachara/ngx-oauth2-access-token
-        run: |
-          cp $GITHUB_WORKSPACE/.npmrc ./
-          npm publish
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
