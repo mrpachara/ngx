@@ -28,5 +28,6 @@ jobs:
           echo "//npm.pkg.github.com:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
           echo "@${{github.actor}}:registry=https://npm.pkg.github.com" >> .npmrc
           echo "always-auth=true" >> .npmrc
-          echo .npmrc
+          ls
+          cat .npmrc
           npm publish
