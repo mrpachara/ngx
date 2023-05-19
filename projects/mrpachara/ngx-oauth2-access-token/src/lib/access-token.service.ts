@@ -38,7 +38,7 @@ import {
 
 const latencyTime = 2 * 5 * 1000;
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class AccessTokenService {
   private readonly loadStoredAccessToken = () => this.storage.loadAccessToken();
 
@@ -139,17 +139,17 @@ export class AccessTokenService {
         }),
         catchError((err) => {
           if (this.renewAccessToken$) {
-            console.log(err);
+            if (this.config.debug) console.log(err);
             return this.renewAccessToken$.pipe(this.storeTokenPipe);
           } else {
             return throwError(() => err);
           }
         }),
-        tap(
-          () =>
-            this.config.debug &&
-            console.debug('access-token-race:', 'I am a winner!!!'),
-        ),
+        tap(() => {
+          if (this.config.debug) {
+            console.debug('access-token-race:', 'I am a winner!!!');
+          }
+        }),
       ),
       // NOTE: Access token is assigned by another tab.
       this.storage.watchAccessToken().pipe(
@@ -159,11 +159,11 @@ export class AccessTokenService {
         ),
         filter((storedTokenData) => storedTokenData.expires_at >= Date.now()),
         take(1),
-        tap(
-          () =>
-            this.config.debug &&
-            console.debug('access-token-race:', 'I am a loser!!!'),
-        ),
+        tap(() => {
+          if (this.config.debug) {
+            console.debug('access-token-race:', 'I am a loser!!!');
+          }
+        }),
       ),
     ).pipe(
       map(

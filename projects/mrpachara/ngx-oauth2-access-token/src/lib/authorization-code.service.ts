@@ -29,7 +29,7 @@ const stateIdLength = 32;
 
 type GenUrlParams = Omit<AuthorizationCodeParams, 'state'>;
 
-@Injectable()
+@Injectable({ providedIn: 'root' })
 export class AuthorizationCodeService {
   private readonly loadStateData = (stateId: string) =>
     this.storage.loadStateData(stateId);

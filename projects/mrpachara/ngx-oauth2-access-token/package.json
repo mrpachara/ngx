@@ -1,9 +1,9 @@
 {
   "name": "@mrpachara/ngx-oauth2-access-token",
-  "version": "0.0.1",
+  "version": "0.0.1-pre.1",
   "peerDependencies": {
-    "@angular/common": "^16.0.1",
-    "@angular/core": "^16.0.1"
+    "@angular/common": "^16.0.2",
+    "@angular/core": "^16.0.2"
   },
   "dependencies": {
     "tslib": "^2.3.0"
