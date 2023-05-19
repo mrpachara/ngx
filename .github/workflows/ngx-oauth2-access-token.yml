@@ -26,6 +26,7 @@ jobs:
         working-directory: ./dist/mrpachara/ngx-oauth2-access-token
         run: |
           echo "//npm.pkg.github.com:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
-          echo "registry=https://npm.pkg.github.com" >> .npmrc
+          echo "@${{github.actor}}:registry=https://npm.pkg.github.com" >> .npmrc
           echo "always-auth=true" >> .npmrc
+          echo .npmrc
           npm publish
