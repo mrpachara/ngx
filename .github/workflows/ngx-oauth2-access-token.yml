@@ -25,5 +25,5 @@ jobs:
       - name: Publish package
         working-directory: ./dist/mrpachara/ngx-oauth2-access-token
         run: |
-          echo -e "${{ github.actor }}\n${{ secrets.GITHUB_TOKEN }}" | npm login --scope=@NAMESPACE --auth-type=legacy --registry=https://npm.pkg.github.com
+          echo -e "${{ github.actor }}\n${{ secrets.GITHUB_TOKEN }}" | npm login --scope=@mrpachara --auth-type=legacy --registry=https://npm.pkg.github.com
           npm publish
