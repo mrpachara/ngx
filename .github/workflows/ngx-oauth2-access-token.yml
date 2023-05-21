@@ -11,6 +11,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+    env:
+      PACKAGE_SCOPE: mrpachara
+      PACKAGE_NAME: ngx-oauth2-access-token
     steps:
       - uses: actions/checkout@v3
       # Setup .npmrc file to publish to GitHub Packages
@@ -18,16 +21,14 @@ jobs:
         with:
           node-version: '18.x'
           cache: 'yarn'
+          registry-url: https://npm.pkg.github.com
+
       - name: Install dependcies
         run: yarn install --frozen-lockfile
       - name: Build package
-        run: npx ng build @mrpachara/ngx-oauth2-access-token -c production
+        run: npx ng build @$PACKAGE_SCOPE/$PACKAGE_NAME -c production
       - name: Publish package
-        working-directory: ./dist/mrpachara/ngx-oauth2-access-token
-        run: |
-          echo "//npm.pkg.github.com:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
-          echo "@${{github.actor}}:registry=https://npm.pkg.github.com" >> .npmrc
-          echo "always-auth=true" >> .npmrc
-          ls
-          cat .npmrc
-          npm publish
+        working-directory: ./dist/$PACKAGE_SCOPE/$PACKAGE_NAME
+        run: yarn publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
