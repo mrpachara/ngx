@@ -13,7 +13,7 @@ export type StateDataContainer = {
   data: StateData;
 };
 
-export class AuthorizationCodeStorage implements AuthorizationCodeStorage {
+export class AuthorizationCodeStorage {
   private readonly stateKey = (stateId: string): string =>
     `${this.name}-${stateDataKeyName}-${stateId}`;
 
@@ -97,10 +97,17 @@ export class AuthorizationCodeStorage implements AuthorizationCodeStorage {
     return stateData;
   }
 
-  async removeStateData(stateId: string): Promise<void> {
+  async removeStateData(stateId: string): Promise<StateData | null> {
     await this.ready;
 
-    await this.storage.removeItem(this.stateKey(stateId));
+    try {
+      const stateData = await this.loadStateData(stateId);
+      await this.storage.removeItem(this.stateKey(stateId));
+      return stateData;
+    } catch (err) {
+      await this.storage.removeItem(this.stateKey(stateId));
+      return null;
+    }
   }
 }
 

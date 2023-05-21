@@ -1,7 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
-import { AccessTokenService } from '@mrpachara/ngx-oauth2-access-token';
 
 @Component({
   selector: 'app-root',
@@ -12,7 +11,4 @@ import { AccessTokenService } from '@mrpachara/ngx-oauth2-access-token';
 })
 export class AppComponent {
   title = 'demo';
-
-  protected readonly accessToken$ =
-    inject(AccessTokenService).fetchAccessToken();
 }

@@ -3,12 +3,4 @@
   <nav></nav>
 </header>
 
-<pre *ngIf="accessToken$ | async as accessToken; else loading">{{
-  accessToken | json
-}}</pre>
-
-<ng-template #loading>
-  <div>loading...</div>
-</ng-template>
-
 <router-outlet></router-outlet>
