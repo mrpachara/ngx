@@ -1,7 +1,6 @@
 import { Observable } from 'rxjs';
 
 import { AccessToken } from './standard.types';
-import { StateAction } from './state-action.types';
 
 export type StoredAccessToken = Omit<
   AccessToken,
@@ -15,8 +14,8 @@ export type StoredRefreshToken = {
   expires_at: number;
 };
 
-export type StateData = StateAction & {
-  [prop: string]: string;
+export type StateData = {
+  [prop: string]: string | undefined;
 };
 
 export interface KeyValuePairStorage {

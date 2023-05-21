@@ -21,13 +21,14 @@ export function oauth2Callback(
       return from(
         stateId
           ? authorizationCodeService.clearState(stateId)
-          : new Promise<void>((resolve) => resolve()),
+          : Promise.resolve(null),
       ).pipe(
-        switchMap(() =>
+        switchMap((stateData) =>
           throwError(() => {
             return new ErrorResponseCallbackError({
               ...{ error },
               ...(error_description ? { error_description } : {}),
+              ...(stateData ? { stateData } : {}),
             });
           }),
         ),
@@ -44,11 +45,16 @@ export function oauth2Callback(
     }
 
     if (code === null) {
-      return throwError(
-        () =>
-          new BadResponseCallbackError(
-            `The 'code' is required for callback. No 'code' was replied from oauth server in query string.`,
-          ),
+      return from(authorizationCodeService.clearState(stateId)).pipe(
+        switchMap((stateData) => {
+          return throwError(
+            () =>
+              new BadResponseCallbackError(
+                `The 'code' is required for callback. No 'code' was replied from oauth server in query string.`,
+                stateData ?? undefined,
+              ),
+          );
+        }),
       );
     }
 
@@ -60,8 +66,8 @@ export function oauth2Callback(
     switchMap(({ stateId, code }) => {
       return authorizationCodeService.exchangeAuthorizationCode(stateId, code);
     }),
-    switchMap(({ accessToken, stateData }) =>
-      stateActionService.dispatch(stateData, accessToken),
-    ),
+    switchMap(({ accessToken, stateData }) => {
+      return stateActionService.dispatch(accessToken, stateData);
+    }),
   );
 }

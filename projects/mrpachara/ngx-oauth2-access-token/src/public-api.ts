@@ -13,5 +13,8 @@ export * from './lib/authorization-code.service';
 
 export * from './lib/provide-key-value-pair-storage';
 export * from './lib/provide-oauth2-client';
+export * from './lib/provide-state-action';
 export * from './lib/provide-access-token';
 export * from './lib/provide-authorization-code';
+
+export * from './lib/components';

@@ -21,7 +21,6 @@ import {
   AuthorizationCodeParams,
   CodeChallengeMethod,
   Scopes,
-  StateAction,
   StateData,
 } from './types';
 
@@ -130,8 +129,8 @@ export class AuthorizationCodeService {
     return this.generateAuthorizationCodeUrl(stateId, storedStateData, params);
   }
 
-  async clearState(stateId: string): Promise<void> {
-    await this.removeStateData(stateId);
+  async clearState(stateId: string): Promise<StateData | null> {
+    return await this.removeStateData(stateId);
   }
 
   verifyState(stateId: string): Observable<StateData> {
@@ -143,9 +142,7 @@ export class AuthorizationCodeService {
     authorizationCode: string,
   ): Observable<{
     accessToken: AccessToken;
-    stateData: StateAction & {
-      [prop: string]: string;
-    };
+    stateData: StateData;
   }> {
     return this.verifyState(stateId).pipe(
       switchMap((stateData) => {

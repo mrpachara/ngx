@@ -1,0 +1,8 @@
+<pre *ngIf="accessToken() as accessToken; else loading">{{
+  accessToken | json
+}}</pre>
+<span *ngIf="errorMessage() as errorMessage">{{ errorMessage }}</span>
+
+<ng-template #loading>
+  <div>loading...</div>
+</ng-template>
