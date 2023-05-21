@@ -6,13 +6,13 @@ import {
 } from './types';
 import { AUTHORIZATION_CODE_FULL_CONFIG } from './tokens';
 
-const defaultStateTTL = 10 * 60 * 1000;
+const defaultStateTtl = 10 * 60 * 1000;
 const defaultCodeVerifierLength = 56;
 
 const defaultConfig: PickOptional<AuthorizationCodeConfig> = {
   debug: false,
   pkce: 'none',
-  stateTTL: defaultStateTTL,
+  stateTtl: defaultStateTtl,
   codeVerifierLength: defaultCodeVerifierLength,
   additionalParams: {},
 };

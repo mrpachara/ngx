@@ -6,7 +6,7 @@ import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 
 const stateDataKeyName = `oauth-code-state`;
 
-const stateClearTTL = 10 * 60 * 1000;
+const stateClearTtl = 10 * 60 * 1000;
 
 export type StateDataContainer = {
   expires_at: number;
@@ -37,7 +37,7 @@ export class AuthorizationCodeStorage implements AuthorizationCodeStorage {
 
   constructor(
     private readonly name: string,
-    private readonly stateTTL: number,
+    private readonly stateTtl: number,
     private readonly storage: KeyValuePairStorage,
   ) {
     this.ready = this.clearStateDataContainers();
@@ -56,7 +56,7 @@ export class AuthorizationCodeStorage implements AuthorizationCodeStorage {
 
       if (
         storedStateDataContainer &&
-        storedStateDataContainer?.expires_at + stateClearTTL < currentTime
+        storedStateDataContainer?.expires_at + stateClearTtl < currentTime
       ) {
         await this.storage.removeItem(stateKey);
       }
@@ -90,7 +90,7 @@ export class AuthorizationCodeStorage implements AuthorizationCodeStorage {
     await this.ready;
 
     await this.storage.storeItem(this.stateKey(stateId), {
-      expires_at: Date.now() + this.stateTTL,
+      expires_at: Date.now() + this.stateTtl,
       data: stateData,
     });
 
@@ -109,7 +109,7 @@ export class AuthorizationCodeStorageFactory {
   private readonly storage = inject(KEY_VALUE_PAIR_STORAGE);
   private readonly existingNameSet = new Set<string>();
 
-  create(name: string, stateTTL: number): AuthorizationCodeStorage {
+  create(name: string, stateTtl: number): AuthorizationCodeStorage {
     if (this.existingNameSet.has(name)) {
       throw new Error(
         `Duplicated name '${name}' in authorization-code.storage.`,
@@ -118,6 +118,6 @@ export class AuthorizationCodeStorageFactory {
 
     this.existingNameSet.add(name);
 
-    return new AuthorizationCodeStorage(name, stateTTL, this.storage);
+    return new AuthorizationCodeStorage(name, stateTtl, this.storage);
   }
 }

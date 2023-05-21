@@ -99,7 +99,7 @@ export class AuthorizationCodeService {
   ) {
     this.storage = this.storageFactory.create(
       this.config.name,
-      this.config.stateTTL,
+      this.config.stateTtl,
     );
   }
 

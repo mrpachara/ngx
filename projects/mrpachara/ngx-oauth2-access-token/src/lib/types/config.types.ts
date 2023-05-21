@@ -29,8 +29,8 @@ export type Oauth2ClientFullConfig = RequiredExcept<
 export type AccessTokenConfig = NameableConfig &
   Partial<DebugableConfig> &
   Partial<AdditionalParams> & {
-    readonly accessTokenTTL?: number;
-    readonly refreshTokenTTL?: number;
+    readonly accessTokenTtl?: number;
+    readonly refreshTokenTtl?: number;
   };
 export type AccessTokenFullConfig = Required<AccessTokenConfig>;
 
@@ -40,7 +40,7 @@ export type AuthorizationCodeConfig = NameableConfig &
     readonly authorizationCodeUrl: string;
     readonly redirectUri: string;
     readonly pkce?: 'none' | CodeChallengeMethod;
-    readonly stateTTL?: number;
+    readonly stateTtl?: number;
     readonly codeVerifierLength?: number;
   };
 

@@ -22,9 +22,10 @@ jobs:
           node-version: '18.x'
           cache: 'yarn'
           registry-url: https://npm.pkg.github.com
-
       - name: Install dependcies
         run: yarn install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build package
         run: npx ng build @$PACKAGE_SCOPE/$PACKAGE_NAME -c production
       - name: Publish package

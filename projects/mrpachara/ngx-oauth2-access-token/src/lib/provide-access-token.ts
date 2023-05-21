@@ -13,14 +13,14 @@ import {
   PickOptional,
 } from './types';
 
-const defaultAccessTokenTTL = 10 * 60 * 1000;
-const defaultRefreshTokenTTL = 30 * 24 * 60 * 60 * 1000;
+const defaultAccessTokenTtl = 10 * 60 * 1000;
+const defaultRefreshTokenTtl = 30 * 24 * 60 * 60 * 1000;
 
 const defaultConfig: PickOptional<AccessTokenConfig> = {
   debug: false,
   additionalParams: {},
-  accessTokenTTL: defaultAccessTokenTTL,
-  refreshTokenTTL: defaultRefreshTokenTTL,
+  accessTokenTtl: defaultAccessTokenTtl,
+  refreshTokenTtl: defaultRefreshTokenTtl,
 };
 
 export function provideAccessToken(

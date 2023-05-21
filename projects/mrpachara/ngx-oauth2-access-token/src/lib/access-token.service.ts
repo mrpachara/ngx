@@ -59,14 +59,14 @@ export class AccessTokenService {
       ...extractedAccessToken,
       expires_at:
         currentTime +
-        (expires_in ? expires_in * 1000 : this.config.accessTokenTTL) -
+        (expires_in ? expires_in * 1000 : this.config.accessTokenTtl) -
         latencyTime,
     };
 
     const storingRefreshToken: StoredRefreshToken | undefined = refresh_token
       ? {
           refresh_token: refresh_token,
-          expires_at: currentTime + this.config.refreshTokenTTL - latencyTime,
+          expires_at: currentTime + this.config.refreshTokenTtl - latencyTime,
         }
       : undefined;
 
