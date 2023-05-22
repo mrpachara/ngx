@@ -27,7 +27,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build package
-        run: npx ng build @$PACKAGE_SCOPE/$PACKAGE_NAME -c production
+        run: |
+          npx ng build @$PACKAGE_SCOPE/$PACKAGE_NAME -c production
+          cp LICENSE ./dist/$PACKAGE_SCOPE/$PACKAGE_NAME
       - name: Publish package
         working-directory: ./dist/${{ env.PACKAGE_SCOPE }}/${{ env.PACKAGE_NAME }}
         run: yarn publish
