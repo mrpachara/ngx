@@ -192,7 +192,7 @@ export class AccessTokenService {
         return this.requestAccessToken({
           grant_type: 'refresh_token',
           refresh_token: storedRefreshToken.refresh_token,
-          ...(scope ? { scope: scope } : {}),
+          ...(scope ? { scope } : {}),
         });
       }),
     );

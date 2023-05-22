@@ -14,7 +14,7 @@ export function validateAndTransformScopes(
 
         if (scope.match(/\s/) !== null) {
           throw new InvalidScopeError(
-            `Space is not allowed in scope, ${JSON.stringify(scopes)}.`,
+            `Spaces are not allowed in scope, ${JSON.stringify(scopes)}.`,
           );
         }
 

@@ -1,24 +1,20 @@
 # NgxOauth2AccessToken
 
-This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.0.
+![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/mrpachara/ngx?filename=projects%2Fmrpachara%2Fngx-oauth2-access-token%2Fpackage.json)
+![GitHub](https://img.shields.io/github/license/mrpachara/ngx)
 
-## Code scaffolding
+This library is for simply getting access tokens from [OAuth 2.0](https://oauth.net/2/) in the standard scenario.
 
-Run `ng generate component component-name --project ngx-oauth2-access-token` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module --project ngx-oauth2-access-token`.
-> Note: Don't forget to add `--project ngx-oauth2-access-token` or else it will be added to the default project in your `angular.json` file. 
+## Installation
 
-## Build
+npm
 
-Run `ng build ngx-oauth2-access-token` to build the project. The build artifacts will be stored in the `dist/` directory.
+```bash
+$ npm install @mrpachara/ngx-oauth2-access-token
+```
 
-## Publishing
+yarn
 
-After building your library with `ng build ngx-oauth2-access-token`, go to the dist folder `cd dist/ngx-oauth2-access-token` and run `npm publish`.
-
-## Running unit tests
-
-Run `ng test ngx-oauth2-access-token` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+```bash
+$ yarn add @mrpachara/ngx-oauth2-access-token
+```

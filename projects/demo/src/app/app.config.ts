@@ -13,6 +13,7 @@ import {
   AuthorizationCodeConfig,
   AuthorizationCodeService,
   Oauth2ClientConfig,
+  Scopes,
   StateActionInfo,
   StateActionType,
   parseStateAction,
@@ -88,10 +89,7 @@ export const appConfig: ApplicationConfig = {
                 throw new Error('Authorization is canceled.');
               }
 
-              const scopes = (scopeText || 'email').split(/\s+/) as [
-                string,
-                ...string[],
-              ];
+              const scopes = scopeText.split(/\s+/) as Scopes;
               const isNewTab = confirm('Open in new tab');
               const useBroadcast = isNewTab && confirm('Use broadcast');
 
