@@ -26,7 +26,25 @@ File: `src/app/app.config.ts`
 ```typescript
 // ... import other modules
 
-import { AccessToken, AccessTokenConfig, AuthorizationCodeConfig, AuthorizationCodeService, Oauth2ClientConfig, Scopes, StateActionType, parseStateAction, provideAccessToken, provideAuthorizationCode, provideKeyValuePairStorage, provideOauth2Client, provideStateAction, randomString, stringifyStateAction, withErrorHandler, withRenewAccessTokenSource } from '@mrpachara/ngx-oauth2-access-token';
+import {
+  AccessToken,
+  AccessTokenConfig,
+  AuthorizationCodeConfig,
+  AuthorizationCodeService,
+  Oauth2ClientConfig,
+  Scopes,
+  parseStateAction,
+  provideAccessToken,
+  provideAuthorizationCode,
+  provideOauth2Client,
+  provideStateAction,
+  randomString,
+  stringifyStateAction,
+  withErrorHandler,
+  withRenewAccessTokenSource,
+} from '@mrpachara/ngx-oauth2-access-token';
+
+import { routes } from './app.routes';
 
 const clientConfig: Oauth2ClientConfig = {
   name: 'google',
@@ -70,7 +88,6 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
 
     // NOTE: The ngx-oauth2-access-token provide functions
-    provideKeyValuePairStorage(),
     provideOauth2Client(clientConfig),
     provideAuthorizationCode(authorizationCodeConfig),
     provideAccessToken(
@@ -98,10 +115,8 @@ export const appConfig: ApplicationConfig = {
 
                 if (data.type === 'success') {
                   resolve(data.data);
-                  channel.postMessage(true);
                 } else {
                   reject(data.error);
-                  channel.postMessage(false);
                 }
 
                 channel.close();
@@ -130,7 +145,7 @@ export const appConfig: ApplicationConfig = {
       () => {
         return {
           // NOTE: The name of action
-          broadcast: (accessToken, data) => {
+          broadcast: async (accessToken, data) => {
             const channelName = data['channel'];
 
             if (!channelName) {
@@ -139,18 +154,16 @@ export const appConfig: ApplicationConfig = {
 
             const channel = new BroadcastChannel(`${channelName}`);
 
-            return new Promise((resolve) => {
-              channel.addEventListener('message', () => {
-                resolve('Access token has been set by another process.');
-                channel.close();
-                close();
-              });
+            channel.postMessage({
+              type: 'success',
+              data: accessToken,
+            } as BroadcastData);
 
-              channel.postMessage({
-                type: 'success',
-                data: accessToken,
-              } as BroadcastData);
-            });
+            channel.close();
+            close();
+
+            // NOTE: If window cannot be closed
+            return 'Access token has been set by another process.';
           },
         };
       },
@@ -163,18 +176,14 @@ export const appConfig: ApplicationConfig = {
             error: err,
           };
 
-          if (stateData?.['action']) {
-            const { data } = parseStateAction(stateData['action'] as StateActionType);
+          if (stateData?.action) {
+            const { data } = parseStateAction(stateData.action);
 
             if (data['channel']) {
               const channel = new BroadcastChannel(`${data['channel']}`);
 
-              channel.addEventListener('message', () => {
-                channel.close();
-                close();
-              });
-
               channel.postMessage(errData);
+              close();
             }
           }
         };
