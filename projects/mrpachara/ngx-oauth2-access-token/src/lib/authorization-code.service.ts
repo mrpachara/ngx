@@ -57,7 +57,7 @@ export class AuthorizationCodeService {
       this.config.pkce === 'plain'
         ? codeVerifier
         : base64UrlEncode(await sha256(codeVerifier));
-    stateData['codeVerifier'] = codeVerifier;
+    stateData.codeVerifier = codeVerifier;
 
     return {
       code_challenge: codeChallenge,
@@ -152,8 +152,8 @@ export class AuthorizationCodeService {
           redirect_uri: this.config.redirectUri,
         };
 
-        if (stateData['codeVerifier']) {
-          params.code_verifier = stateData['codeVerifier'];
+        if (stateData.codeVerifier) {
+          params.code_verifier = stateData.codeVerifier;
         }
 
         return this.client.requestAccessToken(params).pipe(

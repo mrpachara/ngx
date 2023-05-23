@@ -3,6 +3,14 @@ import { ObservableInput } from 'rxjs';
 import { AccessToken } from './standard.types';
 import { StateData } from './storages.types';
 
+export type StateActionType = `${string}:${string}`;
+
+declare module './storages.types' {
+  interface StateData {
+    action?: StateActionType;
+  }
+}
+
 export type StateActionData = {
   [prop: string]: string | number | boolean;
 };

@@ -14,13 +14,9 @@ export type StoredRefreshToken = {
   expires_at: number;
 };
 
-export type StateActionType = `${string}:${string}`;
-
-export type StateData = {
-  action?: StateActionType;
-} & {
+export interface StateData {
   [prop: string]: string | undefined;
-};
+}
 
 export interface KeyValuePairStorage {
   loadItem<T = unknown>(key: string): Promise<T | null>;
