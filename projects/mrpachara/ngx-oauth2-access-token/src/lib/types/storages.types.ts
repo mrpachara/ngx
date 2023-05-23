@@ -14,7 +14,11 @@ export type StoredRefreshToken = {
   expires_at: number;
 };
 
+export type StateActionType = `${string}:${string}`;
+
 export type StateData = {
+  action?: StateActionType;
+} & {
   [prop: string]: string | undefined;
 };
 

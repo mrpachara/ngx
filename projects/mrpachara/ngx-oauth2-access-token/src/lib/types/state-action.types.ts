@@ -1,12 +1,7 @@
 import { ObservableInput } from 'rxjs';
+
 import { AccessToken } from './standard.types';
 import { StateData } from './storages.types';
-
-export type StateActionType = `${string}:${string}`;
-
-export type StateDataAction = {
-  action?: StateActionType;
-};
 
 export type StateActionData = {
   [prop: string]: string | number | boolean;

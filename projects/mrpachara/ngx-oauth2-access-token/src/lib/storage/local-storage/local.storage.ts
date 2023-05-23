@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { filter, map, Observable, pipe, Subject, UnaryFunction } from 'rxjs';
+
 import { KeyValuePairStorage } from '../../types';
 
 @Injectable({ providedIn: 'root' })
@@ -29,7 +30,7 @@ export class LocalStorage implements KeyValuePairStorage {
 
   // NOTE: 1) Subject is a multicast observable.
   //       2) storageEvent$ act as both Subject and Observable,
-  //       cause Subject inherit Observable.
+  //          cause Subject inherit Observable.
   private readonly storageEvent$ = new Subject<StorageEvent>();
 
   private readonly keyObservableMap = new Map<string, Observable<unknown>>();
