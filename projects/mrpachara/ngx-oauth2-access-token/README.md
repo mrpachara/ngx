@@ -54,11 +54,6 @@ const clientConfig: Oauth2ClientConfig = {
   accessTokenUrl: 'https://oauth2.googleapis.com/token',
 };
 
-const accessTokenConfig: AccessTokenConfig = {
-  name: 'google',
-  debug: true,
-};
-
 const authorizationCodeConfig: AuthorizationCodeConfig = {
   name: 'google',
   debug: true,
@@ -70,6 +65,11 @@ const authorizationCodeConfig: AuthorizationCodeConfig = {
     prompt: 'consent',
     access_type: 'offline',
   },
+};
+
+const accessTokenConfig: AccessTokenConfig = {
+  name: 'google',
+  debug: true,
 };
 
 type BroadcastData =
@@ -84,6 +84,8 @@ type BroadcastData =
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    // NOTE: withComponentInputBinding() will atomatically bind
+    //       query strings to component inputs.
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(),
 
@@ -102,7 +104,7 @@ export const appConfig: ApplicationConfig = {
               const scopeText = prompt('Input scope');
 
               if (scopeText === null) {
-                throw new Error('Authorization process is canceled.');
+                throw new Error('The authorization process is canceled.');
               }
 
               const scopes = scopeText.split(/\s+/) as Scopes;
