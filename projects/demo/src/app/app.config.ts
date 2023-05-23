@@ -51,6 +51,7 @@ const authorizationCodeConfig: AuthorizationCodeConfig = {
   authorizationCodeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
   redirectUri: 'http://localhost:4200/google/authorization',
   pkce: 'S256',
+  // NOTE: for getting refresh token
   additionalParams: {
     prompt: 'consent',
     access_type: 'offline',
@@ -91,14 +92,17 @@ export const appConfig: ApplicationConfig = {
 
               const scopes = scopeText.split(/\s+/) as Scopes;
               const isNewTab = confirm('Open in new tab');
-              const useBroadcast = isNewTab && confirm('Use broadcast');
+              const useBroadcast =
+                isNewTab &&
+                typeof BroadcastChannel !== 'undefined' &&
+                confirm('Use broadcast');
 
               const stateActionInfo: StateActionInfo = {
                 action: 'unknown',
                 data: {},
               };
 
-              if (useBroadcast && typeof BroadcastChannel !== 'undefined') {
+              if (useBroadcast) {
                 const channelName = randomString(8);
                 const channel = new BroadcastChannel(channelName);
 

@@ -6,9 +6,9 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { catchError, of } from 'rxjs';
 
 import { AccessTokenService } from '@mrpachara/ngx-oauth2-access-token';
-import { catchError, of } from 'rxjs';
 
 @Component({
   selector: 'app-home',
@@ -25,7 +25,12 @@ export class HomeComponent {
       .fetchAccessToken()
       .pipe(
         catchError((err) => {
-          this.errorMessage.set(`${err}`);
+          if (typeof err.stack === 'string') {
+            const [message] = err.stack.split('\n', 1);
+            this.errorMessage.set(message);
+          } else {
+            this.errorMessage.set(`${err}`);
+          }
 
           return of({});
         }),

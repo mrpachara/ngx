@@ -56,6 +56,7 @@ export class StateActionService {
       return (this.handlers[action] as StateActionHandler<T>)(
         accessToken,
         data,
+        stateData,
       );
     });
   }

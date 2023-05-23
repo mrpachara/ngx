@@ -20,6 +20,7 @@ export type StateActionInfo = {
 export type StateActionHandler<T> = (
   accessToken: AccessToken,
   data: StateActionData,
+  stateData: StateData,
 ) => ObservableInput<T>;
 
 export type StateActionErrorHandler = (

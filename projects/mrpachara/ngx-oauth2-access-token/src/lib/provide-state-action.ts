@@ -8,19 +8,13 @@ import { StateActionErrorHandler, StateActionHandlers } from './types';
 import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from './tokens';
 
 export function provideStateAction(
-  handlers: StateActionHandlers | (() => StateActionHandlers),
+  handlersFactory: () => StateActionHandlers,
   ...features: StateActionFeatures[]
 ): EnvironmentProviders {
   return makeEnvironmentProviders([
     {
       provide: STATE_ACTION_HANDLERS,
-      ...(typeof handlers === 'function'
-        ? {
-            useFactory: handlers,
-          }
-        : {
-            useValue: handlers,
-          }),
+      useFactory: handlersFactory,
     },
     features.map((feature) => feature.providers),
   ]);
