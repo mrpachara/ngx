@@ -64,7 +64,7 @@ type BroadcastData =
     }
   | {
       type: 'error';
-      message: string;
+      error: unknown;
     };
 
 export const appConfig: ApplicationConfig = {
@@ -109,7 +109,7 @@ export const appConfig: ApplicationConfig = {
                     resolve(data.data);
                     channel.postMessage(true);
                   } else {
-                    reject(new Error(data.message));
+                    reject(data.error);
                     channel.postMessage(false);
                   }
 
@@ -125,7 +125,7 @@ export const appConfig: ApplicationConfig = {
               }
 
               if (isNewTab) {
-                stateActionInfo.data['close'] = false;
+                stateActionInfo.data['close'] = true;
               } else {
                 stateActionInfo.data['redirectUrl'] = router.url;
               }
@@ -199,7 +199,7 @@ export const appConfig: ApplicationConfig = {
         return (err, stateData) => {
           const errData: BroadcastData = {
             type: 'error',
-            message: `${err}`,
+            error: err,
           };
 
           if (stateData?.['action']) {
