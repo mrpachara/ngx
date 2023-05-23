@@ -51,20 +51,14 @@ export type RenewAccessTokenSourceFeature =
   AccessTokenFeature<AccessTokenFeatureKind.RenewAccessTokenSourceFeature>;
 
 export function withRenewAccessTokenSource(
-  source: Observable<AccessToken> | (() => Observable<AccessToken>),
+  sourceFactory: () => Observable<AccessToken>,
 ): RenewAccessTokenSourceFeature {
   return {
     kind: AccessTokenFeatureKind.RenewAccessTokenSourceFeature,
     providers: [
       {
         provide: RENEW_ACCESS_TOKEN_SOURCE,
-        ...(typeof source === 'function'
-          ? {
-              useFactory: source,
-            }
-          : {
-              useValue: source,
-            }),
+        useFactory: sourceFactory,
       },
     ],
   };

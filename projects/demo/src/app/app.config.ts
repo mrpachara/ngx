@@ -15,11 +15,9 @@ import {
   Oauth2ClientConfig,
   Scopes,
   StateActionInfo,
-  StateActionType,
   parseStateAction,
   provideAccessToken,
   provideAuthorizationCode,
-  provideKeyValuePairStorage,
   provideOauth2Client,
   provideStateAction,
   randomString,
@@ -34,15 +32,9 @@ import { defer } from 'rxjs';
 const clientConfig: Oauth2ClientConfig = {
   name: 'google',
   debug: true,
-  clientId:
-    '209689905225-dj1bo29m0c7or5926cv4bb1nu5aru0cv.apps.googleusercontent.com',
-  clientSecret: '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',
+  clientId: 'CLIENT_ID',
+  clientSecret: 'CLIENT_SECRET',
   accessTokenUrl: 'https://oauth2.googleapis.com/token',
-};
-
-const accessTokenConfig: AccessTokenConfig = {
-  name: 'google',
-  debug: true,
 };
 
 const authorizationCodeConfig: AuthorizationCodeConfig = {
@@ -51,10 +43,16 @@ const authorizationCodeConfig: AuthorizationCodeConfig = {
   authorizationCodeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
   redirectUri: 'http://localhost:4200/google/authorization',
   pkce: 'S256',
+  // NOTE: For getting refresh token from Google
   additionalParams: {
     prompt: 'consent',
     access_type: 'offline',
   },
+};
+
+const accessTokenConfig: AccessTokenConfig = {
+  name: 'google',
+  debug: true,
 };
 
 type BroadcastData =
@@ -69,13 +67,17 @@ type BroadcastData =
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    // NOTE: withComponentInputBinding() will atomatically bind
+    //       query strings to component inputs.
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(),
-    provideKeyValuePairStorage(),
+
+    // NOTE: The ngx-oauth2-access-token provide functions
     provideOauth2Client(clientConfig),
     provideAuthorizationCode(authorizationCodeConfig),
     provideAccessToken(
       accessTokenConfig,
+      // NOTE: The process for getting the new access token
       withRenewAccessTokenSource(() => {
         const authorizationCodeService = inject(AuthorizationCodeService);
         const router = inject(Router);
@@ -91,14 +93,17 @@ export const appConfig: ApplicationConfig = {
 
               const scopes = scopeText.split(/\s+/) as Scopes;
               const isNewTab = confirm('Open in new tab');
-              const useBroadcast = isNewTab && confirm('Use broadcast');
+              const useBroadcast =
+                isNewTab &&
+                typeof BroadcastChannel !== 'undefined' &&
+                confirm('Use broadcast');
 
               const stateActionInfo: StateActionInfo = {
                 action: 'unknown',
                 data: {},
               };
 
-              if (useBroadcast && typeof BroadcastChannel !== 'undefined') {
+              if (useBroadcast) {
                 const channelName = randomString(8);
                 const channel = new BroadcastChannel(channelName);
 
@@ -116,6 +121,8 @@ export const appConfig: ApplicationConfig = {
                   channel.close();
                 });
 
+                // NOTE: The name of action will be performed in the callback URL.
+                //       And the data using in the callback URL.
                 stateActionInfo.action = 'broadcast';
                 stateActionInfo.data = {
                   channel: channelName,
@@ -148,12 +155,15 @@ export const appConfig: ApplicationConfig = {
         );
       }),
     ),
+
+    // NOTE: The process in callback URL.
     provideStateAction(
       () => {
         const accessTokenService = inject(AccessTokenService);
         const router = inject(Router);
 
         return {
+          // NOTE: The name of action
           set: async (accessToken, data) => {
             accessToken = await accessTokenService.setAccessToken(accessToken);
 
@@ -193,6 +203,8 @@ export const appConfig: ApplicationConfig = {
           },
         };
       },
+
+      // NOTE: When the server return error
       withErrorHandler(() => {
         const router = inject(Router);
 
@@ -202,10 +214,8 @@ export const appConfig: ApplicationConfig = {
             error: err,
           };
 
-          if (stateData?.['action']) {
-            const { data } = parseStateAction(
-              stateData['action'] as StateActionType,
-            );
+          if (stateData?.action) {
+            const { data } = parseStateAction(stateData.action);
 
             if (data['channel']) {
               const channel = new BroadcastChannel(`${data['channel']}`);

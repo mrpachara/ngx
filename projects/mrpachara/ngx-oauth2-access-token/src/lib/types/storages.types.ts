@@ -14,9 +14,9 @@ export type StoredRefreshToken = {
   expires_at: number;
 };
 
-export type StateData = {
+export interface StateData {
   [prop: string]: string | undefined;
-};
+}
 
 export interface KeyValuePairStorage {
   loadItem<T = unknown>(key: string): Promise<T | null>;

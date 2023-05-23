@@ -76,7 +76,7 @@ export class AutorizationCodeCallbackComponent implements OnInit {
 
           this.stateActionService.handerError(err, stateData);
 
-          throw err;
+          console.error(err);
         },
       });
   }

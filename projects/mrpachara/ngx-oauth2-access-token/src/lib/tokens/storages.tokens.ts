@@ -5,9 +5,15 @@ import {
   AccessTokenStorageFactory,
   AuthorizationCodeStorageFactory,
 } from '../storage';
+import { LocalStorage } from '../storage/local-storage/local.storage';
 
 export const KEY_VALUE_PAIR_STORAGE = new InjectionToken<KeyValuePairStorage>(
   'key-value-pair-storage',
+  {
+    factory: () => {
+      return new LocalStorage();
+    },
+  },
 );
 
 export const ACCESS_TOKEN_STORAGE_FACTORY =

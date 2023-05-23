@@ -1,12 +1,15 @@
 import { ObservableInput } from 'rxjs';
+
 import { AccessToken } from './standard.types';
 import { StateData } from './storages.types';
 
 export type StateActionType = `${string}:${string}`;
 
-export type StateDataAction = {
-  action?: StateActionType;
-};
+declare module './storages.types' {
+  interface StateData {
+    action?: StateActionType;
+  }
+}
 
 export type StateActionData = {
   [prop: string]: string | number | boolean;
@@ -20,6 +23,7 @@ export type StateActionInfo = {
 export type StateActionHandler<T> = (
   accessToken: AccessToken,
   data: StateActionData,
+  stateData: StateData,
 ) => ObservableInput<T>;
 
 export type StateActionErrorHandler = (
