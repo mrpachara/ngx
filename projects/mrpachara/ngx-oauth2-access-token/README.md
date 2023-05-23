@@ -18,3 +18,188 @@ yarn
 ```bash
 $ yarn add @mrpachara/ngx-oauth2-access-token
 ```
+
+## Configuration Example
+
+File: `src/app/app.config.ts`
+
+```typescript
+// ... import other modules
+
+import { AccessToken, AccessTokenConfig, AuthorizationCodeConfig, AuthorizationCodeService, Oauth2ClientConfig, Scopes, StateActionType, parseStateAction, provideAccessToken, provideAuthorizationCode, provideKeyValuePairStorage, provideOauth2Client, provideStateAction, randomString, stringifyStateAction, withErrorHandler, withRenewAccessTokenSource } from '@mrpachara/ngx-oauth2-access-token';
+
+const clientConfig: Oauth2ClientConfig = {
+  name: 'google',
+  debug: true,
+  clientId: 'CLIENT_ID',
+  clientSecret: 'CLIENT_SECRET',
+  accessTokenUrl: 'https://oauth2.googleapis.com/token',
+};
+
+const accessTokenConfig: AccessTokenConfig = {
+  name: 'google',
+  debug: true,
+};
+
+const authorizationCodeConfig: AuthorizationCodeConfig = {
+  name: 'google',
+  debug: true,
+  authorizationCodeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+  redirectUri: 'http://localhost:4200/google/authorization',
+  pkce: 'S256',
+  // NOTE: For getting refresh token from Google
+  additionalParams: {
+    prompt: 'consent',
+    access_type: 'offline',
+  },
+};
+
+type BroadcastData =
+  | {
+      type: 'success';
+      data: AccessToken;
+    }
+  | {
+      type: 'error';
+      error: unknown;
+    };
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideRouter(routes, withComponentInputBinding()),
+    provideHttpClient(),
+
+    // NOTE: The ngx-oauth2-access-token provide functions
+    provideKeyValuePairStorage(),
+    provideOauth2Client(clientConfig),
+    provideAuthorizationCode(authorizationCodeConfig),
+    provideAccessToken(
+      accessTokenConfig,
+      // NOTE: The process for getting the new access token
+      withRenewAccessTokenSource(() => {
+        const authorizationCodeService = inject(AuthorizationCodeService);
+
+        return defer(
+          () =>
+            new Promise<AccessToken>((resolve, reject) => {
+              const scopeText = prompt('Input scope');
+
+              if (scopeText === null) {
+                throw new Error('Authorization process is canceled.');
+              }
+
+              const scopes = scopeText.split(/\s+/) as Scopes;
+
+              const channelName = randomString(8);
+              const channel = new BroadcastChannel(channelName);
+
+              channel.addEventListener('message', (ev) => {
+                const data = ev.data as BroadcastData;
+
+                if (data.type === 'success') {
+                  resolve(data.data);
+                  channel.postMessage(true);
+                } else {
+                  reject(data.error);
+                  channel.postMessage(false);
+                }
+
+                channel.close();
+              });
+
+              (async () => {
+                const url = await authorizationCodeService.fetchAuthorizationCodeUrl(scopes, {
+                  action: stringifyStateAction({
+                    // NOTE: The name of action will be performed in the callback URL.
+                    //       And the data using in the callback URL.
+                    action: 'broadcast',
+                    data: {
+                      channel: channelName,
+                    },
+                  }),
+                });
+                open(url, '_blank');
+              })();
+            }),
+        );
+      }),
+    ),
+
+    // NOTE: The process in callback URL.
+    provideStateAction(
+      () => {
+        return {
+          // NOTE: The name of action
+          broadcast: (accessToken, data) => {
+            const channelName = data['channel'];
+
+            if (!channelName) {
+              throw new Error('Broadcast channel is not found.');
+            }
+
+            const channel = new BroadcastChannel(`${channelName}`);
+
+            return new Promise((resolve) => {
+              channel.addEventListener('message', () => {
+                resolve('Access token has been set by another process.');
+                channel.close();
+                close();
+              });
+
+              channel.postMessage({
+                type: 'success',
+                data: accessToken,
+              } as BroadcastData);
+            });
+          },
+        };
+      },
+
+      // NOTE: When the server return error
+      withErrorHandler(() => {
+        return (err, stateData) => {
+          const errData: BroadcastData = {
+            type: 'error',
+            error: err,
+          };
+
+          if (stateData?.['action']) {
+            const { data } = parseStateAction(stateData['action'] as StateActionType);
+
+            if (data['channel']) {
+              const channel = new BroadcastChannel(`${data['channel']}`);
+
+              channel.addEventListener('message', () => {
+                channel.close();
+                close();
+              });
+
+              channel.postMessage(errData);
+            }
+          }
+        };
+      }),
+    ),
+  ],
+};
+```
+
+FILE: `src/app/app.routes.ts`
+
+```typescript
+import { Routes } from '@angular/router';
+
+import { AutorizationCodeCallbackComponent } from '@mrpachara/ngx-oauth2-access-token';
+
+import { HomeComponent } from './core/home/home.component';
+
+export const routes: Routes = [
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
+  // NOTE: HomeComponent should call AccessTokenService.fetchAccessToken()
+  { path: 'home', component: HomeComponent },
+  {
+    path: 'google/authorization',
+    component: AutorizationCodeCallbackComponent,
+  },
+];
+```
