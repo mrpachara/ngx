@@ -8,12 +8,11 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { take } from 'rxjs';
 
 import { oauth2Callback } from '../../functions';
 import { AuthorizationCodeService } from '../../authorization-code.service';
 import { StateActionService } from '../../state-action.service';
-import { take } from 'rxjs';
-import { CallbackError } from '../../errors';
 
 type MessageInfo = {
   type: 'info' | 'error' | null;
@@ -68,13 +67,6 @@ export class AutorizationCodeCallbackComponent implements OnInit {
             type: 'error',
             message: `${err}`,
           });
-          const stateData =
-            err instanceof CallbackError &&
-            typeof err.cause.stateData === 'object'
-              ? err.cause.stateData
-              : null;
-
-          this.stateActionService.handerError(err, stateData);
 
           console.error(err);
         },
