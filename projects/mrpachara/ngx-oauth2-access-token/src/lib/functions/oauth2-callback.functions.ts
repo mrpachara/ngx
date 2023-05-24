@@ -1,8 +1,17 @@
-import { defer, from, Observable, of, switchMap, throwError } from 'rxjs';
+import {
+  catchError,
+  defer,
+  from,
+  Observable,
+  of,
+  switchMap,
+  throwError,
+} from 'rxjs';
 
 import { AuthorizationCodeService } from '../authorization-code.service';
 import {
   BadResponseCallbackError,
+  CallbackError,
   ErrorResponseCallbackError,
 } from '../errors';
 import { StateActionService } from '../state-action.service';
@@ -68,6 +77,16 @@ export function oauth2Callback(
     }),
     switchMap(({ accessToken, stateData }) => {
       return stateActionService.dispatch(accessToken, stateData);
+    }),
+    catchError((err) => {
+      const stateData =
+        err instanceof CallbackError && typeof err.cause.stateData === 'object'
+          ? err.cause.stateData
+          : null;
+
+      stateActionService.handerError(err, stateData);
+
+      return throwError(() => err);
     }),
   );
 }
