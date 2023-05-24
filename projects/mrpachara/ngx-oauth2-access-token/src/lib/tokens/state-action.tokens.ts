@@ -7,4 +7,9 @@ export const STATE_ACTION_HANDLERS = new InjectionToken<StateActionHandlers>(
 );
 
 export const STATE_ACTION_ERROR_HANDLER =
-  new InjectionToken<StateActionErrorHandler>('state-action-error-handler');
+  new InjectionToken<StateActionErrorHandler>('state-action-error-handler', {
+    factory: () => {
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      return () => {};
+    },
+  });
