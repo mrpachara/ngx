@@ -21,7 +21,7 @@ import {
   AuthorizationCodeParams,
   CodeChallengeMethod,
   Scopes,
-  StateData,
+  StateAuthorizationParams,
 } from './types';
 
 const stateIdLength = 32;
@@ -33,14 +33,16 @@ export class AuthorizationCodeService {
   private readonly loadStateData = (stateId: string) =>
     this.storage.loadStateData(stateId);
 
-  private readonly storeStateData = (stateId: string, stateData: StateData) =>
-    this.storage.storeStateData(stateId, stateData);
+  private readonly storeStateData = (
+    stateId: string,
+    stateData: StateAuthorizationParams,
+  ) => this.storage.storeStateData(stateId, stateData);
 
   private readonly removeStateData = (stateId: string) =>
     this.storage.removeStateData(stateId);
 
   private readonly generateCodeChallenge = async (
-    stateData: StateData,
+    stateData: StateAuthorizationParams,
   ): Promise<
     | {
         code_challenge: string;
@@ -67,7 +69,7 @@ export class AuthorizationCodeService {
 
   private readonly generateAuthorizationCodeUrl = async (
     stateId: string,
-    stateData: StateData,
+    stateData: StateAuthorizationParams,
     authorizationCodeParams: GenUrlParams,
   ): Promise<URL> => {
     await this.storeStateData(stateId, stateData);
@@ -104,7 +106,7 @@ export class AuthorizationCodeService {
 
   async fetchAuthorizationCodeUrl(
     scopes: Scopes,
-    stateData?: StateData,
+    stateData?: StateAuthorizationParams,
     additionalParams?: { [param: string]: string },
   ): Promise<URL> {
     const scope = validateAndTransformScopes(scopes);
@@ -114,7 +116,7 @@ export class AuthorizationCodeService {
     }
 
     const stateId = randomString(stateIdLength);
-    const storedStateData: StateData = {
+    const storedStateData: StateAuthorizationParams = {
       ...stateData,
     };
 
@@ -129,11 +131,11 @@ export class AuthorizationCodeService {
     return this.generateAuthorizationCodeUrl(stateId, storedStateData, params);
   }
 
-  async clearState(stateId: string): Promise<StateData | null> {
+  async clearState(stateId: string): Promise<StateAuthorizationParams | null> {
     return await this.removeStateData(stateId);
   }
 
-  verifyState(stateId: string): Observable<StateData> {
+  verifyState(stateId: string): Observable<StateAuthorizationParams> {
     return defer(() => this.loadStateData(stateId));
   }
 
@@ -142,7 +144,7 @@ export class AuthorizationCodeService {
     authorizationCode: string,
   ): Observable<{
     accessToken: AccessToken;
-    stateData: StateData;
+    stateData: StateAuthorizationParams;
   }> {
     return this.verifyState(stateId).pipe(
       switchMap((stateData) => {

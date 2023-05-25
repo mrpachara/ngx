@@ -14,9 +14,9 @@ export type StoredRefreshToken = {
   expires_at: number;
 };
 
-export interface StateData {
+export type StateData = {
   [prop: string]: string | undefined;
-}
+};
 
 export type StoredIdToken = {
   token: JwtTokenType;

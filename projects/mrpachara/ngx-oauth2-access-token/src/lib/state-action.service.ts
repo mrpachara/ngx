@@ -8,7 +8,7 @@ import {
   StateActionErrorHandler,
   StateActionHandler,
   StateActionHandlers,
-  StateData,
+  StateActionParams,
 } from './types';
 import { parseStateAction } from './functions';
 
@@ -35,7 +35,10 @@ export class StateActionService {
     return this._errorHandler;
   }
 
-  dispatch<T>(accessToken: AccessToken, stateData: StateData): Observable<T> {
+  dispatch<T>(
+    accessToken: AccessToken,
+    stateData: StateActionParams,
+  ): Observable<T> {
     return defer(() => {
       const stateAction = stateData.action;
 
@@ -57,7 +60,7 @@ export class StateActionService {
     });
   }
 
-  handerError(err: unknown, stateData: StateData | null): void {
+  handerError(err: unknown, stateData: StateActionParams | null): void {
     this.errorHandler(err, stateData);
   }
 }

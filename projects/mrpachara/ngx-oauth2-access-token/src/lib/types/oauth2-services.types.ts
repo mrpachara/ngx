@@ -4,13 +4,7 @@ import {
   JwtHeader,
   JwtTokenType,
 } from './standard.types';
-import { StoredAccessToken } from './storages.types';
-
-declare module './storages.types' {
-  interface StateData {
-    codeVerifier?: string;
-  }
-}
+import { StateData, StoredAccessToken } from './storages.types';
 
 export type Scopes = [string, ...string[]];
 
@@ -21,6 +15,10 @@ export interface TokenExtractor<T extends StoredAccessToken, R> {
 export type AccessTokenInfo = {
   type: string;
   token: string;
+};
+
+export type StateAuthorizationParams = StateData & {
+  codeVerifier?: string;
 };
 
 export type EncryptedPayload = string;
