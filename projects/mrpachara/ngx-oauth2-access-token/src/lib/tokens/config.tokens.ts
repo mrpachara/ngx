@@ -2,6 +2,7 @@ import { InjectionToken } from '@angular/core';
 import {
   AccessTokenFullConfig,
   AuthorizationCodeFullConfig,
+  IdTokenFullConfig,
   Oauth2ClientFullConfig,
 } from '../types';
 
@@ -15,3 +16,7 @@ export const AUTHORIZATION_CODE_FULL_CONFIG =
   new InjectionToken<AuthorizationCodeFullConfig>(
     'authorization-code-full-config',
   );
+
+export const ID_TOKEN_FULL_CONFIG = new InjectionToken<IdTokenFullConfig>(
+  'id-token-full-config',
+);

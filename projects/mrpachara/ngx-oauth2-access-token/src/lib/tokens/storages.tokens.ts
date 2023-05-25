@@ -10,7 +10,8 @@ import { LocalStorage } from '../storage/local-storage/local.storage';
 export const KEY_VALUE_PAIR_STORAGE = new InjectionToken<KeyValuePairStorage>(
   'key-value-pair-storage',
   {
-    factory: () => {
+    providedIn: 'root',
+    factory() {
       return new LocalStorage();
     },
   },

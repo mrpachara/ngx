@@ -12,12 +12,14 @@ import {
   AccessTokenService,
   AuthorizationCodeConfig,
   AuthorizationCodeService,
+  IdTokenConfig,
   Oauth2ClientConfig,
   Scopes,
   StateActionInfo,
   parseStateAction,
   provideAccessToken,
   provideAuthorizationCode,
+  provideIdToken,
   provideOauth2Client,
   provideStateAction,
   randomString,
@@ -32,8 +34,9 @@ import { defer } from 'rxjs';
 const clientConfig: Oauth2ClientConfig = {
   name: 'google',
   debug: true,
-  clientId: 'CLIENT_ID',
-  clientSecret: 'CLIENT_SECRET',
+  clientId:
+    '209689905225-dj1bo29m0c7or5926cv4bb1nu5aru0cv.apps.googleusercontent.com',
+  clientSecret: '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',
   accessTokenUrl: 'https://oauth2.googleapis.com/token',
 };
 
@@ -51,6 +54,11 @@ const authorizationCodeConfig: AuthorizationCodeConfig = {
 };
 
 const accessTokenConfig: AccessTokenConfig = {
+  name: 'google',
+  debug: true,
+};
+
+const idTokenConfig: IdTokenConfig = {
   name: 'google',
   debug: true,
 };
@@ -132,7 +140,7 @@ export const appConfig: ApplicationConfig = {
               }
 
               if (isNewTab) {
-                stateActionInfo.data['close'] = true;
+                stateActionInfo.data['close'] = false;
               } else {
                 stateActionInfo.data['redirectUrl'] = router.url;
               }
@@ -240,5 +248,6 @@ export const appConfig: ApplicationConfig = {
         };
       }),
     ),
+    provideIdToken(idTokenConfig),
   ],
 };

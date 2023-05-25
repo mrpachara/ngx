@@ -45,3 +45,11 @@ export type AuthorizationCodeConfig = NameableConfig &
   };
 
 export type AuthorizationCodeFullConfig = Required<AuthorizationCodeConfig>;
+
+export type IdTokenConfig = NameableConfig &
+  Partial<DebugableConfig> & {
+    jwksUrl?: string;
+    providedInAccessToken?: boolean;
+  };
+
+export type IdTokenFullConfig = RequiredExcept<IdTokenConfig, 'jwksUrl'>;

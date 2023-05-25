@@ -14,8 +14,8 @@ export type StateDataContainer = {
 };
 
 export class AuthorizationCodeStorage {
-  private readonly stateKey = (stateId: string): string =>
-    `${this.name}-${stateDataKeyName}-${stateId}`;
+  private readonly stateKey = (stateId: string) =>
+    `${this.name}-${stateDataKeyName}-${stateId}` as const;
 
   private readonly loadStateDataContainer = async (
     stateKey: string,

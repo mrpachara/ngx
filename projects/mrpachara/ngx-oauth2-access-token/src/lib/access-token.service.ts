@@ -25,11 +25,15 @@ import {
 import { validateAndTransformScopes } from './functions';
 import { Oauth2Client } from './oauth2.client';
 import { AccessTokenStorage, AccessTokenStorageFactory } from './storage';
-import { ACCESS_TOKEN_FULL_CONFIG, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
+import {
+  ACCESS_TOKEN_EXTRACTOR,
+  ACCESS_TOKEN_FULL_CONFIG,
+  RENEW_ACCESS_TOKEN_SOURCE,
+} from './tokens';
 import {
   AccessToken,
   AccessTokenFullConfig,
-  AccessTokenWithType,
+  AccessTokenInfo,
   Scopes,
   StandardGrantsParams,
   StoredAccessToken,
@@ -85,6 +89,9 @@ export class AccessTokenService {
       ...(storingRefreshToken
         ? [this.storeRefreshToken(storingRefreshToken)]
         : []),
+      ...this.extractors.map((extractor) =>
+        extractor.extractToken(storingAccessToken),
+      ),
     ]);
   };
 
@@ -103,10 +110,11 @@ export class AccessTokenService {
     });
   };
 
-  private readonly accessToken$: Observable<AccessTokenWithType>;
+  private readonly accessToken$: Observable<AccessTokenInfo>;
 
   protected readonly storageFactory = inject(AccessTokenStorageFactory);
   protected readonly storage: AccessTokenStorage;
+  protected readonly extractors = inject(ACCESS_TOKEN_EXTRACTOR);
 
   constructor(
     @Inject(ACCESS_TOKEN_FULL_CONFIG)
@@ -167,7 +175,7 @@ export class AccessTokenService {
       ),
     ).pipe(
       map(
-        (storedAccessToken): AccessTokenWithType => ({
+        (storedAccessToken): AccessTokenInfo => ({
           type: storedAccessToken.token_type,
           token: storedAccessToken.access_token,
         }),
@@ -176,7 +184,7 @@ export class AccessTokenService {
     );
   }
 
-  fetchAccessToken(): Observable<AccessTokenWithType> {
+  fetchAccessToken(): Observable<AccessTokenInfo> {
     return this.accessToken$;
   }
 

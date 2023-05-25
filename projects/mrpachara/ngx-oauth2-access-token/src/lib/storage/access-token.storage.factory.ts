@@ -17,8 +17,8 @@ import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 const tokenDataKeyName = `access-token-data`;
 
 export class AccessTokenStorage {
-  private stoageKey = (type: 'access-token' | 'refresh-token'): string =>
-    `${this.name}-${tokenDataKeyName}-${type}`;
+  private stoageKey = (type: 'access-token' | 'refresh-token') =>
+    `${this.name}-${tokenDataKeyName}-${type}` as const;
 
   private readonly accessToken$: Observable<StoredAccessToken | null>;
 
