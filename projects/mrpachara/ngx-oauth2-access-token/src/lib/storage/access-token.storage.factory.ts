@@ -14,7 +14,7 @@ import {
 } from '../types';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 
-const tokenDataKeyName = `oauth-token-data`;
+const tokenDataKeyName = `access-token-data`;
 
 export class AccessTokenStorage {
   private stoageKey = (type: 'access-token' | 'refresh-token'): string =>
