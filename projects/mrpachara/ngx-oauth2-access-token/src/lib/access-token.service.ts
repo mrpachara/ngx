@@ -5,8 +5,10 @@ import {
   filter,
   firstValueFrom,
   forkJoin,
+  from,
   map,
   Observable,
+  ObservableInput,
   of,
   pipe,
   race,
@@ -90,7 +92,7 @@ export class AccessTokenService {
         ? [this.storeRefreshToken(storingRefreshToken)]
         : []),
       ...this.extractors.map((extractor) =>
-        extractor.extractToken(storingAccessToken),
+        extractor.extractToken(this.config.name, storingAccessToken),
       ),
     ]);
   };
@@ -126,54 +128,72 @@ export class AccessTokenService {
   ) {
     this.storage = this.storageFactory.create(this.config.name);
 
-    // NOTE: multiple tabs can request refresh_token at the same time
-    //       so use race() for finding the winner.
-    this.accessToken$ = race(
-      defer(() => this.loadStoredAccessToken()).pipe(
-        catchError((accessTokenErr: unknown) => {
-          return this.exchangeRefreshToken().pipe(
-            this.storeTokenPipe,
-            catchError((refreshTokenErr: unknown) => {
-              if (
-                refreshTokenErr instanceof RefreshTokenNotFoundError ||
-                refreshTokenErr instanceof RefreshTokenExpiredError
-              ) {
-                return throwError(() => accessTokenErr);
-              }
-
-              return throwError(() => refreshTokenErr);
-            }),
-          );
-        }),
-        catchError((err) => {
-          if (this.renewAccessToken$) {
-            if (this.config.debug) console.log(err);
-            return this.renewAccessToken$.pipe(this.storeTokenPipe);
-          } else {
-            return throwError(() => err);
-          }
-        }),
-        tap(() => {
-          if (this.config.debug) {
-            console.debug('access-token-race:', 'I am a winner!!!');
-          }
-        }),
-      ),
-      // NOTE: Access token is assigned by another tab.
-      this.storage.watchAccessToken().pipe(
-        filter(
-          (storedTokenData): storedTokenData is StoredAccessToken =>
-            storedTokenData !== null,
+    const ready = firstValueFrom(
+      from(this.loadStoredAccessToken()).pipe(
+        switchMap((storedAcccessToken) =>
+          forkJoin([
+            ...this.extractors.map((extractor) =>
+              extractor.extractToken(this.config.name, storedAcccessToken),
+            ),
+          ]).pipe(map(() => true)),
         ),
-        filter((storedTokenData) => storedTokenData.expires_at >= Date.now()),
-        take(1),
-        tap(() => {
-          if (this.config.debug) {
-            console.debug('access-token-race:', 'I am a loser!!!');
-          }
-        }),
+        catchError(() => of(true)),
       ),
-    ).pipe(
+    );
+
+    this.accessToken$ = from(ready).pipe(
+      switchMap(() =>
+        // NOTE: multiple tabs can request refresh_token at the same time
+        //       so use race() for finding the winner.
+        race(
+          defer(() => this.loadStoredAccessToken()).pipe(
+            catchError((accessTokenErr: unknown) => {
+              return this.exchangeRefreshToken().pipe(
+                this.storeTokenPipe,
+                catchError((refreshTokenErr: unknown) => {
+                  if (
+                    refreshTokenErr instanceof RefreshTokenNotFoundError ||
+                    refreshTokenErr instanceof RefreshTokenExpiredError
+                  ) {
+                    return throwError(() => accessTokenErr);
+                  }
+
+                  return throwError(() => refreshTokenErr);
+                }),
+              );
+            }),
+            catchError((err) => {
+              if (this.renewAccessToken$) {
+                if (this.config.debug) console.log(err);
+                return this.renewAccessToken$.pipe(this.storeTokenPipe);
+              } else {
+                return throwError(() => err);
+              }
+            }),
+            tap(() => {
+              if (this.config.debug) {
+                console.debug('access-token-race:', 'I am a winner!!!');
+              }
+            }),
+          ),
+          // NOTE: Access token is assigned by another tab.
+          this.storage.watchAccessToken().pipe(
+            filter(
+              (storedTokenData): storedTokenData is StoredAccessToken =>
+                storedTokenData !== null,
+            ),
+            filter(
+              (storedTokenData) => storedTokenData.expires_at >= Date.now(),
+            ),
+            take(1),
+            tap(() => {
+              if (this.config.debug) {
+                console.debug('access-token-race:', 'I am a loser!!!');
+              }
+            }),
+          ),
+        ),
+      ),
       map(
         (storedAccessToken): AccessTokenInfo => ({
           type: storedAccessToken.token_type,
@@ -203,6 +223,17 @@ export class AccessTokenService {
           ...(scope ? { scope } : {}),
         });
       }),
+    );
+  }
+
+  ready<R>(
+    process: (
+      serviceName: string,
+      accessToken: AccessTokenInfo,
+    ) => ObservableInput<R>,
+  ): Observable<R> {
+    return this.fetchAccessToken().pipe(
+      switchMap((accessToken) => process(this.config.name, accessToken)),
     );
   }
 

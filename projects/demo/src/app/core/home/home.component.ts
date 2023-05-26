@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, defer, of } from 'rxjs';
+import { catchError, of } from 'rxjs';
 
 import {
   AccessTokenService,
@@ -22,10 +22,32 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent {
+  private readonly accessTokenService = inject(AccessTokenService);
+  private readonly idTokenService = inject(IdTokenService);
+
   protected readonly errorMessage = signal<string | null>(null);
+
   protected readonly accessToken = toSignal(
-    inject(AccessTokenService)
-      .fetchAccessToken()
+    this.accessTokenService.fetchAccessToken().pipe(
+      catchError((err) => {
+        if (typeof err.stack === 'string') {
+          const [message] = err.stack.split('\n', 1);
+          this.errorMessage.set(message);
+        } else {
+          this.errorMessage.set(`${err}`);
+        }
+
+        return of({});
+      }),
+    ),
+  );
+
+  // NOTE: Unlike async pipe ( | async), toSignal() subscribes observable here.
+  //       So the result could be evaluated before it is ready. In this case we
+  //       use accessTokenService.ready() to make sure it is ready.
+  protected readonly idToken = toSignal(
+    this.accessTokenService
+      .ready((serviceName) => this.idTokenService.fetchIdToken(serviceName))
       .pipe(
         catchError((err) => {
           if (typeof err.stack === 'string') {
@@ -34,22 +56,8 @@ export class HomeComponent {
           } else {
             this.errorMessage.set(`${err}`);
           }
-
-          return of({});
+          return of(undefined);
         }),
       ),
-  );
-  protected readonly idToken = toSignal(
-    defer(() => inject(IdTokenService).fetchIdToken()).pipe(
-      catchError((err) => {
-        if (typeof err.stack === 'string') {
-          const [message] = err.stack.split('\n', 1);
-          this.errorMessage.set(message);
-        } else {
-          this.errorMessage.set(`${err}`);
-        }
-        return of(undefined);
-      }),
-    ),
   );
 }

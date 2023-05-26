@@ -7,6 +7,7 @@ import {
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
 } from '../errors';
+import { frameworkPrefix } from '../predefined';
 import {
   KeyValuePairStorage,
   StoredAccessToken,
@@ -18,7 +19,7 @@ const tokenDataKeyName = `access-token-data`;
 
 export class AccessTokenStorage {
   private stoageKey = (type: 'access-token' | 'refresh-token') =>
-    `${this.name}-${tokenDataKeyName}-${type}` as const;
+    `${frameworkPrefix}-${this.name}-${tokenDataKeyName}-${type}` as const;
 
   private readonly accessToken$: Observable<StoredAccessToken | null>;
 

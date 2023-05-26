@@ -6,8 +6,8 @@ export type JwtHeader = {
   iss?: string; // issuer
   sub?: string; // subject
   aud?: string; // audience
-  alg?: string; // signed signature algorithm
-  enc?: string; // encrypted payload algorithm
+  alg?: string; // signing algorithm
+  enc?: string; // encrypting method
   kid?: string; // kid for JWKS
 };
 

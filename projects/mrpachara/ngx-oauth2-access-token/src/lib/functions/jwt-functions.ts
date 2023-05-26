@@ -12,7 +12,7 @@ import { base64UrlDecode } from './crypto.functions';
 export function extractJwt<T extends JwtClaims = JwtClaims>(
   token: JwtTokenType,
 ): JwtUnknownInfo<T> {
-  const [headerPart, payloadPart, signature] = token.split('.', 3) as [
+  const [headerPart, payloadPart, signature] = token.split('.') as [
     string,
     string,
     string | undefined,
@@ -35,9 +35,10 @@ export function extractJwt<T extends JwtClaims = JwtClaims>(
   }
 
   return {
+    token,
+    content: `${headerPart}.${payloadPart}`,
     header,
     payload,
-    content: `${headerPart}.${payloadPart}`,
     ...(signature ? { signature } : {}),
   } as JwtUnknownInfo<T>;
 }

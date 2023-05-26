@@ -2,8 +2,8 @@
   "name": "@mrpachara/ngx-oauth2-access-token",
   "version": "0.0.1-pre.6",
   "keywords": [
-    "Angular",
-    "OAuth 2.0"
+    "angular",
+    "oauth 2.0"
   ],
   "license": "MIT",
   "repository": {

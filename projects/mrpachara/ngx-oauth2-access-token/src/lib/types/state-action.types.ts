@@ -35,7 +35,7 @@ export type StateActionHandler<T> = (
  */
 export type StateActionErrorHandler = (
   err: unknown,
-  stateData: StateData | null,
+  stateData: StateActionParams | null,
 ) => void;
 
 export type StateActionHandlers = {

@@ -26,10 +26,22 @@ export class IdTokenService
   constructor(
     @Inject(ID_TOKEN_FULL_CONFIG) protected readonly config: IdTokenFullConfig,
   ) {
-    this.storage = this.storageFactory.create(this.config.name);
+    this.storage = this.storageFactory.create();
   }
 
+  private readonly setIdToken = async (
+    serviceName: string,
+    token: JwtTokenType,
+  ) =>
+    await this.storage.storeIdToken(serviceName, {
+      token: token,
+    });
+
+  private readonly loatIdTokenInfo = async (serviceName: string) =>
+    await this.storage.loadIdTokenInfo(serviceName);
+
   async extractToken(
+    serviceName: string,
     storingAccessToken: StoredIdTokenParams,
   ): Promise<StoredIdToken | void> {
     const token = this.config.providedInAccessToken
@@ -37,13 +49,13 @@ export class IdTokenService
       : storingAccessToken.id_token;
 
     if (token) {
-      return await this.storage.storeIdToken({
-        token: token,
-      });
+      return await this.setIdToken(serviceName, token);
     }
   }
 
-  async fetchIdToken(): Promise<IdTokenInfo> {
-    return this.storage.loadIdTokenInfo();
+  async fetchIdToken(
+    serviceName = this.config.defaultServiceName,
+  ): Promise<IdTokenInfo> {
+    return this.loatIdTokenInfo(serviceName);
   }
 }

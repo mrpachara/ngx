@@ -1,5 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 
+import {
+  IdTokenEncryptedError,
+  IdTokenExpiredError,
+  IdTokenNotFoundError,
+} from '../errors';
+import { extractJwt, isJwtEncryptedPayload } from '../functions';
+import { frameworkPrefix } from '../predefined';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 import {
   IdTokenClaims,
@@ -7,57 +14,55 @@ import {
   KeyValuePairStorage,
   StoredIdToken,
 } from '../types';
-import {
-  IdTokenEncryptedError,
-  IdTokenExpiredError,
-  IdTokenNotFoundError,
-} from '../errors';
-import { extractJwt, isJwtEncryptedPayload } from '../functions';
 
 const tokenDataKeyName = `id-token-data`;
 
 export class IdTokenStorage {
-  private stoageKey = () => `${this.name}-${tokenDataKeyName}` as const;
+  private stoageKey = (serviceName: string) =>
+    `${frameworkPrefix}-${serviceName}-${tokenDataKeyName}` as const;
 
-  constructor(
-    private readonly name: string,
-    private readonly storage: KeyValuePairStorage,
-  ) {}
+  constructor(private readonly storage: KeyValuePairStorage) {}
 
-  private async loadIdToken(): Promise<StoredIdToken> {
+  private async loadIdToken(serviceName: string): Promise<StoredIdToken> {
     const storedIdToken = await this.storage.loadItem<StoredIdToken>(
-      this.stoageKey(),
+      this.stoageKey(serviceName),
     );
 
     if (storedIdToken === null) {
-      throw new IdTokenNotFoundError(this.name);
+      throw new IdTokenNotFoundError(serviceName);
     }
 
     return storedIdToken;
   }
 
-  async loadIdTokenInfo(): Promise<IdTokenInfo> {
-    const storedIdToken = await this.loadIdToken();
+  async loadIdTokenInfo(serviceName: string): Promise<IdTokenInfo> {
+    const storedIdToken = await this.loadIdToken(serviceName);
 
     const idTokenInfo = extractJwt<IdTokenClaims>(storedIdToken.token);
 
     if (isJwtEncryptedPayload(idTokenInfo)) {
-      throw new IdTokenEncryptedError(this.name);
+      throw new IdTokenEncryptedError(serviceName);
     }
 
     if (idTokenInfo.payload.exp * 1000 < Date.now()) {
-      throw new IdTokenExpiredError(this.name);
+      throw new IdTokenExpiredError(serviceName);
     }
 
     return idTokenInfo;
   }
 
-  async storeIdToken(storedIdToken: StoredIdToken): Promise<StoredIdToken> {
-    return await this.storage.storeItem(this.stoageKey(), storedIdToken);
+  async storeIdToken(
+    serviceName: string,
+    storedIdToken: StoredIdToken,
+  ): Promise<StoredIdToken> {
+    return await this.storage.storeItem(
+      this.stoageKey(serviceName),
+      storedIdToken,
+    );
   }
 
-  async removeIdToken(): Promise<void> {
-    await this.storage.removeItem(this.stoageKey());
+  async removeIdToken(serviceName: string): Promise<void> {
+    await this.storage.removeItem(this.stoageKey(serviceName));
   }
 }
 
@@ -66,15 +71,8 @@ export class IdTokenStorage {
 })
 export class IdTokenStorageFactory {
   private readonly storage = inject(KEY_VALUE_PAIR_STORAGE);
-  private readonly existingNameSet = new Set<string>();
 
-  create(name: string): IdTokenStorage {
-    if (this.existingNameSet.has(name)) {
-      throw new Error(`Duplicated name '${name}' in id-token.storage.`);
-    }
-
-    this.existingNameSet.add(name);
-
-    return new IdTokenStorage(name, this.storage);
+  create(): IdTokenStorage {
+    return new IdTokenStorage(this.storage);
   }
 }

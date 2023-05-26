@@ -9,7 +9,7 @@ import { StateData, StoredAccessToken } from './storages.types';
 export type Scopes = [string, ...string[]];
 
 export interface TokenExtractor<T extends StoredAccessToken, R> {
-  extractToken(storingAccessToken: T): Promise<R | void>;
+  extractToken(serviceName: string, storingAccessToken: T): Promise<R | void>;
 }
 
 export type AccessTokenInfo = {
@@ -24,9 +24,10 @@ export type StateAuthorizationParams = StateData & {
 export type EncryptedPayload = string;
 
 export type JwtBaseInfo<T extends JwtClaims | EncryptedPayload> = {
+  token: JwtTokenType;
+  content: string;
   header: JwtHeader;
   payload: T;
-  content: string;
   signature?: string;
 };
 
