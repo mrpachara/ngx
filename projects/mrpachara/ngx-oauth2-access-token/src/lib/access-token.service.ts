@@ -58,6 +58,9 @@ export class AccessTokenService {
   private readonly storeRefreshToken = (refreshToken: StoredRefreshToken) =>
     this.storage.storeRefreshToken(refreshToken);
 
+  private readonly removeStoredAccessToken = () =>
+    this.storage.removeAccessToken();
+
   private readonly transformToken = (accessToken: AccessToken) => {
     const currentTime = Date.now();
 
@@ -82,7 +85,7 @@ export class AccessTokenService {
   };
 
   private readonly updateToListeners = async (
-    storingAccessToken: StoredAccessToken | null,
+    storingAccessToken: StoredAccessToken,
   ) => {
     const results = await Promise.allSettled(
       this.listeners.map((listener) =>
@@ -90,6 +93,27 @@ export class AccessTokenService {
           this.config.name,
           storingAccessToken,
         ),
+      ),
+    );
+
+    if (this.config.debug) {
+      console.log(
+        results
+          .filter(
+            (result): result is PromiseRejectedResult =>
+              result.status === 'rejected',
+          )
+          .map((err) => err.reason),
+      );
+    }
+
+    return results;
+  };
+
+  private readonly clearToListeners = async () => {
+    const results = await Promise.allSettled(
+      this.listeners.map((listener) =>
+        listener.onAccessTokenResponseClear(this.config.name),
       ),
     );
 
@@ -334,11 +358,11 @@ export class AccessTokenService {
   }
 
   async removeAccessToken(): Promise<void> {
-    return await this.storage.removeAccessToken();
+    return await this.removeStoredAccessToken();
   }
 
   async clearToken(): Promise<void> {
     await this.storage.clearToken();
-    await this.updateToListeners(null);
+    await this.clearToListeners();
   }
 }

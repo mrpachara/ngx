@@ -11,8 +11,10 @@ export type Scopes = [string, ...string[]];
 export interface AccessTokenResponseListener<T extends StoredAccessToken> {
   onAccessTokenResponseUpdate(
     serviceName: string,
-    storingAccessToken: T | null,
+    storingAccessToken: T,
   ): Promise<void>;
+
+  onAccessTokenResponseClear(serviceName: string): Promise<void>;
 }
 
 export interface AccessTokenResponseExtractor<T extends StoredAccessToken, R> {

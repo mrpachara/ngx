@@ -67,12 +67,8 @@ export class IdTokenService
 
   async onAccessTokenResponseUpdate(
     serviceName: string,
-    storingAccessToken: StoredIdTokenParams | null,
+    storingAccessToken: StoredIdTokenParams,
   ): Promise<void> {
-    if (storingAccessToken === null) {
-      return await this.removeIdToken(serviceName);
-    }
-
     const token = this.config.providedInAccessToken
       ? (storingAccessToken.access_token as JwtTokenType)
       : storingAccessToken.id_token;
@@ -80,5 +76,9 @@ export class IdTokenService
     if (token) {
       await this.setIdToken(serviceName, token);
     }
+  }
+
+  async onAccessTokenResponseClear(serviceName: string): Promise<void> {
+    await this.removeIdToken(serviceName);
   }
 }
