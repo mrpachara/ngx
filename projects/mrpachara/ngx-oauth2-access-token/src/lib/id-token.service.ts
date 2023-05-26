@@ -6,9 +6,9 @@ import {
   IdTokenFullConfig,
   IdTokenInfo,
   JwtTokenType,
-  StoredIdToken,
   StoredIdTokenParams,
-  TokenExtractor,
+  TokenResponseExtractor,
+  TokenResponseListener,
 } from './types';
 import { ID_TOKEN_FULL_CONFIG } from './tokens';
 
@@ -16,7 +16,9 @@ import { ID_TOKEN_FULL_CONFIG } from './tokens';
   providedIn: 'root',
 })
 export class IdTokenService
-  implements TokenExtractor<StoredIdTokenParams, StoredIdToken>
+  implements
+    TokenResponseExtractor<StoredIdTokenParams, IdTokenInfo>,
+    TokenResponseListener<StoredIdTokenParams>
 {
   protected readonly http = inject(HttpClient);
 
@@ -40,22 +42,36 @@ export class IdTokenService
   private readonly loatIdTokenInfo = async (serviceName: string) =>
     await this.storage.loadIdTokenInfo(serviceName);
 
-  async extractToken(
+  async fetchExistedExtractedResult(serviceName: string): Promise<IdTokenInfo> {
+    return await this.loatIdTokenInfo(serviceName);
+  }
+
+  async extractTokenResponse(
+    serviceName: string,
+    _: StoredIdTokenParams,
+    throwError: boolean,
+  ): Promise<IdTokenInfo | null> {
+    try {
+      return await this.fetchExistedExtractedResult(serviceName);
+    } catch (err) {
+      if (throwError) {
+        throw err;
+      }
+
+      return null;
+    }
+  }
+
+  async onTokenResponseUpdate(
     serviceName: string,
     storingAccessToken: StoredIdTokenParams,
-  ): Promise<StoredIdToken | void> {
+  ): Promise<void> {
     const token = this.config.providedInAccessToken
       ? (storingAccessToken.access_token as JwtTokenType)
       : storingAccessToken.id_token;
 
     if (token) {
-      return await this.setIdToken(serviceName, token);
+      await this.setIdToken(serviceName, token);
     }
-  }
-
-  async fetchIdToken(
-    serviceName = this.config.defaultServiceName,
-  ): Promise<IdTokenInfo> {
-    return this.loatIdTokenInfo(serviceName);
   }
 }

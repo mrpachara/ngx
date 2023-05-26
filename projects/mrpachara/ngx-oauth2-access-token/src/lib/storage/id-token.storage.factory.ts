@@ -11,6 +11,7 @@ import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 import {
   IdTokenClaims,
   IdTokenInfo,
+  JwtTokenType,
   KeyValuePairStorage,
   StoredIdToken,
 } from '../types';
@@ -35,10 +36,11 @@ export class IdTokenStorage {
     return storedIdToken;
   }
 
-  async loadIdTokenInfo(serviceName: string): Promise<IdTokenInfo> {
-    const storedIdToken = await this.loadIdToken(serviceName);
-
-    const idTokenInfo = extractJwt<IdTokenClaims>(storedIdToken.token);
+  extractAndValidateIdToken(
+    serviceName: string,
+    token: JwtTokenType,
+  ): IdTokenInfo {
+    const idTokenInfo = extractJwt<IdTokenClaims>(token);
 
     if (isJwtEncryptedPayload(idTokenInfo)) {
       throw new IdTokenEncryptedError(serviceName);
@@ -49,6 +51,12 @@ export class IdTokenStorage {
     }
 
     return idTokenInfo;
+  }
+
+  async loadIdTokenInfo(serviceName: string): Promise<IdTokenInfo> {
+    const storedIdToken = await this.loadIdToken(serviceName);
+
+    return this.extractAndValidateIdToken(serviceName, storedIdToken.token);
   }
 
   async storeIdToken(

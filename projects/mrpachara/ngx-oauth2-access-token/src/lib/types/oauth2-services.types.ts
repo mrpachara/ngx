@@ -8,8 +8,36 @@ import { StateData, StoredAccessToken } from './storages.types';
 
 export type Scopes = [string, ...string[]];
 
-export interface TokenExtractor<T extends StoredAccessToken, R> {
-  extractToken(serviceName: string, storingAccessToken: T): Promise<R | void>;
+export interface TokenResponseListener<T extends StoredAccessToken> {
+  onTokenResponseUpdate(
+    serviceName: string,
+    storingAccessToken: T,
+  ): Promise<void>;
+}
+
+export interface TokenResponseExtractor<T extends StoredAccessToken, R> {
+  fetchExistedExtractedResult?(serviceName: string): Promise<R>;
+  extractTokenResponse(
+    serviceName: string,
+    storingAccessToken: T,
+    throwError: boolean,
+  ): Promise<R | null>;
+}
+
+export class SkipReloadAccessToken implements Error {
+  readonly name: string;
+  readonly message: string;
+  readonly stack: string;
+
+  constructor(readonly skipedName: string, readonly cause: unknown) {
+    this.name = this.constructor.name;
+    this.message = `Skip reload access token for ${this.skipedName}`;
+    this.stack = `${this}\n`;
+  }
+
+  toString(): string {
+    return `${this.name}: ${this.message}`;
+  }
 }
 
 export type AccessTokenInfo = {

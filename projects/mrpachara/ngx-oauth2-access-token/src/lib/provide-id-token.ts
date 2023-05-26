@@ -2,7 +2,7 @@ import { EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
 
 import { IdTokenService } from './id-token.service';
 import { IdTokenConfig, IdTokenFullConfig, PickOptional } from './types';
-import { ACCESS_TOKEN_EXTRACTOR, ID_TOKEN_FULL_CONFIG } from './tokens';
+import { ID_TOKEN_FULL_CONFIG, TOKEN_RESPONSE_LISTENERS } from './tokens';
 
 const defaultConfig: PickOptional<Omit<IdTokenConfig, 'jwksUrl'>> = {
   debug: false,
@@ -18,7 +18,7 @@ export function provideIdToken(config: IdTokenConfig): EnvironmentProviders {
   return makeEnvironmentProviders([
     { provide: ID_TOKEN_FULL_CONFIG, useValue: fullConfig },
     {
-      provide: ACCESS_TOKEN_EXTRACTOR,
+      provide: TOKEN_RESPONSE_LISTENERS,
       multi: true,
       useExisting: IdTokenService,
     },

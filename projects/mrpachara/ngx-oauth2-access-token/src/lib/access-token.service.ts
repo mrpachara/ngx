@@ -23,23 +23,27 @@ import {
   InvalidScopeError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
+  UpdateToTokenResponseListenerError,
 } from './errors';
 import { validateAndTransformScopes } from './functions';
 import { Oauth2Client } from './oauth2.client';
 import { AccessTokenStorage, AccessTokenStorageFactory } from './storage';
 import {
-  ACCESS_TOKEN_EXTRACTOR,
   ACCESS_TOKEN_FULL_CONFIG,
   RENEW_ACCESS_TOKEN_SOURCE,
+  TOKEN_RESPONSE_LISTENERS,
 } from './tokens';
 import {
   AccessToken,
   AccessTokenFullConfig,
   AccessTokenInfo,
   Scopes,
+  SkipReloadAccessToken,
   StandardGrantsParams,
   StoredAccessToken,
   StoredRefreshToken,
+  TokenResponseExtractor,
+  TokenResponseListener,
 } from './types';
 
 const latencyTime = 2 * 5 * 1000;
@@ -91,8 +95,8 @@ export class AccessTokenService {
       ...(storingRefreshToken
         ? [this.storeRefreshToken(storingRefreshToken)]
         : []),
-      ...this.extractors.map((extractor) =>
-        extractor.extractToken(this.config.name, storingAccessToken),
+      ...this.listeners.map((listener) =>
+        this.updateToListener(listener, storingAccessToken),
       ),
     ]);
   };
@@ -112,11 +116,28 @@ export class AccessTokenService {
     });
   };
 
-  private readonly accessToken$: Observable<AccessTokenInfo>;
+  private readonly updateToListener = async (
+    listener: TokenResponseListener<StoredAccessToken>,
+    storingAccessToken: StoredAccessToken,
+  ) => {
+    try {
+      return await listener.onTokenResponseUpdate(
+        this.config.name,
+        storingAccessToken,
+      );
+    } catch (err) {
+      return new UpdateToTokenResponseListenerError(
+        listener.constructor.name,
+        err,
+      );
+    }
+  };
+
+  private readonly accessToken$: Observable<StoredAccessToken>;
 
   protected readonly storageFactory = inject(AccessTokenStorageFactory);
   protected readonly storage: AccessTokenStorage;
-  protected readonly extractors = inject(ACCESS_TOKEN_EXTRACTOR);
+  protected readonly listeners = inject(TOKEN_RESPONSE_LISTENERS);
 
   constructor(
     @Inject(ACCESS_TOKEN_FULL_CONFIG)
@@ -128,15 +149,18 @@ export class AccessTokenService {
   ) {
     this.storage = this.storageFactory.create(this.config.name);
 
+    // TODO: add storage watch for listeners.
+
     const ready = firstValueFrom(
       from(this.loadStoredAccessToken()).pipe(
-        switchMap((storedAcccessToken) =>
+        switchMap((storedAccessToken) =>
           forkJoin([
-            ...this.extractors.map((extractor) =>
-              extractor.extractToken(this.config.name, storedAcccessToken),
+            ...this.listeners.map((listener) =>
+              this.updateToListener(listener, storedAccessToken),
             ),
-          ]).pipe(map(() => true)),
+          ]),
         ),
+        map(() => true),
         catchError(() => of(true)),
       ),
     );
@@ -194,18 +218,81 @@ export class AccessTokenService {
           ),
         ),
       ),
+      share(),
+    );
+  }
+
+  fetchAccessToken(): Observable<AccessTokenInfo> {
+    return this.accessToken$.pipe(
       map(
         (storedAccessToken): AccessTokenInfo => ({
           type: storedAccessToken.token_type,
           token: storedAccessToken.access_token,
         }),
       ),
-      share(),
     );
   }
 
-  fetchAccessToken(): Observable<AccessTokenInfo> {
-    return this.accessToken$;
+  fetchTokenResponse<
+    R extends StoredAccessToken = StoredAccessToken,
+  >(): Observable<R> {
+    return this.accessToken$ as Observable<R>;
+  }
+
+  extract<T extends StoredAccessToken, R>(
+    extractor: TokenResponseExtractor<T, R>,
+    throwError: true,
+  ): Promise<NonNullable<R>>;
+
+  extract<T extends StoredAccessToken, R>(
+    extractor: TokenResponseExtractor<T, R>,
+    throwError: false,
+  ): Promise<R | null>;
+
+  extract<T extends StoredAccessToken, R>(
+    extractor: TokenResponseExtractor<T, R>,
+  ): Promise<R | null>;
+
+  async extract<T extends StoredAccessToken, R>(
+    extractor: TokenResponseExtractor<T, R>,
+    throwError = false,
+  ): Promise<R | null> {
+    if (typeof extractor.fetchExistedExtractedResult === 'function') {
+      try {
+        return await extractor.fetchExistedExtractedResult(this.config.name);
+      } catch (err) {
+        if (err instanceof SkipReloadAccessToken) {
+          if (this.config.debug) {
+            console.log(err.cause);
+          }
+
+          if (throwError) {
+            throw err.cause;
+          }
+
+          return null;
+        }
+      }
+    }
+
+    try {
+      const tokenResponse = await firstValueFrom(this.fetchTokenResponse<T>());
+      return await extractor.extractTokenResponse(
+        this.config.name,
+        tokenResponse,
+        throwError,
+      );
+    } catch (err) {
+      if (this.config.debug) {
+        console.log(err);
+      }
+
+      if (throwError) {
+        throw err;
+      }
+
+      return null;
+    }
   }
 
   exchangeRefreshToken(scopes?: Scopes): Observable<AccessToken> {
@@ -228,12 +315,12 @@ export class AccessTokenService {
 
   ready<R>(
     process: (
-      serviceName: string,
       accessToken: AccessTokenInfo,
+      serviceName: string,
     ) => ObservableInput<R>,
   ): Observable<R> {
     return this.fetchAccessToken().pipe(
-      switchMap((accessToken) => process(this.config.name, accessToken)),
+      switchMap((accessToken) => process(accessToken, this.config.name)),
     );
   }
 

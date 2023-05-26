@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, of } from 'rxjs';
+import { catchError, from, of } from 'rxjs';
 
 import {
   AccessTokenService,
@@ -43,21 +43,18 @@ export class HomeComponent {
   );
 
   // NOTE: Unlike async pipe ( | async), toSignal() subscribes observable here.
-  //       So the result could be evaluated before it is ready. In this case we
-  //       use accessTokenService.ready() to make sure it is ready.
+  //       So the result could be evaluated before it is ready.
   protected readonly idToken = toSignal(
-    this.accessTokenService
-      .ready((serviceName) => this.idTokenService.fetchIdToken(serviceName))
-      .pipe(
-        catchError((err) => {
-          if (typeof err.stack === 'string') {
-            const [message] = err.stack.split('\n', 1);
-            this.errorMessage.set(message);
-          } else {
-            this.errorMessage.set(`${err}`);
-          }
-          return of(undefined);
-        }),
-      ),
+    from(this.accessTokenService.extract(this.idTokenService)).pipe(
+      catchError((err) => {
+        if (typeof err.stack === 'string') {
+          const [message] = err.stack.split('\n', 1);
+          this.errorMessage.set(message);
+        } else {
+          this.errorMessage.set(`${err}`);
+        }
+        return of(undefined);
+      }),
+    ),
   );
 }
