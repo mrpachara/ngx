@@ -2,6 +2,9 @@
   "name": "ngx",
   "version": "0.0.0",
   "license": "MIT",
+  "keywords": [
+    "angular"
+  ],
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
