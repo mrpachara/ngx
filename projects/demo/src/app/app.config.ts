@@ -59,7 +59,6 @@ const accessTokenConfig: AccessTokenConfig = {
 };
 
 const idTokenConfig: IdTokenConfig = {
-  defaultServiceName: 'google',
   debug: true,
 };
 

@@ -3,12 +3,12 @@ import { HttpClient } from '@angular/common/http';
 
 import { IdTokenStorage, IdTokenStorageFactory } from './storage';
 import {
+  AccessTokenResponseExtractor,
+  AccessTokenResponseListener,
   IdTokenFullConfig,
   IdTokenInfo,
   JwtTokenType,
   StoredIdTokenParams,
-  TokenResponseExtractor,
-  TokenResponseListener,
 } from './types';
 import { ID_TOKEN_FULL_CONFIG } from './tokens';
 
@@ -17,8 +17,8 @@ import { ID_TOKEN_FULL_CONFIG } from './tokens';
 })
 export class IdTokenService
   implements
-    TokenResponseExtractor<StoredIdTokenParams, IdTokenInfo>,
-    TokenResponseListener<StoredIdTokenParams>
+    AccessTokenResponseExtractor<StoredIdTokenParams, IdTokenInfo>,
+    AccessTokenResponseListener<StoredIdTokenParams>
 {
   protected readonly http = inject(HttpClient);
 
@@ -42,11 +42,14 @@ export class IdTokenService
   private readonly loatIdTokenInfo = async (serviceName: string) =>
     await this.storage.loadIdTokenInfo(serviceName);
 
+  private readonly removeIdToken = async (serviceName: string) =>
+    await this.storage.removeIdToken(serviceName);
+
   async fetchExistedExtractedResult(serviceName: string): Promise<IdTokenInfo> {
     return await this.loatIdTokenInfo(serviceName);
   }
 
-  async extractTokenResponse(
+  async extractAccessTokenResponse(
     serviceName: string,
     _: StoredIdTokenParams,
     throwError: boolean,
@@ -62,10 +65,14 @@ export class IdTokenService
     }
   }
 
-  async onTokenResponseUpdate(
+  async onAccessTokenResponseUpdate(
     serviceName: string,
-    storingAccessToken: StoredIdTokenParams,
+    storingAccessToken: StoredIdTokenParams | null,
   ): Promise<void> {
+    if (storingAccessToken === null) {
+      return await this.removeIdToken(serviceName);
+    }
+
     const token = this.config.providedInAccessToken
       ? (storingAccessToken.access_token as JwtTokenType)
       : storingAccessToken.id_token;

@@ -23,27 +23,25 @@ import {
   InvalidScopeError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
-  UpdateToTokenResponseListenerError,
 } from './errors';
 import { validateAndTransformScopes } from './functions';
 import { Oauth2Client } from './oauth2.client';
 import { AccessTokenStorage, AccessTokenStorageFactory } from './storage';
 import {
   ACCESS_TOKEN_FULL_CONFIG,
+  ACCESS_TOKEN_RESPONSE_LISTENERS,
   RENEW_ACCESS_TOKEN_SOURCE,
-  TOKEN_RESPONSE_LISTENERS,
 } from './tokens';
 import {
   AccessToken,
   AccessTokenFullConfig,
   AccessTokenInfo,
+  AccessTokenResponseExtractor,
   Scopes,
   SkipReloadAccessToken,
   StandardGrantsParams,
   StoredAccessToken,
   StoredRefreshToken,
-  TokenResponseExtractor,
-  TokenResponseListener,
 } from './types';
 
 const latencyTime = 2 * 5 * 1000;
@@ -83,6 +81,32 @@ export class AccessTokenService {
     return { storingAccessToken, storingRefreshToken };
   };
 
+  private readonly updateToListeners = async (
+    storingAccessToken: StoredAccessToken | null,
+  ) => {
+    const results = await Promise.allSettled(
+      this.listeners.map((listener) =>
+        listener.onAccessTokenResponseUpdate(
+          this.config.name,
+          storingAccessToken,
+        ),
+      ),
+    );
+
+    if (this.config.debug) {
+      console.log(
+        results
+          .filter(
+            (result): result is PromiseRejectedResult =>
+              result.status === 'rejected',
+          )
+          .map((err) => err.reason),
+      );
+    }
+
+    return results;
+  };
+
   private readonly storeStoringToken = ({
     storingAccessToken,
     storingRefreshToken,
@@ -95,9 +119,7 @@ export class AccessTokenService {
       ...(storingRefreshToken
         ? [this.storeRefreshToken(storingRefreshToken)]
         : []),
-      ...this.listeners.map((listener) =>
-        this.updateToListener(listener, storingAccessToken),
-      ),
+      this.updateToListeners(storingAccessToken),
     ]);
   };
 
@@ -116,28 +138,11 @@ export class AccessTokenService {
     });
   };
 
-  private readonly updateToListener = async (
-    listener: TokenResponseListener<StoredAccessToken>,
-    storingAccessToken: StoredAccessToken,
-  ) => {
-    try {
-      return await listener.onTokenResponseUpdate(
-        this.config.name,
-        storingAccessToken,
-      );
-    } catch (err) {
-      return new UpdateToTokenResponseListenerError(
-        listener.constructor.name,
-        err,
-      );
-    }
-  };
-
   private readonly accessToken$: Observable<StoredAccessToken>;
 
   protected readonly storageFactory = inject(AccessTokenStorageFactory);
   protected readonly storage: AccessTokenStorage;
-  protected readonly listeners = inject(TOKEN_RESPONSE_LISTENERS);
+  protected readonly listeners = inject(ACCESS_TOKEN_RESPONSE_LISTENERS);
 
   constructor(
     @Inject(ACCESS_TOKEN_FULL_CONFIG)
@@ -149,21 +154,16 @@ export class AccessTokenService {
   ) {
     this.storage = this.storageFactory.create(this.config.name);
 
-    // TODO: add storage watch for listeners.
-
-    const ready = firstValueFrom(
-      from(this.loadStoredAccessToken()).pipe(
-        switchMap((storedAccessToken) =>
-          forkJoin([
-            ...this.listeners.map((listener) =>
-              this.updateToListener(listener, storedAccessToken),
-            ),
-          ]),
-        ),
-        map(() => true),
-        catchError(() => of(true)),
-      ),
-    );
+    const ready = new Promise<void>((resolve) => {
+      (async () => {
+        try {
+          const storedAccessToken = await this.loadStoredAccessToken();
+          await this.updateToListeners(storedAccessToken);
+        } finally {
+          resolve();
+        }
+      })();
+    });
 
     this.accessToken$ = from(ready).pipe(
       switchMap(() =>
@@ -240,21 +240,21 @@ export class AccessTokenService {
   }
 
   extract<T extends StoredAccessToken, R>(
-    extractor: TokenResponseExtractor<T, R>,
+    extractor: AccessTokenResponseExtractor<T, R>,
     throwError: true,
   ): Promise<NonNullable<R>>;
 
   extract<T extends StoredAccessToken, R>(
-    extractor: TokenResponseExtractor<T, R>,
+    extractor: AccessTokenResponseExtractor<T, R>,
     throwError: false,
   ): Promise<R | null>;
 
   extract<T extends StoredAccessToken, R>(
-    extractor: TokenResponseExtractor<T, R>,
+    extractor: AccessTokenResponseExtractor<T, R>,
   ): Promise<R | null>;
 
   async extract<T extends StoredAccessToken, R>(
-    extractor: TokenResponseExtractor<T, R>,
+    extractor: AccessTokenResponseExtractor<T, R>,
     throwError = false,
   ): Promise<R | null> {
     if (typeof extractor.fetchExistedExtractedResult === 'function') {
@@ -277,7 +277,7 @@ export class AccessTokenService {
 
     try {
       const tokenResponse = await firstValueFrom(this.fetchTokenResponse<T>());
-      return await extractor.extractTokenResponse(
+      return await extractor.extractAccessTokenResponse(
         this.config.name,
         tokenResponse,
         throwError,
@@ -338,6 +338,7 @@ export class AccessTokenService {
   }
 
   async clearToken(): Promise<void> {
-    return await this.storage.clearToken();
+    await this.storage.clearToken();
+    await this.updateToListeners(null);
   }
 }

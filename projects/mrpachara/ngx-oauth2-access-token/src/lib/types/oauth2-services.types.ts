@@ -8,16 +8,16 @@ import { StateData, StoredAccessToken } from './storages.types';
 
 export type Scopes = [string, ...string[]];
 
-export interface TokenResponseListener<T extends StoredAccessToken> {
-  onTokenResponseUpdate(
+export interface AccessTokenResponseListener<T extends StoredAccessToken> {
+  onAccessTokenResponseUpdate(
     serviceName: string,
-    storingAccessToken: T,
+    storingAccessToken: T | null,
   ): Promise<void>;
 }
 
-export interface TokenResponseExtractor<T extends StoredAccessToken, R> {
+export interface AccessTokenResponseExtractor<T extends StoredAccessToken, R> {
   fetchExistedExtractedResult?(serviceName: string): Promise<R>;
-  extractTokenResponse(
+  extractAccessTokenResponse(
     serviceName: string,
     storingAccessToken: T,
     throwError: boolean,

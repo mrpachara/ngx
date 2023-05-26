@@ -47,7 +47,6 @@ export type AuthorizationCodeConfig = NameableConfig &
 export type AuthorizationCodeFullConfig = Required<AuthorizationCodeConfig>;
 
 export type IdTokenConfig = Partial<DebugableConfig> & {
-  defaultServiceName: string;
   providedInAccessToken?: boolean;
 };
 

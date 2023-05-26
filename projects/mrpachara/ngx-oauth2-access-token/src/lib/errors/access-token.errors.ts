@@ -1,4 +1,4 @@
-export class UpdateToTokenResponseListenerError extends Error {
+export class UpdateToAccessTokenResponseListenerError extends Error {
   constructor(name: string, cause: unknown) {
     super(`Error on '${name}'.`, {
       cause,
