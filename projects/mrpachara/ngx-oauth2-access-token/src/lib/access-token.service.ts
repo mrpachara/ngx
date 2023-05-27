@@ -33,14 +33,14 @@ import {
   RENEW_ACCESS_TOKEN_SOURCE,
 } from './tokens';
 import {
-  AccessToken,
   AccessTokenFullConfig,
   AccessTokenInfo,
+  AccessTokenResponse,
   AccessTokenResponseExtractor,
   Scopes,
   SkipReloadAccessToken,
   StandardGrantsParams,
-  StoredAccessToken,
+  StoredAccessTokenResponse,
   StoredRefreshToken,
 } from './types';
 
@@ -48,26 +48,31 @@ const latencyTime = 2 * 5 * 1000;
 
 @Injectable({ providedIn: 'root' })
 export class AccessTokenService {
-  private readonly loadStoredAccessToken = () => this.storage.loadAccessToken();
+  private readonly loadStoredAccessTokenResponse = () =>
+    this.storage.loadAccessTokenResponse();
 
   private readonly loadRefreshToken = () => this.storage.loadRefreshToken();
 
-  private readonly storeStoringAccessToken = (accessToken: StoredAccessToken) =>
-    this.storage.storeAccessToken(accessToken);
+  private readonly storeStoringAccessTokenResponse = (
+    accessTokenResponse: StoredAccessTokenResponse,
+  ) => this.storage.storeAccessTokenResponse(accessTokenResponse);
 
   private readonly storeRefreshToken = (refreshToken: StoredRefreshToken) =>
     this.storage.storeRefreshToken(refreshToken);
 
-  private readonly removeStoredAccessToken = () =>
-    this.storage.removeAccessToken();
+  private readonly removeStoredAccessTokenResponse = () =>
+    this.storage.removeAccessTokenResponse();
 
-  private readonly transformToken = (accessToken: AccessToken) => {
+  private readonly transformToken = (
+    accessTokenResponse: AccessTokenResponse,
+  ) => {
     const currentTime = Date.now();
 
-    const { expires_in, refresh_token, ...extractedAccessToken } = accessToken;
+    const { expires_in, refresh_token, ...extractedAccessTokenResponse } =
+      accessTokenResponse;
 
-    const storingAccessToken: StoredAccessToken = {
-      ...extractedAccessToken,
+    const storingAccessTokenResponse: StoredAccessTokenResponse = {
+      ...extractedAccessTokenResponse,
       expires_at:
         currentTime +
         (expires_in ? expires_in * 1000 : this.config.accessTokenTtl) -
@@ -81,17 +86,17 @@ export class AccessTokenService {
         }
       : undefined;
 
-    return { storingAccessToken, storingRefreshToken };
+    return { storingAccessTokenResponse, storingRefreshToken };
   };
 
   private readonly updateToListeners = async (
-    storingAccessToken: StoredAccessToken,
+    storingAccessTokenResponse: StoredAccessTokenResponse,
   ) => {
     const results = await Promise.allSettled(
       this.listeners.map((listener) =>
         listener.onAccessTokenResponseUpdate(
           this.config.name,
-          storingAccessToken,
+          storingAccessTokenResponse,
         ),
       ),
     );
@@ -132,37 +137,37 @@ export class AccessTokenService {
   };
 
   private readonly storeStoringToken = ({
-    storingAccessToken,
+    storingAccessTokenResponse,
     storingRefreshToken,
   }: {
-    storingAccessToken: StoredAccessToken;
+    storingAccessTokenResponse: StoredAccessTokenResponse;
     storingRefreshToken: StoredRefreshToken | undefined;
   }) => {
     return forkJoin([
-      this.storeStoringAccessToken(storingAccessToken),
+      this.storeStoringAccessTokenResponse(storingAccessTokenResponse),
       ...(storingRefreshToken
         ? [this.storeRefreshToken(storingRefreshToken)]
         : []),
-      this.updateToListeners(storingAccessToken),
+      this.updateToListeners(storingAccessTokenResponse),
     ]);
   };
 
   private readonly storeTokenPipe = pipe(
     map(this.transformToken),
     switchMap(this.storeStoringToken),
-    map(([storedAccessToken]) => storedAccessToken),
+    map(([storedAccessTokenResponse]) => storedAccessTokenResponse),
   );
 
   private readonly requestAccessToken = (
     params: StandardGrantsParams,
-  ): Observable<AccessToken> => {
+  ): Observable<AccessTokenResponse> => {
     return this.client.requestAccessToken({
       ...this.config.additionalParams,
       ...params,
     });
   };
 
-  private readonly accessToken$: Observable<StoredAccessToken>;
+  private readonly accessToken$: Observable<StoredAccessTokenResponse>;
 
   protected readonly storageFactory = inject(AccessTokenStorageFactory);
   protected readonly storage: AccessTokenStorage;
@@ -174,15 +179,16 @@ export class AccessTokenService {
     protected readonly client: Oauth2Client,
     @Optional()
     @Inject(RENEW_ACCESS_TOKEN_SOURCE)
-    protected readonly renewAccessToken$: Observable<AccessToken> | null = null,
+    protected readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
   ) {
     this.storage = this.storageFactory.create(this.config.name);
 
     const ready = new Promise<void>((resolve) => {
       (async () => {
         try {
-          const storedAccessToken = await this.loadStoredAccessToken();
-          await this.updateToListeners(storedAccessToken);
+          const storedAccessTokenResponse =
+            await this.loadStoredAccessTokenResponse();
+          await this.updateToListeners(storedAccessTokenResponse);
         } finally {
           resolve();
         }
@@ -194,7 +200,7 @@ export class AccessTokenService {
         // NOTE: multiple tabs can request refresh_token at the same time
         //       so use race() for finding the winner.
         race(
-          defer(() => this.loadStoredAccessToken()).pipe(
+          defer(() => this.loadStoredAccessTokenResponse()).pipe(
             catchError((accessTokenErr: unknown) => {
               return this.exchangeRefreshToken().pipe(
                 this.storeTokenPipe,
@@ -225,9 +231,9 @@ export class AccessTokenService {
             }),
           ),
           // NOTE: Access token is assigned by another tab.
-          this.storage.watchAccessToken().pipe(
+          this.storage.watchAccessTokenResponse().pipe(
             filter(
-              (storedTokenData): storedTokenData is StoredAccessToken =>
+              (storedTokenData): storedTokenData is StoredAccessTokenResponse =>
                 storedTokenData !== null,
             ),
             filter(
@@ -258,26 +264,26 @@ export class AccessTokenService {
   }
 
   fetchTokenResponse<
-    R extends StoredAccessToken = StoredAccessToken,
+    R extends StoredAccessTokenResponse = StoredAccessTokenResponse,
   >(): Observable<R> {
     return this.accessToken$ as Observable<R>;
   }
 
-  extract<T extends StoredAccessToken, R>(
+  extract<T extends StoredAccessTokenResponse, R>(
     extractor: AccessTokenResponseExtractor<T, R>,
     throwError: true,
   ): Promise<NonNullable<R>>;
 
-  extract<T extends StoredAccessToken, R>(
+  extract<T extends StoredAccessTokenResponse, R>(
     extractor: AccessTokenResponseExtractor<T, R>,
     throwError: false,
   ): Promise<R | null>;
 
-  extract<T extends StoredAccessToken, R>(
+  extract<T extends StoredAccessTokenResponse, R>(
     extractor: AccessTokenResponseExtractor<T, R>,
   ): Promise<R | null>;
 
-  async extract<T extends StoredAccessToken, R>(
+  async extract<T extends StoredAccessTokenResponse, R>(
     extractor: AccessTokenResponseExtractor<T, R>,
     throwError = false,
   ): Promise<R | null> {
@@ -319,7 +325,7 @@ export class AccessTokenService {
     }
   }
 
-  exchangeRefreshToken(scopes?: Scopes): Observable<AccessToken> {
+  exchangeRefreshToken(scopes?: Scopes): Observable<AccessTokenResponse> {
     return defer(() => this.loadRefreshToken()).pipe(
       switchMap((storedRefreshToken) => {
         const scope = scopes ? validateAndTransformScopes(scopes) : null;
@@ -348,17 +354,19 @@ export class AccessTokenService {
     );
   }
 
-  async setAccessToken(accessToken: AccessToken): Promise<AccessToken> {
+  async setAccessToken(
+    accessTokenResponse: AccessTokenResponse,
+  ): Promise<AccessTokenResponse> {
     return firstValueFrom(
-      of(accessToken).pipe(
+      of(accessTokenResponse).pipe(
         this.storeTokenPipe,
-        map(() => accessToken),
+        map(() => accessTokenResponse),
       ),
     );
   }
 
-  async removeAccessToken(): Promise<void> {
-    return await this.removeStoredAccessToken();
+  async removeAccessTokenResponse(): Promise<void> {
+    return await this.removeStoredAccessTokenResponse();
   }
 
   async clearToken(): Promise<void> {

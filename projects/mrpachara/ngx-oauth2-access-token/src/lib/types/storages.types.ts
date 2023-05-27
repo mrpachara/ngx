@@ -1,9 +1,9 @@
 import { Observable } from 'rxjs';
 
-import { AccessToken, JwtTokenType } from './standard.types';
+import { AccessTokenResponse, JwtTokenType } from './standard.types';
 
-export type StoredAccessToken = Omit<
-  AccessToken,
+export type StoredAccessTokenResponse = Omit<
+  AccessTokenResponse,
   'expires_in' | 'refresh_token'
 > & {
   expires_at: number;

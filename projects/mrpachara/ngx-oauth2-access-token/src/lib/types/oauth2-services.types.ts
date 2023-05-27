@@ -4,11 +4,13 @@ import {
   JwtHeader,
   JwtTokenType,
 } from './standard.types';
-import { StateData, StoredAccessToken } from './storages.types';
+import { StateData, StoredAccessTokenResponse } from './storages.types';
 
 export type Scopes = [string, ...string[]];
 
-export interface AccessTokenResponseListener<T extends StoredAccessToken> {
+export interface AccessTokenResponseListener<
+  T extends StoredAccessTokenResponse,
+> {
   onAccessTokenResponseUpdate(
     serviceName: string,
     storingAccessToken: T,
@@ -17,7 +19,10 @@ export interface AccessTokenResponseListener<T extends StoredAccessToken> {
   onAccessTokenResponseClear(serviceName: string): Promise<void>;
 }
 
-export interface AccessTokenResponseExtractor<T extends StoredAccessToken, R> {
+export interface AccessTokenResponseExtractor<
+  T extends StoredAccessTokenResponse,
+  R,
+> {
   fetchExistedExtractedResult?(serviceName: string): Promise<R>;
   extractAccessTokenResponse(
     serviceName: string,
@@ -67,7 +72,7 @@ export type JwtUnknownInfo<T extends JwtClaims = JwtClaims> =
   | JwtInfo<T>
   | JwtBaseInfo<EncryptedPayload>;
 
-export type StoredIdTokenParams = StoredAccessToken & {
+export type StoredIdTokenParams = StoredAccessTokenResponse & {
   id_token?: JwtTokenType;
 };
 

@@ -15,7 +15,7 @@ import {
 } from './storage';
 import { AUTHORIZATION_CODE_FULL_CONFIG } from './tokens';
 import {
-  AccessToken,
+  AccessTokenResponse,
   AuthorizationCodeFullConfig,
   AuthorizationCodeGrantParams,
   AuthorizationCodeParams,
@@ -143,7 +143,7 @@ export class AuthorizationCodeService {
     stateId: string,
     authorizationCode: string,
   ): Observable<{
-    accessToken: AccessToken;
+    accessTokenResponse: AccessTokenResponse;
     stateData: StateAuthorizationParams;
   }> {
     return this.verifyState(stateId).pipe(
@@ -159,9 +159,9 @@ export class AuthorizationCodeService {
         }
 
         return this.client.requestAccessToken(params).pipe(
-          switchMap((accessToken) => {
+          switchMap((accessTokenResponse) => {
             return from(this.clearState(stateId)).pipe(
-              map(() => ({ accessToken, stateData })),
+              map(() => ({ accessTokenResponse, stateData })),
             );
           }),
         );

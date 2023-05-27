@@ -78,7 +78,7 @@ export type AuthorizationCodeRequest = {
   state: string;
 };
 
-export type AccessToken = {
+export type AccessTokenResponse = {
   token_type: string;
   access_token: string;
   expires_in?: number;

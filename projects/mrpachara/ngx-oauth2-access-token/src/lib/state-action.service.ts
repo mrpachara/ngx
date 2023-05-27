@@ -4,7 +4,7 @@ import { defer, Observable, of, throwError } from 'rxjs';
 import { StateActionNotFoundError } from './errors';
 import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from './tokens';
 import {
-  AccessToken,
+  AccessTokenResponse,
   StateActionErrorHandler,
   StateActionHandler,
   StateActionHandlers,
@@ -36,7 +36,7 @@ export class StateActionService {
   }
 
   dispatch<T>(
-    accessToken: AccessToken,
+    accessToken: AccessTokenResponse,
     stateData: StateActionParams,
   ): Observable<T> {
     return defer(() => {

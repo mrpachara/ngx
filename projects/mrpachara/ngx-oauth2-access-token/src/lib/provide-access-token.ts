@@ -7,9 +7,9 @@ import { Observable } from 'rxjs';
 
 import { ACCESS_TOKEN_FULL_CONFIG, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
 import {
-  AccessToken,
   AccessTokenConfig,
   AccessTokenFullConfig,
+  AccessTokenResponse,
   PickOptional,
 } from './types';
 
@@ -51,7 +51,7 @@ export type RenewAccessTokenSourceFeature =
   AccessTokenFeature<AccessTokenFeatureKind.RenewAccessTokenSourceFeature>;
 
 export function withRenewAccessTokenSource(
-  sourceFactory: () => Observable<AccessToken>,
+  sourceFactory: () => Observable<AccessTokenResponse>,
 ): RenewAccessTokenSourceFeature {
   return {
     kind: AccessTokenFeatureKind.RenewAccessTokenSourceFeature,

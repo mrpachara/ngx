@@ -67,11 +67,11 @@ export class IdTokenService
 
   async onAccessTokenResponseUpdate(
     serviceName: string,
-    storingAccessToken: StoredIdTokenParams,
+    storingAccessTokenResponse: StoredIdTokenParams,
   ): Promise<void> {
     const token = this.config.providedInAccessToken
-      ? (storingAccessToken.access_token as JwtTokenType)
-      : storingAccessToken.id_token;
+      ? (storingAccessTokenResponse.access_token as JwtTokenType)
+      : storingAccessTokenResponse.id_token;
 
     if (token) {
       await this.setIdToken(serviceName, token);

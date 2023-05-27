@@ -1,6 +1,6 @@
 import { ObservableInput } from 'rxjs';
 
-import { AccessToken } from './standard.types';
+import { AccessTokenResponse } from './standard.types';
 import { StateData } from './storages.types';
 
 export type StateActionType = `${string}:${string}`;
@@ -23,7 +23,7 @@ export type StateActionInfo = {
  * token. It can return arbitrary information (T) to the caller.
  */
 export type StateActionHandler<T> = (
-  accessToken: AccessToken,
+  accessTokenResponse: AccessTokenResponse,
   data: StateActionData,
   stateData: StateData,
 ) => ObservableInput<T>;

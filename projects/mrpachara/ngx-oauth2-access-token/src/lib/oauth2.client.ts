@@ -12,7 +12,7 @@ import {
   SKIP_ASSIGNING_ACCESS_TOKEN,
 } from './tokens';
 import {
-  AccessToken,
+  AccessTokenResponse,
   Oauth2ClientErrorTransformer,
   Oauth2ClientFullConfig,
   StandardGrantsParams,
@@ -77,9 +77,9 @@ export class Oauth2Client {
 
   requestAccessToken<T extends StandardGrantsParams>(
     params: T,
-  ): Observable<AccessToken> {
+  ): Observable<AccessTokenResponse> {
     return this.http
-      .post<AccessToken>(
+      .post<AccessTokenResponse>(
         this.config.accessTokenUrl,
         {
           ...params,

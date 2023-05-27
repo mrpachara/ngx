@@ -10,7 +10,7 @@ import {
 import { frameworkPrefix } from '../predefined';
 import {
   KeyValuePairStorage,
-  StoredAccessToken,
+  StoredAccessTokenResponse,
   StoredRefreshToken,
 } from '../types';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
@@ -21,43 +21,44 @@ export class AccessTokenStorage {
   private stoageKey = (type: 'access-token' | 'refresh-token') =>
     `${frameworkPrefix}-${this.name}-${tokenDataKeyName}-${type}` as const;
 
-  private readonly accessToken$: Observable<StoredAccessToken | null>;
+  private readonly accessToken$: Observable<StoredAccessTokenResponse | null>;
 
   constructor(
     private readonly name: string,
     private readonly storage: KeyValuePairStorage,
   ) {
-    this.accessToken$ = this.storage.watchItem<StoredAccessToken>(
+    this.accessToken$ = this.storage.watchItem<StoredAccessTokenResponse>(
       this.stoageKey('access-token'),
     );
   }
 
-  async loadAccessToken(): Promise<StoredAccessToken> {
-    const storedAccessToken = await this.storage.loadItem<StoredAccessToken>(
-      this.stoageKey('access-token'),
-    );
+  async loadAccessTokenResponse(): Promise<StoredAccessTokenResponse> {
+    const storedAccessTokenResponse =
+      await this.storage.loadItem<StoredAccessTokenResponse>(
+        this.stoageKey('access-token'),
+      );
 
-    if (storedAccessToken === null) {
+    if (storedAccessTokenResponse === null) {
       throw new AccessTokenNotFoundError(this.name);
     }
 
-    if (storedAccessToken.expires_at < Date.now()) {
+    if (storedAccessTokenResponse.expires_at < Date.now()) {
       throw new AccessTokenExpiredError(this.name);
     }
 
-    return storedAccessToken;
+    return storedAccessTokenResponse;
   }
 
-  async storeAccessToken(
-    storedAccessToken: StoredAccessToken,
-  ): Promise<StoredAccessToken> {
+  async storeAccessTokenResponse(
+    storedAccessTokenResponse: StoredAccessTokenResponse,
+  ): Promise<StoredAccessTokenResponse> {
     return await this.storage.storeItem(
       this.stoageKey('access-token'),
-      storedAccessToken,
+      storedAccessTokenResponse,
     );
   }
 
-  async removeAccessToken(): Promise<void> {
+  async removeAccessTokenResponse(): Promise<void> {
     await this.storage.removeItem(this.stoageKey('access-token'));
   }
 
@@ -95,7 +96,7 @@ export class AccessTokenStorage {
     await this.storage.removeItem(this.stoageKey('refresh-token'));
   }
 
-  watchAccessToken(): Observable<StoredAccessToken | null> {
+  watchAccessTokenResponse(): Observable<StoredAccessTokenResponse | null> {
     return this.accessToken$;
   }
 }
