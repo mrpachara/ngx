@@ -1,4 +1,5 @@
 import {
+  AccessTokenResponse,
   IdTokenClaims,
   JwtClaims,
   JwtHeader,
@@ -8,25 +9,27 @@ import { StateData, StoredAccessTokenResponse } from './storages.types';
 
 export type Scopes = [string, ...string[]];
 
-export interface AccessTokenResponseListener<
-  T extends StoredAccessTokenResponse,
-> {
+export type AccessTokenResponseInfo<
+  T extends AccessTokenResponse = AccessTokenResponse,
+> = StoredAccessTokenResponse<T>;
+
+export interface AccessTokenResponseListener<T extends AccessTokenResponse> {
   onAccessTokenResponseUpdate(
     serviceName: string,
-    storingAccessToken: T,
+    accessTokenResponseInfo: AccessTokenResponseInfo<T>,
   ): Promise<void>;
 
   onAccessTokenResponseClear(serviceName: string): Promise<void>;
 }
 
 export interface AccessTokenResponseExtractor<
-  T extends StoredAccessTokenResponse,
+  T extends AccessTokenResponse,
   R,
 > {
   fetchExistedExtractedResult?(serviceName: string): Promise<R>;
   extractAccessTokenResponse(
     serviceName: string,
-    storingAccessToken: T,
+    accessTokenResponseInfo: AccessTokenResponseInfo<T>,
     throwError: boolean,
   ): Promise<R | null>;
 }
@@ -72,7 +75,7 @@ export type JwtUnknownInfo<T extends JwtClaims = JwtClaims> =
   | JwtInfo<T>
   | JwtBaseInfo<EncryptedPayload>;
 
-export type StoredIdTokenParams = StoredAccessTokenResponse & {
+export type IdTokenResponse = AccessTokenResponse & {
   id_token?: JwtTokenType;
 };
 

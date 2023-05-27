@@ -119,7 +119,7 @@ export class AccessTokenService {
                 storedTokenData !== null,
             ),
             filter(
-              (storedTokenData) => storedTokenData.expires_at >= Date.now(),
+              (storedTokenData) => storedTokenData.expiresAt >= Date.now(),
             ),
             take(1),
             tap(() => {
@@ -138,7 +138,7 @@ export class AccessTokenService {
     const storedAccessTokenResponse =
       await this.storage.loadAccessTokenResponse();
 
-    if (storedAccessTokenResponse.expires_at < Date.now()) {
+    if (storedAccessTokenResponse.expiresAt < Date.now()) {
       throw new AccessTokenExpiredError(this.config.name);
     }
 
@@ -168,11 +168,12 @@ export class AccessTokenService {
     const { expires_in, refresh_token } = accessTokenResponse;
 
     const storingAccessTokenResponse: StoredAccessTokenResponse = {
-      ...accessTokenResponse,
-      expires_at:
+      createdAt: currentTime,
+      expiresAt:
         currentTime +
         (expires_in ? expires_in * 1000 : this.config.accessTokenTtl) -
         latencyTime,
+      response: accessTokenResponse,
     };
 
     const storingRefreshToken: StoredRefreshToken | undefined = refresh_token
@@ -266,35 +267,35 @@ export class AccessTokenService {
   fetchAccessToken(): Observable<AccessTokenInfo> {
     return this.accessToken$.pipe(
       map(
-        (storedAccessToken): AccessTokenInfo => ({
-          type: storedAccessToken.token_type,
-          token: storedAccessToken.access_token,
+        (storedAccessTokenResponse): AccessTokenInfo => ({
+          type: storedAccessTokenResponse.response.token_type,
+          token: storedAccessTokenResponse.response.access_token,
         }),
       ),
     );
   }
 
   fetchTokenResponse<
-    R extends StoredAccessTokenResponse = StoredAccessTokenResponse,
-  >(): Observable<R> {
-    return this.accessToken$ as Observable<R>;
+    R extends AccessTokenResponse = AccessTokenResponse,
+  >(): Observable<StoredAccessTokenResponse<R>> {
+    return this.accessToken$ as Observable<StoredAccessTokenResponse<R>>;
   }
 
-  extract<T extends StoredAccessTokenResponse, R>(
+  extract<T extends AccessTokenResponse, R>(
     extractor: AccessTokenResponseExtractor<T, R>,
     throwError: true,
   ): Promise<NonNullable<R>>;
 
-  extract<T extends StoredAccessTokenResponse, R>(
+  extract<T extends AccessTokenResponse, R>(
     extractor: AccessTokenResponseExtractor<T, R>,
     throwError: false,
   ): Promise<R | null>;
 
-  extract<T extends StoredAccessTokenResponse, R>(
+  extract<T extends AccessTokenResponse, R>(
     extractor: AccessTokenResponseExtractor<T, R>,
   ): Promise<R | null>;
 
-  async extract<T extends StoredAccessTokenResponse, R>(
+  async extract<T extends AccessTokenResponse, R>(
     extractor: AccessTokenResponseExtractor<T, R>,
     throwError = false,
   ): Promise<R | null> {

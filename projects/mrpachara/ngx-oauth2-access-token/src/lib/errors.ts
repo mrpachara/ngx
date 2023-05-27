@@ -5,4 +5,6 @@ export * from './errors/state-action.errors';
 
 export * from './errors/access-token.errors';
 export * from './errors/authorization-code.errors';
+
+export * from './errors/refresh-token.errors';
 export * from './errors/id-token.errors';

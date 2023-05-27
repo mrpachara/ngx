@@ -4,12 +4,13 @@ import { HttpClient } from '@angular/common/http';
 import { IdTokenStorage, IdTokenStorageFactory } from './storage';
 import {
   AccessTokenResponseExtractor,
+  AccessTokenResponseInfo,
   AccessTokenResponseListener,
   IdTokenClaims,
   IdTokenFullConfig,
   IdTokenInfo,
+  IdTokenResponse,
   JwtTokenType,
-  StoredIdTokenParams,
 } from './types';
 import { ID_TOKEN_FULL_CONFIG } from './tokens';
 import { extractJwt, isJwtEncryptedPayload } from './functions';
@@ -20,8 +21,8 @@ import { IdTokenEncryptedError, IdTokenExpiredError } from './errors';
 })
 export class IdTokenService
   implements
-    AccessTokenResponseExtractor<StoredIdTokenParams, IdTokenInfo>,
-    AccessTokenResponseListener<StoredIdTokenParams>
+    AccessTokenResponseExtractor<IdTokenResponse, IdTokenInfo>,
+    AccessTokenResponseListener<IdTokenResponse>
 {
   protected readonly http = inject(HttpClient);
 
@@ -71,7 +72,7 @@ export class IdTokenService
 
   async extractAccessTokenResponse(
     serviceName: string,
-    _: StoredIdTokenParams,
+    _: AccessTokenResponseInfo<IdTokenResponse>,
     throwError: boolean,
   ): Promise<IdTokenInfo | null> {
     try {
@@ -87,11 +88,11 @@ export class IdTokenService
 
   async onAccessTokenResponseUpdate(
     serviceName: string,
-    storingAccessTokenResponse: StoredIdTokenParams,
+    accessTokenResponseInfo: AccessTokenResponseInfo<IdTokenResponse>,
   ): Promise<void> {
     const token = this.config.providedInAccessToken
-      ? (storingAccessTokenResponse.access_token as JwtTokenType)
-      : storingAccessTokenResponse.id_token;
+      ? (accessTokenResponseInfo.response.access_token as JwtTokenType)
+      : accessTokenResponseInfo.response.id_token;
 
     if (token) {
       await this.storeIdToken(serviceName, token);
