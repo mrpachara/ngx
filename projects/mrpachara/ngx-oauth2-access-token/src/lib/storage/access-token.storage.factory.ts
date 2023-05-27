@@ -2,7 +2,6 @@ import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import {
-  AccessTokenExpiredError,
   AccessTokenNotFoundError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
@@ -40,10 +39,6 @@ export class AccessTokenStorage {
 
     if (storedAccessTokenResponse === null) {
       throw new AccessTokenNotFoundError(this.name);
-    }
-
-    if (storedAccessTokenResponse.expires_at < Date.now()) {
-      throw new AccessTokenExpiredError(this.name);
     }
 
     return storedAccessTokenResponse;

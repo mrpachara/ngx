@@ -1,20 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 
-import {
-  IdTokenEncryptedError,
-  IdTokenExpiredError,
-  IdTokenNotFoundError,
-} from '../errors';
-import { extractJwt, isJwtEncryptedPayload } from '../functions';
+import { IdTokenNotFoundError } from '../errors';
 import { frameworkPrefix } from '../predefined';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
-import {
-  IdTokenClaims,
-  IdTokenInfo,
-  JwtTokenType,
-  KeyValuePairStorage,
-  StoredIdToken,
-} from '../types';
+import { KeyValuePairStorage, StoredIdToken } from '../types';
 
 const tokenDataKeyName = `id-token-data`;
 
@@ -24,7 +13,7 @@ export class IdTokenStorage {
 
   constructor(private readonly storage: KeyValuePairStorage) {}
 
-  private async loadIdToken(serviceName: string): Promise<StoredIdToken> {
+  async loadIdToken(serviceName: string): Promise<StoredIdToken> {
     const storedIdToken = await this.storage.loadItem<StoredIdToken>(
       this.stoageKey(serviceName),
     );
@@ -34,29 +23,6 @@ export class IdTokenStorage {
     }
 
     return storedIdToken;
-  }
-
-  extractAndValidateIdToken(
-    serviceName: string,
-    token: JwtTokenType,
-  ): IdTokenInfo {
-    const idTokenInfo = extractJwt<IdTokenClaims>(token);
-
-    if (isJwtEncryptedPayload(idTokenInfo)) {
-      throw new IdTokenEncryptedError(serviceName);
-    }
-
-    if (idTokenInfo.payload.exp * 1000 < Date.now()) {
-      throw new IdTokenExpiredError(serviceName);
-    }
-
-    return idTokenInfo;
-  }
-
-  async loadIdTokenInfo(serviceName: string): Promise<IdTokenInfo> {
-    const storedIdToken = await this.loadIdToken(serviceName);
-
-    return this.extractAndValidateIdToken(serviceName, storedIdToken.token);
   }
 
   async storeIdToken(

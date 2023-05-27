@@ -5,12 +5,15 @@ import { IdTokenStorage, IdTokenStorageFactory } from './storage';
 import {
   AccessTokenResponseExtractor,
   AccessTokenResponseListener,
+  IdTokenClaims,
   IdTokenFullConfig,
   IdTokenInfo,
   JwtTokenType,
   StoredIdTokenParams,
 } from './types';
 import { ID_TOKEN_FULL_CONFIG } from './tokens';
+import { extractJwt, isJwtEncryptedPayload } from './functions';
+import { IdTokenEncryptedError, IdTokenExpiredError } from './errors';
 
 @Injectable({
   providedIn: 'root',
@@ -31,16 +34,36 @@ export class IdTokenService
     this.storage = this.storageFactory.create();
   }
 
-  private readonly setIdToken = (serviceName: string, token: JwtTokenType) =>
+  private readonly storeIdToken = (serviceName: string, token: JwtTokenType) =>
     this.storage.storeIdToken(serviceName, {
       token: token,
     });
 
-  private readonly loadIdTokenInfo = (serviceName: string) =>
-    this.storage.loadIdTokenInfo(serviceName);
+  private readonly loadIdTokenInfo = async (serviceName: string) => {
+    const { token } = await this.storage.loadIdToken(serviceName);
+
+    return this.extractAndValidateIdToken(serviceName, token);
+  };
 
   private readonly removeIdToken = async (serviceName: string) =>
     await this.storage.removeIdToken(serviceName);
+
+  private extractAndValidateIdToken(
+    serviceName: string,
+    token: JwtTokenType,
+  ): IdTokenInfo {
+    const idTokenInfo = extractJwt<IdTokenClaims>(token);
+
+    if (isJwtEncryptedPayload(idTokenInfo)) {
+      throw new IdTokenEncryptedError(serviceName);
+    }
+
+    if (idTokenInfo.payload.exp * 1000 < Date.now()) {
+      throw new IdTokenExpiredError(serviceName);
+    }
+
+    return idTokenInfo;
+  }
 
   async fetchExistedExtractedResult(serviceName: string): Promise<IdTokenInfo> {
     return await this.loadIdTokenInfo(serviceName);
@@ -71,7 +94,7 @@ export class IdTokenService
       : storingAccessTokenResponse.id_token;
 
     if (token) {
-      await this.setIdToken(serviceName, token);
+      await this.storeIdToken(serviceName, token);
     }
   }
 

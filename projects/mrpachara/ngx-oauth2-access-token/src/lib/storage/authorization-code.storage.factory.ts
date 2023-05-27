@@ -46,6 +46,7 @@ export class AuthorizationCodeStorage {
 
   private async clearStateDataContainers(): Promise<void> {
     const currentTime = Date.now();
+
     const stateKeys = (await this.storage.keys()).filter((key) =>
       key.startsWith(this.stateKey('')),
     );

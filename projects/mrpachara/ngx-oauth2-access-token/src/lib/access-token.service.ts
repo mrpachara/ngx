@@ -20,6 +20,7 @@ import {
 } from 'rxjs';
 
 import {
+  AccessTokenExpiredError,
   InvalidScopeError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
@@ -111,8 +112,8 @@ export class AccessTokenService {
               }
             }),
           ),
-          // NOTE: Access token is assigned by another tab.
-          this.storage.watchAccessTokenResponse().pipe(
+          // NOTE: The access token is assigned by another tab.
+          this.watchStoredAccessTokenResponse().pipe(
             filter(
               (storedTokenData): storedTokenData is StoredAccessTokenResponse =>
                 storedTokenData !== null,
@@ -133,8 +134,16 @@ export class AccessTokenService {
     );
   }
 
-  private readonly loadStoredAccessTokenResponse = () =>
-    this.storage.loadAccessTokenResponse();
+  private readonly loadStoredAccessTokenResponse = async () => {
+    const storedAccessTokenResponse =
+      await this.storage.loadAccessTokenResponse();
+
+    if (storedAccessTokenResponse.expires_at < Date.now()) {
+      throw new AccessTokenExpiredError(this.config.name);
+    }
+
+    return storedAccessTokenResponse;
+  };
 
   private readonly storeStoringAccessTokenResponse = (
     accessTokenResponse: StoredAccessTokenResponse,
@@ -148,16 +157,18 @@ export class AccessTokenService {
   private readonly storeRefreshToken = (refreshToken: StoredRefreshToken) =>
     this.storage.storeRefreshToken(refreshToken);
 
+  private readonly watchStoredAccessTokenResponse = () =>
+    this.storage.watchAccessTokenResponse();
+
   private readonly transformAccessTokenResponse = (
     accessTokenResponse: AccessTokenResponse,
   ) => {
     const currentTime = Date.now();
 
-    const { expires_in, refresh_token, ...extractedAccessTokenResponse } =
-      accessTokenResponse;
+    const { expires_in, refresh_token } = accessTokenResponse;
 
     const storingAccessTokenResponse: StoredAccessTokenResponse = {
-      ...extractedAccessTokenResponse,
+      ...accessTokenResponse,
       expires_at:
         currentTime +
         (expires_in ? expires_in * 1000 : this.config.accessTokenTtl) -

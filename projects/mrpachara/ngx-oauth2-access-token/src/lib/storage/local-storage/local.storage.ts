@@ -5,11 +5,11 @@ import { KeyValuePairStorage } from '../../types';
 
 @Injectable({ providedIn: 'root' })
 export class LocalStorage implements KeyValuePairStorage {
-  private readonly transToStorage = <T>(value: T | null): string => {
+  private readonly transformToStorage = <T>(value: T | null): string => {
     return JSON.stringify(value);
   };
 
-  private readonly transToValue = <T = unknown>(
+  private readonly transformToValue = <T = unknown>(
     value: string | null,
   ): T | null => {
     return Object.freeze(JSON.parse(value ?? 'null'));
@@ -24,7 +24,7 @@ export class LocalStorage implements KeyValuePairStorage {
           storageEvent.key === null || storageEvent.key === key,
       ),
       map((storageEvent: StorageEvent) => storageEvent.newValue),
-      map(this.transToValue as () => T | null),
+      map(this.transformToValue as () => T | null),
     );
   };
 
@@ -42,11 +42,11 @@ export class LocalStorage implements KeyValuePairStorage {
   }
 
   async loadItem<T = unknown>(key: string): Promise<T | null> {
-    return this.transToValue(localStorage.getItem(key));
+    return this.transformToValue(localStorage.getItem(key));
   }
 
   async storeItem<T = unknown>(key: string, value: T): Promise<T> {
-    localStorage.setItem(key, this.transToStorage(value));
+    localStorage.setItem(key, this.transformToStorage(value));
 
     return value;
   }
