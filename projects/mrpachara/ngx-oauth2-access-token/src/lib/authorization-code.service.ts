@@ -30,6 +30,20 @@ type GenUrlParams = Omit<AuthorizationCodeParams, 'state'>;
 
 @Injectable({ providedIn: 'root' })
 export class AuthorizationCodeService {
+  protected readonly storageFactory = inject(AuthorizationCodeStorageFactory);
+  protected readonly storage: AuthorizationCodeStorage;
+
+  constructor(
+    @Inject(AUTHORIZATION_CODE_FULL_CONFIG)
+    protected readonly config: AuthorizationCodeFullConfig,
+    protected readonly client: Oauth2Client,
+  ) {
+    this.storage = this.storageFactory.create(
+      this.config.name,
+      this.config.stateTtl,
+    );
+  }
+
   private readonly loadStateData = (stateId: string) =>
     this.storage.loadStateData(stateId);
 
@@ -89,20 +103,6 @@ export class AuthorizationCodeService {
 
     return url;
   };
-
-  protected readonly storageFactory = inject(AuthorizationCodeStorageFactory);
-  protected readonly storage: AuthorizationCodeStorage;
-
-  constructor(
-    @Inject(AUTHORIZATION_CODE_FULL_CONFIG)
-    protected readonly config: AuthorizationCodeFullConfig,
-    protected readonly client: Oauth2Client,
-  ) {
-    this.storage = this.storageFactory.create(
-      this.config.name,
-      this.config.stateTtl,
-    );
-  }
 
   async fetchAuthorizationCodeUrl(
     scopes: Scopes,

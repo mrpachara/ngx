@@ -48,22 +48,107 @@ const latencyTime = 2 * 5 * 1000;
 
 @Injectable({ providedIn: 'root' })
 export class AccessTokenService {
+  protected readonly storageFactory = inject(AccessTokenStorageFactory);
+  protected readonly storage: AccessTokenStorage;
+  protected readonly listeners = inject(ACCESS_TOKEN_RESPONSE_LISTENERS);
+
+  private readonly accessToken$: Observable<StoredAccessTokenResponse>;
+
+  constructor(
+    @Inject(ACCESS_TOKEN_FULL_CONFIG)
+    protected readonly config: AccessTokenFullConfig,
+    protected readonly client: Oauth2Client,
+    @Optional()
+    @Inject(RENEW_ACCESS_TOKEN_SOURCE)
+    protected readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
+  ) {
+    this.storage = this.storageFactory.create(this.config.name);
+
+    const ready = new Promise<void>((resolve) => {
+      (async () => {
+        try {
+          const storedAccessTokenResponse =
+            await this.loadStoredAccessTokenResponse();
+          await this.updateToListeners(storedAccessTokenResponse);
+        } finally {
+          resolve();
+        }
+      })();
+    });
+
+    this.accessToken$ = from(ready).pipe(
+      switchMap(() =>
+        // NOTE: multiple tabs can request refresh_token at the same time
+        //       so use race() for finding the winner.
+        race(
+          defer(() => this.loadStoredAccessTokenResponse()).pipe(
+            catchError((accessTokenErr: unknown) => {
+              return this.exchangeRefreshToken().pipe(
+                this.storeTokenPipe,
+                catchError((refreshTokenErr: unknown) => {
+                  if (
+                    refreshTokenErr instanceof RefreshTokenNotFoundError ||
+                    refreshTokenErr instanceof RefreshTokenExpiredError
+                  ) {
+                    return throwError(() => accessTokenErr);
+                  }
+
+                  return throwError(() => refreshTokenErr);
+                }),
+              );
+            }),
+            catchError((err) => {
+              if (this.renewAccessToken$) {
+                if (this.config.debug) console.log(err);
+                return this.renewAccessToken$.pipe(this.storeTokenPipe);
+              } else {
+                return throwError(() => err);
+              }
+            }),
+            tap(() => {
+              if (this.config.debug) {
+                console.debug('access-token-race:', 'I am a winner!!!');
+              }
+            }),
+          ),
+          // NOTE: Access token is assigned by another tab.
+          this.storage.watchAccessTokenResponse().pipe(
+            filter(
+              (storedTokenData): storedTokenData is StoredAccessTokenResponse =>
+                storedTokenData !== null,
+            ),
+            filter(
+              (storedTokenData) => storedTokenData.expires_at >= Date.now(),
+            ),
+            take(1),
+            tap(() => {
+              if (this.config.debug) {
+                console.debug('access-token-race:', 'I am a loser!!!');
+              }
+            }),
+          ),
+        ),
+      ),
+      share(),
+    );
+  }
+
   private readonly loadStoredAccessTokenResponse = () =>
     this.storage.loadAccessTokenResponse();
-
-  private readonly loadRefreshToken = () => this.storage.loadRefreshToken();
 
   private readonly storeStoringAccessTokenResponse = (
     accessTokenResponse: StoredAccessTokenResponse,
   ) => this.storage.storeAccessTokenResponse(accessTokenResponse);
 
-  private readonly storeRefreshToken = (refreshToken: StoredRefreshToken) =>
-    this.storage.storeRefreshToken(refreshToken);
-
   private readonly removeStoredAccessTokenResponse = () =>
     this.storage.removeAccessTokenResponse();
 
-  private readonly transformToken = (
+  private readonly loadRefreshToken = () => this.storage.loadRefreshToken();
+
+  private readonly storeRefreshToken = (refreshToken: StoredRefreshToken) =>
+    this.storage.storeRefreshToken(refreshToken);
+
+  private readonly transformAccessTokenResponse = (
     accessTokenResponse: AccessTokenResponse,
   ) => {
     const currentTime = Date.now();
@@ -153,7 +238,7 @@ export class AccessTokenService {
   };
 
   private readonly storeTokenPipe = pipe(
-    map(this.transformToken),
+    map(this.transformAccessTokenResponse),
     switchMap(this.storeStoringToken),
     map(([storedAccessTokenResponse]) => storedAccessTokenResponse),
   );
@@ -166,91 +251,6 @@ export class AccessTokenService {
       ...params,
     });
   };
-
-  private readonly accessToken$: Observable<StoredAccessTokenResponse>;
-
-  protected readonly storageFactory = inject(AccessTokenStorageFactory);
-  protected readonly storage: AccessTokenStorage;
-  protected readonly listeners = inject(ACCESS_TOKEN_RESPONSE_LISTENERS);
-
-  constructor(
-    @Inject(ACCESS_TOKEN_FULL_CONFIG)
-    protected readonly config: AccessTokenFullConfig,
-    protected readonly client: Oauth2Client,
-    @Optional()
-    @Inject(RENEW_ACCESS_TOKEN_SOURCE)
-    protected readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
-  ) {
-    this.storage = this.storageFactory.create(this.config.name);
-
-    const ready = new Promise<void>((resolve) => {
-      (async () => {
-        try {
-          const storedAccessTokenResponse =
-            await this.loadStoredAccessTokenResponse();
-          await this.updateToListeners(storedAccessTokenResponse);
-        } finally {
-          resolve();
-        }
-      })();
-    });
-
-    this.accessToken$ = from(ready).pipe(
-      switchMap(() =>
-        // NOTE: multiple tabs can request refresh_token at the same time
-        //       so use race() for finding the winner.
-        race(
-          defer(() => this.loadStoredAccessTokenResponse()).pipe(
-            catchError((accessTokenErr: unknown) => {
-              return this.exchangeRefreshToken().pipe(
-                this.storeTokenPipe,
-                catchError((refreshTokenErr: unknown) => {
-                  if (
-                    refreshTokenErr instanceof RefreshTokenNotFoundError ||
-                    refreshTokenErr instanceof RefreshTokenExpiredError
-                  ) {
-                    return throwError(() => accessTokenErr);
-                  }
-
-                  return throwError(() => refreshTokenErr);
-                }),
-              );
-            }),
-            catchError((err) => {
-              if (this.renewAccessToken$) {
-                if (this.config.debug) console.log(err);
-                return this.renewAccessToken$.pipe(this.storeTokenPipe);
-              } else {
-                return throwError(() => err);
-              }
-            }),
-            tap(() => {
-              if (this.config.debug) {
-                console.debug('access-token-race:', 'I am a winner!!!');
-              }
-            }),
-          ),
-          // NOTE: Access token is assigned by another tab.
-          this.storage.watchAccessTokenResponse().pipe(
-            filter(
-              (storedTokenData): storedTokenData is StoredAccessTokenResponse =>
-                storedTokenData !== null,
-            ),
-            filter(
-              (storedTokenData) => storedTokenData.expires_at >= Date.now(),
-            ),
-            take(1),
-            tap(() => {
-              if (this.config.debug) {
-                console.debug('access-token-race:', 'I am a loser!!!');
-              }
-            }),
-          ),
-        ),
-      ),
-      share(),
-    );
-  }
 
   fetchAccessToken(): Observable<AccessTokenInfo> {
     return this.accessToken$.pipe(

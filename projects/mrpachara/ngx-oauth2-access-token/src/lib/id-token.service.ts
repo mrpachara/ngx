@@ -31,22 +31,19 @@ export class IdTokenService
     this.storage = this.storageFactory.create();
   }
 
-  private readonly setIdToken = async (
-    serviceName: string,
-    token: JwtTokenType,
-  ) =>
-    await this.storage.storeIdToken(serviceName, {
+  private readonly setIdToken = (serviceName: string, token: JwtTokenType) =>
+    this.storage.storeIdToken(serviceName, {
       token: token,
     });
 
-  private readonly loatIdTokenInfo = async (serviceName: string) =>
-    await this.storage.loadIdTokenInfo(serviceName);
+  private readonly loadIdTokenInfo = (serviceName: string) =>
+    this.storage.loadIdTokenInfo(serviceName);
 
   private readonly removeIdToken = async (serviceName: string) =>
     await this.storage.removeIdToken(serviceName);
 
   async fetchExistedExtractedResult(serviceName: string): Promise<IdTokenInfo> {
-    return await this.loatIdTokenInfo(serviceName);
+    return await this.loadIdTokenInfo(serviceName);
   }
 
   async extractAccessTokenResponse(

@@ -1,39 +1,19 @@
-import { Injectable, Injector, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { defer, Observable, of, throwError } from 'rxjs';
 
 import { StateActionNotFoundError } from './errors';
 import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from './tokens';
 import {
   AccessTokenResponse,
-  StateActionErrorHandler,
   StateActionHandler,
-  StateActionHandlers,
   StateActionParams,
 } from './types';
 import { parseStateAction } from './functions';
 
 @Injectable({ providedIn: 'root' })
 export class StateActionService {
-  private readonly injector = inject(Injector);
-
-  // NOTE: for preventing circular reference, set handlers if needed
-  private _handlers: StateActionHandlers | null = null;
-  private get handlers() {
-    if (this._handlers === null) {
-      this._handlers = this.injector.get(STATE_ACTION_HANDLERS);
-    }
-
-    return this._handlers;
-  }
-
-  private _errorHandler: StateActionErrorHandler | null = null;
-  private get errorHandler() {
-    if (this._errorHandler === null) {
-      this._errorHandler = this.injector.get(STATE_ACTION_ERROR_HANDLER);
-    }
-
-    return this._errorHandler;
-  }
+  private readonly handlers = inject(STATE_ACTION_HANDLERS);
+  private readonly errorHandler = inject(STATE_ACTION_ERROR_HANDLER);
 
   dispatch<T>(
     accessToken: AccessTokenResponse,
