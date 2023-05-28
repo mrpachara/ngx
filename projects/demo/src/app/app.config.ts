@@ -7,8 +7,8 @@ import {
 import { provideHttpClient } from '@angular/common/http';
 
 import {
-  AccessToken,
   AccessTokenConfig,
+  AccessTokenResponse,
   AccessTokenService,
   AuthorizationCodeConfig,
   AuthorizationCodeService,
@@ -20,6 +20,7 @@ import {
   provideAccessToken,
   provideAuthorizationCode,
   provideIdToken,
+  provideKeyValuePairStorage,
   provideOauth2Client,
   provideStateAction,
   randomString,
@@ -65,7 +66,7 @@ const idTokenConfig: IdTokenConfig = {
 type BroadcastData =
   | {
       type: 'success';
-      data: AccessToken;
+      data: AccessTokenResponse;
     }
   | {
       type: 'error';
@@ -80,6 +81,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
 
     // NOTE: The ngx-oauth2-access-token provide functions
+    provideKeyValuePairStorage(1n),
     provideOauth2Client(clientConfig),
     provideAuthorizationCode(authorizationCodeConfig),
     provideAccessToken(
@@ -91,7 +93,7 @@ export const appConfig: ApplicationConfig = {
 
         return defer(
           () =>
-            new Promise<AccessToken>((resolve, reject) => {
+            new Promise<AccessTokenResponse>((resolve, reject) => {
               const scopeText = prompt('Input scope');
 
               if (scopeText === null) {
@@ -171,8 +173,11 @@ export const appConfig: ApplicationConfig = {
 
         return {
           // NOTE: The name of action
-          set: async (accessToken, data) => {
-            accessToken = await accessTokenService.setAccessToken(accessToken);
+          set: async (accessTokenResponse, data) => {
+            accessTokenResponse =
+              await accessTokenService.setAccessTokenResponse(
+                accessTokenResponse,
+              );
 
             if (data['redirectUrl']) {
               return router.navigateByUrl(`${data['redirectUrl']}`, {});
@@ -183,7 +188,7 @@ export const appConfig: ApplicationConfig = {
             return 'Access token has been set successfully.';
           },
 
-          broadcast: (accessToken, data) => {
+          broadcast: (accessTokenResponse, data) => {
             const channelName = data['channel'];
 
             if (!channelName) {
@@ -193,7 +198,7 @@ export const appConfig: ApplicationConfig = {
             const channel = new BroadcastChannel(`${channelName}`);
             channel.postMessage({
               type: 'success',
-              data: accessToken,
+              data: accessTokenResponse,
             } as BroadcastData);
 
             return new Promise((resolve) => {

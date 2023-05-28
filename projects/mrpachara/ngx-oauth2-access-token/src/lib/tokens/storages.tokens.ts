@@ -7,6 +7,8 @@ import {
 } from '../storage';
 import { LocalStorage } from '../storage/local-storage/local.storage';
 
+export const STORAGE_VERSION = new InjectionToken<bigint>('storage-version');
+
 export const KEY_VALUE_PAIR_STORAGE = new InjectionToken<KeyValuePairStorage>(
   'key-value-pair-storage',
   {

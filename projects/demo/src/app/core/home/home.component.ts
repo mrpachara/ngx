@@ -28,7 +28,7 @@ export class HomeComponent {
   protected readonly errorMessage = signal<string | null>(null);
 
   protected readonly accessToken = toSignal(
-    this.accessTokenService.fetchAccessToken().pipe(
+    this.accessTokenService.fetchToken().pipe(
       catchError((err) => {
         if (typeof err.stack === 'string') {
           const [message] = err.stack.split('\n', 1);

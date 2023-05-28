@@ -11,8 +11,8 @@ export type StoredAccessTokenResponse<
 };
 
 export type StoredRefreshToken = {
-  refresh_token: string;
-  expires_at: number;
+  expiresAt: number;
+  token: string;
 };
 
 export type StateData = {

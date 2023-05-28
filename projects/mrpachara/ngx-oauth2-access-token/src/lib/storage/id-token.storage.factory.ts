@@ -1,15 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 
 import { IdTokenNotFoundError } from '../errors';
-import { frameworkPrefix } from '../predefined';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 import { KeyValuePairStorage, StoredIdToken } from '../types';
 
-const tokenDataKeyName = `id-token-data`;
+const tokenDataKeyName = `id-token-data` as const;
 
 export class IdTokenStorage {
   private stoageKey = (serviceName: string) =>
-    `${frameworkPrefix}-${serviceName}-${tokenDataKeyName}` as const;
+    `${serviceName}-${tokenDataKeyName}` as const;
 
   constructor(private readonly storage: KeyValuePairStorage) {}
 

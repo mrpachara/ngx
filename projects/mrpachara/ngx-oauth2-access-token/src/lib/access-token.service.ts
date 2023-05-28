@@ -38,6 +38,7 @@ import {
   AccessTokenInfo,
   AccessTokenResponse,
   AccessTokenResponseExtractor,
+  AccessTokenResponseInfo,
   Scopes,
   SkipReloadAccessToken,
   StandardGrantsParams,
@@ -178,8 +179,8 @@ export class AccessTokenService {
 
     const storingRefreshToken: StoredRefreshToken | undefined = refresh_token
       ? {
-          refresh_token: refresh_token,
-          expires_at: currentTime + this.config.refreshTokenTtl - latencyTime,
+          expiresAt: currentTime + this.config.refreshTokenTtl - latencyTime,
+          token: refresh_token,
         }
       : undefined;
 
@@ -264,7 +265,7 @@ export class AccessTokenService {
     });
   };
 
-  fetchAccessToken(): Observable<AccessTokenInfo> {
+  fetchToken(): Observable<AccessTokenInfo> {
     return this.accessToken$.pipe(
       map(
         (storedAccessTokenResponse): AccessTokenInfo => ({
@@ -275,10 +276,10 @@ export class AccessTokenService {
     );
   }
 
-  fetchTokenResponse<
+  fetchResponse<
     R extends AccessTokenResponse = AccessTokenResponse,
-  >(): Observable<StoredAccessTokenResponse<R>> {
-    return this.accessToken$ as Observable<StoredAccessTokenResponse<R>>;
+  >(): Observable<AccessTokenResponseInfo<R>> {
+    return this.accessToken$ as Observable<AccessTokenResponseInfo<R>>;
   }
 
   extract<T extends AccessTokenResponse, R>(
@@ -318,10 +319,12 @@ export class AccessTokenService {
     }
 
     try {
-      const tokenResponse = await firstValueFrom(this.fetchTokenResponse<T>());
+      const accessTokenResponseInfo = await firstValueFrom(
+        this.fetchResponse<T>(),
+      );
       return await extractor.extractAccessTokenResponse(
         this.config.name,
-        tokenResponse,
+        accessTokenResponseInfo,
         throwError,
       );
     } catch (err) {
@@ -348,7 +351,7 @@ export class AccessTokenService {
 
         return this.requestAccessToken({
           grant_type: 'refresh_token',
-          refresh_token: storedRefreshToken.refresh_token,
+          refresh_token: storedRefreshToken.token,
           ...(scope ? { scope } : {}),
         });
       }),
@@ -361,12 +364,12 @@ export class AccessTokenService {
       serviceName: string,
     ) => ObservableInput<R>,
   ): Observable<R> {
-    return this.fetchAccessToken().pipe(
+    return this.fetchToken().pipe(
       switchMap((accessToken) => process(accessToken, this.config.name)),
     );
   }
 
-  async setAccessToken(
+  async setAccessTokenResponse(
     accessTokenResponse: AccessTokenResponse,
   ): Promise<AccessTokenResponse> {
     return firstValueFrom(
@@ -377,11 +380,11 @@ export class AccessTokenService {
     );
   }
 
-  async removeAccessTokenResponse(): Promise<void> {
+  async removeToken(): Promise<void> {
     return await this.removeStoredAccessTokenResponse();
   }
 
-  async clearToken(): Promise<void> {
+  async clearAllTokens(): Promise<void> {
     await this.storage.clearToken();
     await this.clearToListeners();
   }

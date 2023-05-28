@@ -1,1 +1,1 @@
-export const frameworkPrefix = 'oat';
+export const libPrefix = 'oat';

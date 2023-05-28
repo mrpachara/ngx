@@ -1,11 +1,10 @@
 import { inject, Injectable } from '@angular/core';
 
 import { StateExpiredError, StateNotFoundError } from '../errors';
-import { frameworkPrefix } from '../predefined';
 import { KeyValuePairStorage, StateData } from '../types';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 
-const stateDataKeyName = `oauth-code-state`;
+const stateDataKeyName = `oauth-code-state` as const;
 
 const stateClearTtl = 10 * 60 * 1000;
 
@@ -16,7 +15,7 @@ export type StateDataContainer = {
 
 export class AuthorizationCodeStorage {
   private readonly stateKey = (stateId: string) =>
-    `${frameworkPrefix}-${this.name}-${stateDataKeyName}-${stateId}` as const;
+    `${this.name}-${stateDataKeyName}-${stateId}` as const;
 
   private readonly loadStateDataContainer = async (
     stateKey: string,

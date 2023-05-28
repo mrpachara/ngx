@@ -1,15 +1,14 @@
 import { Injectable, inject } from '@angular/core';
 
-import { frameworkPrefix } from '../predefined';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 import { KeyValuePairStorage, StoredRefreshToken } from '../types';
 import { RefreshTokenExpiredError, RefreshTokenNotFoundError } from '../errors';
 
-const tokenDataKeyName = `refresh-token-data`;
+const tokenDataKeyName = `refresh-token-data` as const;
 
 export class RefreshTokenStorage {
   private stoageKey = (serviceName: string) =>
-    `${frameworkPrefix}-${serviceName}-${tokenDataKeyName}` as const;
+    `${serviceName}-${tokenDataKeyName}` as const;
 
   constructor(private readonly storage: KeyValuePairStorage) {}
 
