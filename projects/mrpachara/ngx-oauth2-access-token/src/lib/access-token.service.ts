@@ -21,11 +21,9 @@ import {
 
 import {
   AccessTokenExpiredError,
-  InvalidScopeError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
 } from './errors';
-import { validateAndTransformScopes } from './functions';
 import { Oauth2Client } from './oauth2.client';
 import { AccessTokenStorage, AccessTokenStorageFactory } from './storage';
 import {
@@ -39,11 +37,10 @@ import {
   AccessTokenResponse,
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
-  Scopes,
   StandardGrantsParams,
   StoredAccessTokenResponse,
-  StoredRefreshToken,
 } from './types';
+import { RefreshTokenService } from './refresh-token.service';
 
 const latencyTime = 2 * 5 * 1000;
 
@@ -51,9 +48,10 @@ const latencyTime = 2 * 5 * 1000;
 export class AccessTokenService {
   protected readonly storageFactory = inject(AccessTokenStorageFactory);
   protected readonly storage: AccessTokenStorage;
+  protected readonly refreshTokenService = inject(RefreshTokenService);
   protected readonly listeners = inject(ACCESS_TOKEN_RESPONSE_LISTENERS);
 
-  private readonly accessToken$: Observable<StoredAccessTokenResponse>;
+  private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse>;
 
   constructor(
     @Inject(ACCESS_TOKEN_FULL_CONFIG)
@@ -71,32 +69,36 @@ export class AccessTokenService {
           const storedAccessTokenResponse =
             await this.loadStoredAccessTokenResponse();
           await this.updateToListeners(storedAccessTokenResponse);
+        } catch (err) {
+          // Prevent error.
         } finally {
           resolve();
         }
       })();
     });
 
-    this.accessToken$ = from(ready).pipe(
+    this.accessTokenResponse$ = from(ready).pipe(
       switchMap(() =>
         // NOTE: multiple tabs can request refresh_token at the same time
         //       so use race() for finding the winner.
         race(
           defer(() => this.loadStoredAccessTokenResponse()).pipe(
             catchError((accessTokenErr: unknown) => {
-              return this.exchangeRefreshToken().pipe(
-                this.storeTokenPipe,
-                catchError((refreshTokenErr: unknown) => {
-                  if (
-                    refreshTokenErr instanceof RefreshTokenNotFoundError ||
-                    refreshTokenErr instanceof RefreshTokenExpiredError
-                  ) {
-                    return throwError(() => accessTokenErr);
-                  }
+              return this.refreshTokenService
+                .exchangeRefreshToken(this.config.name)
+                .pipe(
+                  this.storeTokenPipe,
+                  catchError((refreshTokenErr: unknown) => {
+                    if (
+                      refreshTokenErr instanceof RefreshTokenNotFoundError ||
+                      refreshTokenErr instanceof RefreshTokenExpiredError
+                    ) {
+                      return throwError(() => accessTokenErr);
+                    }
 
-                  return throwError(() => refreshTokenErr);
-                }),
-              );
+                    return throwError(() => refreshTokenErr);
+                  }),
+                );
             }),
             catchError((err) => {
               if (this.renewAccessToken$) {
@@ -152,11 +154,6 @@ export class AccessTokenService {
   private readonly removeStoredAccessTokenResponse = () =>
     this.storage.removeAccessTokenResponse();
 
-  private readonly loadRefreshToken = () => this.storage.loadRefreshToken();
-
-  private readonly storeRefreshToken = (refreshToken: StoredRefreshToken) =>
-    this.storage.storeRefreshToken(refreshToken);
-
   private readonly watchStoredAccessTokenResponse = () =>
     this.storage.watchAccessTokenResponse();
 
@@ -165,7 +162,7 @@ export class AccessTokenService {
   ) => {
     const currentTime = Date.now();
 
-    const { expires_in, refresh_token } = accessTokenResponse;
+    const { expires_in } = accessTokenResponse;
 
     const storingAccessTokenResponse: StoredAccessTokenResponse = {
       createdAt: currentTime,
@@ -176,14 +173,7 @@ export class AccessTokenService {
       response: accessTokenResponse,
     };
 
-    const storingRefreshToken: StoredRefreshToken | undefined = refresh_token
-      ? {
-          expiresAt: currentTime + this.config.refreshTokenTtl - latencyTime,
-          token: refresh_token,
-        }
-      : undefined;
-
-    return { storingAccessTokenResponse, storingRefreshToken };
+    return { storingAccessTokenResponse };
   };
 
   private readonly updateToListeners = async (
@@ -239,16 +229,11 @@ export class AccessTokenService {
 
   private readonly storeStoringToken = ({
     storingAccessTokenResponse,
-    storingRefreshToken,
   }: {
     storingAccessTokenResponse: StoredAccessTokenResponse;
-    storingRefreshToken: StoredRefreshToken | undefined;
   }) => {
     return forkJoin([
       this.storeStoringAccessTokenResponse(storingAccessTokenResponse),
-      ...(storingRefreshToken
-        ? [this.storeRefreshToken(storingRefreshToken)]
-        : []),
       this.updateToListeners(storingAccessTokenResponse),
     ]);
   };
@@ -269,7 +254,7 @@ export class AccessTokenService {
   };
 
   fetchToken(): Observable<AccessTokenInfo> {
-    return this.accessToken$.pipe(
+    return this.accessTokenResponse$.pipe(
       map(
         (storedAccessTokenResponse): AccessTokenInfo => ({
           type: storedAccessTokenResponse.response.token_type,
@@ -282,7 +267,7 @@ export class AccessTokenService {
   fetchResponse<
     R extends AccessTokenResponse = AccessTokenResponse,
   >(): Observable<AccessTokenResponseInfo<R>> {
-    return this.accessToken$ as Observable<AccessTokenResponseInfo<R>>;
+    return this.accessTokenResponse$ as Observable<AccessTokenResponseInfo<R>>;
   }
 
   extract<T extends AccessTokenResponse, R>(
@@ -293,32 +278,16 @@ export class AccessTokenService {
     );
   }
 
-  exchangeRefreshToken(scopes?: Scopes): Observable<AccessTokenResponse> {
-    return defer(() => this.loadRefreshToken()).pipe(
-      switchMap((storedRefreshToken) => {
-        const scope = scopes ? validateAndTransformScopes(scopes) : null;
-
-        if (scope instanceof InvalidScopeError) {
-          return throwError(() => scope);
-        }
-
-        return this.requestAccessToken({
-          grant_type: 'refresh_token',
-          refresh_token: storedRefreshToken.token,
-          ...(scope ? { scope } : {}),
-        });
-      }),
-    );
-  }
-
   ready<R>(
     process: (
-      accessToken: AccessTokenInfo,
+      accessTokenInfo: AccessTokenInfo,
       serviceName: string,
     ) => ObservableInput<R>,
   ): Observable<R> {
     return this.fetchToken().pipe(
-      switchMap((accessToken) => process(accessToken, this.config.name)),
+      switchMap((accessTokenInfo) =>
+        process(accessTokenInfo, this.config.name),
+      ),
     );
   }
 
@@ -338,7 +307,7 @@ export class AccessTokenService {
   }
 
   async clearAllTokens(): Promise<void> {
-    await this.storage.clearToken();
+    await this.removeToken();
     await this.clearToListeners();
   }
 }

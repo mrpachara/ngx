@@ -8,7 +8,7 @@ const stateDataKeyName = `oauth-code-state` as const;
 
 const stateClearTtl = 10 * 60 * 1000;
 
-export type StateDataContainer<T extends StateData> = {
+type StateDataContainer<T extends StateData> = {
   expiresAt: number;
   data: T;
 };

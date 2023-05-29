@@ -1,23 +1,14 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import {
-  AccessTokenNotFoundError,
-  RefreshTokenExpiredError,
-  RefreshTokenNotFoundError,
-} from '../errors';
-import {
-  KeyValuePairStorage,
-  StoredAccessTokenResponse,
-  StoredRefreshToken,
-} from '../types';
+import { AccessTokenNotFoundError } from '../errors';
+import { KeyValuePairStorage, StoredAccessTokenResponse } from '../types';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 
 const tokenDataKeyName = `access-token-data` as const;
 
 export class AccessTokenStorage {
-  private stoageKey = (type: 'access-token' | 'refresh-token') =>
-    `${this.name}-${tokenDataKeyName}-${type}` as const;
+  private stoageKey = () => `${this.name}-${tokenDataKeyName}` as const;
 
   private readonly accessToken$: Observable<StoredAccessTokenResponse | null>;
 
@@ -26,15 +17,13 @@ export class AccessTokenStorage {
     private readonly storage: KeyValuePairStorage,
   ) {
     this.accessToken$ = this.storage.watchItem<StoredAccessTokenResponse>(
-      this.stoageKey('access-token'),
+      this.stoageKey(),
     );
   }
 
   async loadAccessTokenResponse(): Promise<StoredAccessTokenResponse> {
     const storedAccessTokenResponse =
-      await this.storage.loadItem<StoredAccessTokenResponse>(
-        this.stoageKey('access-token'),
-      );
+      await this.storage.loadItem<StoredAccessTokenResponse>(this.stoageKey());
 
     if (storedAccessTokenResponse === null) {
       throw new AccessTokenNotFoundError(this.name);
@@ -47,47 +36,13 @@ export class AccessTokenStorage {
     storedAccessTokenResponse: StoredAccessTokenResponse,
   ): Promise<StoredAccessTokenResponse> {
     return await this.storage.storeItem(
-      this.stoageKey('access-token'),
+      this.stoageKey(),
       storedAccessTokenResponse,
     );
   }
 
   async removeAccessTokenResponse(): Promise<void> {
-    await this.storage.removeItem(this.stoageKey('access-token'));
-  }
-
-  async loadRefreshToken(): Promise<StoredRefreshToken> {
-    const storedRefreshToken = await this.storage.loadItem<StoredRefreshToken>(
-      this.stoageKey('refresh-token'),
-    );
-
-    if (storedRefreshToken === null) {
-      throw new RefreshTokenNotFoundError(this.name);
-    }
-
-    if (storedRefreshToken.expiresAt < Date.now()) {
-      throw new RefreshTokenExpiredError(this.name);
-    }
-
-    return storedRefreshToken;
-  }
-
-  async storeRefreshToken(
-    refreshToken: StoredRefreshToken,
-  ): Promise<StoredRefreshToken> {
-    return await this.storage.storeItem(
-      this.stoageKey('refresh-token'),
-      refreshToken,
-    );
-  }
-
-  async removeRefreshToken(): Promise<void> {
-    await this.storage.removeItem(this.stoageKey('refresh-token'));
-  }
-
-  async clearToken(): Promise<void> {
-    await this.storage.removeItem(this.stoageKey('access-token'));
-    await this.storage.removeItem(this.stoageKey('refresh-token'));
+    await this.storage.removeItem(this.stoageKey());
   }
 
   watchAccessTokenResponse(): Observable<StoredAccessTokenResponse | null> {

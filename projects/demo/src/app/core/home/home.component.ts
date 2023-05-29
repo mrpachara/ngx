@@ -25,19 +25,20 @@ export class HomeComponent {
   private readonly accessTokenService = inject(AccessTokenService);
   private readonly idTokenService = inject(IdTokenService);
 
-  protected readonly errorMessage = signal<string | null>(null);
+  protected readonly errorAccessTokenMessage = signal<string | null>(null);
+  protected readonly errorIdTokenMessage = signal<string | null>(null);
 
   protected readonly accessToken = toSignal(
     this.accessTokenService.fetchToken().pipe(
       catchError((err) => {
         if (typeof err.stack === 'string') {
           const [message] = err.stack.split('\n', 1);
-          this.errorMessage.set(message);
+          this.errorAccessTokenMessage.set(message);
         } else {
-          this.errorMessage.set(`${err}`);
+          this.errorAccessTokenMessage.set(`${err}`);
         }
 
-        return of({});
+        return of(undefined);
       }),
     ),
   );
@@ -49,9 +50,9 @@ export class HomeComponent {
       catchError((err) => {
         if (typeof err.stack === 'string') {
           const [message] = err.stack.split('\n', 1);
-          this.errorMessage.set(message);
+          this.errorIdTokenMessage.set(message);
         } else {
-          this.errorMessage.set(`${err}`);
+          this.errorIdTokenMessage.set(`${err}`);
         }
         return of(undefined);
       }),

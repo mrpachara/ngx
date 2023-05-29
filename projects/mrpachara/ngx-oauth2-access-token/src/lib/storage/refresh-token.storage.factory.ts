@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 
+import { RefreshTokenNotFoundError } from '../errors';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 import { KeyValuePairStorage, StoredRefreshToken } from '../types';
-import { RefreshTokenExpiredError, RefreshTokenNotFoundError } from '../errors';
 
 const tokenDataKeyName = `refresh-token-data` as const;
 
@@ -21,11 +21,6 @@ export class RefreshTokenStorage {
       throw new RefreshTokenNotFoundError(serviceName);
     }
 
-    // TODO: move to service logic
-    if (storedRefreshToken.expiresAt < Date.now()) {
-      throw new RefreshTokenExpiredError(serviceName);
-    }
-
     return storedRefreshToken;
   }
 
@@ -33,11 +28,6 @@ export class RefreshTokenStorage {
     serviceName: string,
     storedIdToken: StoredRefreshToken,
   ): Promise<StoredRefreshToken> {
-    // {
-    //   refresh_token: refresh_token,
-    //   expires_at: currentTime + this.config.refreshTokenTtl - latencyTime,
-    // }
-
     return await this.storage.storeItem(
       this.stoageKey(serviceName),
       storedIdToken,

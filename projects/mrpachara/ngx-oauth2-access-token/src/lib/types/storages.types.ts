@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 
-import { AccessTokenResponse, JwtTokenType } from './standard.types';
+import { AccessTokenResponse } from './standard.types';
 
 export type StoredAccessTokenResponse<
   T extends AccessTokenResponse = AccessTokenResponse,
@@ -16,10 +16,6 @@ export type StoredRefreshToken = {
 };
 
 export type StateData = object;
-
-export type StoredIdToken = {
-  token: JwtTokenType;
-};
 
 export interface KeyValuePairStorage {
   loadItem<T = unknown>(key: string): Promise<T | null>;

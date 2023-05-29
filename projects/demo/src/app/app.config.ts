@@ -99,7 +99,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
 
     // NOTE: The ngx-oauth2-access-token provide functions
-    provideKeyValuePairStorage(1n),
+    provideKeyValuePairStorage(2n),
     provideOauth2Client(clientConfig),
     provideAuthorizationCode(authorizationCodeConfig),
     provideAccessToken(

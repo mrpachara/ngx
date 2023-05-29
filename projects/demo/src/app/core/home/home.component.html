@@ -1,21 +1,27 @@
 <ng-container *ngIf="accessToken() as accessToken; else loading">
   <h2>Access Token</h2>
   <pre>{{ accessToken | json }}</pre>
-
-  <ng-container *ngIf="idToken() as idToken">
-    <h2>ID Token</h2>
-    <h3>Header</h3>
-    <pre>{{ idToken.header | json }}</pre>
-    <h3>Payload</h3>
-    <pre>{{ idToken.payload | json }}</pre>
-    <h3>Signed Content</h3>
-    <pre>{{ idToken.content }}</pre>
-    <h3>Signature</h3>
-    <pre>{{ idToken.signature }}</pre>
-  </ng-container>
 </ng-container>
+<div *ngIf="errorAccessTokenMessage() as errorMessage">
+  <b>AccessToken:</b>
+  <code>{{ errorMessage }}</code>
+</div>
 
-<span *ngIf="errorMessage() as errorMessage">{{ errorMessage }}</span>
+<ng-container *ngIf="idToken() as idToken; else loading">
+  <h2>ID Token</h2>
+  <h3>Header</h3>
+  <pre>{{ idToken.header | json }}</pre>
+  <h3>Payload</h3>
+  <pre>{{ idToken.payload | json }}</pre>
+  <h3>Signed Content</h3>
+  <pre>{{ idToken.content }}</pre>
+  <h3>Signature</h3>
+  <pre>{{ idToken.signature }}</pre>
+</ng-container>
+<div *ngIf="errorIdTokenMessage() as errorMessage">
+  <b>IdToken:</b>
+  <code>{{ errorMessage }}</code>
+</div>
 
 <ng-template #loading>
   <div>loading...</div>

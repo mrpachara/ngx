@@ -26,24 +26,22 @@ export class IdTokenService
     AccessTokenResponseExtractor<IdTokenResponse, IdTokenInfo>,
     AccessTokenResponseListener<IdTokenResponse>
 {
-  protected readonly http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
-  protected readonly storageFactory = inject(IdTokenStorageFactory);
-  protected readonly storage: IdTokenStorage;
+  private readonly storageFactory = inject(IdTokenStorageFactory);
+  private readonly storage: IdTokenStorage;
 
   constructor(
-    @Inject(ID_TOKEN_FULL_CONFIG) protected readonly config: IdTokenFullConfig,
+    @Inject(ID_TOKEN_FULL_CONFIG) private readonly config: IdTokenFullConfig,
   ) {
     this.storage = this.storageFactory.create();
   }
 
   private readonly storeIdToken = (serviceName: string, token: JwtTokenType) =>
-    this.storage.storeIdToken(serviceName, {
-      token: token,
-    });
+    this.storage.storeIdToken(serviceName, token);
 
   private readonly loadIdTokenInfo = async (serviceName: string) => {
-    const { token } = await this.storage.loadIdToken(serviceName);
+    const token = await this.storage.loadIdToken(serviceName);
 
     return this.extractAndValidateIdToken(serviceName, token);
   };
@@ -68,16 +66,12 @@ export class IdTokenService
     return idTokenInfo;
   }
 
-  private async fetchToken(serviceName: string): Promise<IdTokenInfo> {
-    return await this.loadIdTokenInfo(serviceName);
-  }
-
   extractPipe(
     serviceName: string,
   ): ExtractorPipeReturn<IdTokenResponse, IdTokenInfo> {
     return pipe(
-      switchMap(() => this.fetchToken(serviceName)),
-      catchError(() => this.fetchToken(serviceName)),
+      switchMap(() => this.loadIdTokenInfo(serviceName)),
+      catchError(() => this.loadIdTokenInfo(serviceName)),
     );
   }
 

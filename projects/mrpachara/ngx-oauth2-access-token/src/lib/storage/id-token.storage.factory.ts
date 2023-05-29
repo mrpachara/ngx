@@ -2,9 +2,13 @@ import { Injectable, inject } from '@angular/core';
 
 import { IdTokenNotFoundError } from '../errors';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
-import { KeyValuePairStorage, StoredIdToken } from '../types';
+import { JwtTokenType, KeyValuePairStorage } from '../types';
 
 const tokenDataKeyName = `id-token-data` as const;
+
+export type IdTokenContainer = {
+  token: JwtTokenType;
+};
 
 export class IdTokenStorage {
   private stoageKey = (serviceName: string) =>
@@ -12,26 +16,24 @@ export class IdTokenStorage {
 
   constructor(private readonly storage: KeyValuePairStorage) {}
 
-  async loadIdToken(serviceName: string): Promise<StoredIdToken> {
-    const storedIdToken = await this.storage.loadItem<StoredIdToken>(
-      this.stoageKey(serviceName),
-    );
+  async loadIdToken(serviceName: string): Promise<JwtTokenType> {
+    const storedIdTokenContainer =
+      await this.storage.loadItem<IdTokenContainer>(
+        this.stoageKey(serviceName),
+      );
 
-    if (storedIdToken === null) {
+    if (storedIdTokenContainer === null) {
       throw new IdTokenNotFoundError(serviceName);
     }
 
-    return storedIdToken;
+    return storedIdTokenContainer.token;
   }
 
   async storeIdToken(
     serviceName: string,
-    storedIdToken: StoredIdToken,
-  ): Promise<StoredIdToken> {
-    return await this.storage.storeItem(
-      this.stoageKey(serviceName),
-      storedIdToken,
-    );
+    token: JwtTokenType,
+  ): Promise<IdTokenContainer> {
+    return await this.storage.storeItem(this.stoageKey(serviceName), { token });
   }
 
   async removeIdToken(serviceName: string): Promise<void> {

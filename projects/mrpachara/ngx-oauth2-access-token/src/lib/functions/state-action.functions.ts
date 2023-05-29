@@ -5,9 +5,9 @@ import {
   StateActionProvided,
 } from '../types';
 
-export function isStateActionProvided<N extends string, T>(
-  obj: StateAction<StateActionInfo<N, T>>,
-): obj is StateActionProvided<StateAction<StateActionInfo<N, T>>> {
+export function isStateActionProvided<T extends StateActionInfo>(
+  obj: StateAction<T>,
+): obj is StateActionProvided<StateAction<T>> {
   return typeof obj.action !== 'undefined';
 }
 
