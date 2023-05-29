@@ -21,6 +21,7 @@ export class RefreshTokenStorage {
       throw new RefreshTokenNotFoundError(serviceName);
     }
 
+    // TODO: move to service logic
     if (storedRefreshToken.expiresAt < Date.now()) {
       throw new RefreshTokenExpiredError(serviceName);
     }

@@ -40,7 +40,6 @@ import {
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
   Scopes,
-  SkipReloadAccessToken,
   StandardGrantsParams,
   StoredAccessTokenResponse,
   StoredRefreshToken,
@@ -288,62 +287,10 @@ export class AccessTokenService {
 
   extract<T extends AccessTokenResponse, R>(
     extractor: AccessTokenResponseExtractor<T, R>,
-    throwError: true,
-  ): Promise<NonNullable<R>>;
-
-  extract<T extends AccessTokenResponse, R>(
-    extractor: AccessTokenResponseExtractor<T, R>,
-    throwError: false,
-  ): Promise<R | null>;
-
-  extract<T extends AccessTokenResponse, R>(
-    extractor: AccessTokenResponseExtractor<T, R>,
-  ): Promise<R | null>;
-
-  async extract<T extends AccessTokenResponse, R>(
-    extractor: AccessTokenResponseExtractor<T, R>,
-    throwError = false,
-  ): Promise<R | null> {
-    if (typeof extractor.fetchExistedExtractedResult === 'function') {
-      try {
-        // TODO: When it is in request token process, should we wait until
-        //       the process is finish?
-        return await extractor.fetchExistedExtractedResult(this.config.name);
-      } catch (err) {
-        if (err instanceof SkipReloadAccessToken) {
-          if (this.config.debug) {
-            console.log(err.cause);
-          }
-
-          if (throwError) {
-            throw err.cause;
-          }
-
-          return null;
-        }
-      }
-    }
-
-    try {
-      const accessTokenResponseInfo = await firstValueFrom(
-        this.fetchResponse<T>(),
-      );
-      return await extractor.extractAccessTokenResponse(
-        this.config.name,
-        accessTokenResponseInfo,
-        throwError,
-      );
-    } catch (err) {
-      if (this.config.debug) {
-        console.log(err);
-      }
-
-      if (throwError) {
-        throw err;
-      }
-
-      return null;
-    }
+  ): Observable<R> {
+    return this.fetchResponse<T>().pipe(
+      extractor.extractPipe(this.config.name),
+    );
   }
 
   exchangeRefreshToken(scopes?: Scopes): Observable<AccessTokenResponse> {

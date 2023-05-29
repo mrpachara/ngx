@@ -155,8 +155,11 @@ export class LocalStorage implements KeyValuePairStorage {
   async keys(): Promise<string[]> {
     await this.ready;
 
-    return Object.keys(localStorage).filter((key) =>
-      key.startsWith(`${this.stoageKey('')}`),
-    );
+    const prefix = this.stoageKey('');
+    const prefixLength = prefix.length;
+
+    return Object.keys(localStorage)
+      .filter((key) => key.startsWith(prefix))
+      .map((key) => key.slice(prefixLength));
   }
 }

@@ -1,3 +1,4 @@
+import { OperatorFunction } from 'rxjs';
 import {
   AccessTokenResponse,
   IdTokenClaims,
@@ -22,16 +23,16 @@ export interface AccessTokenResponseListener<T extends AccessTokenResponse> {
   onAccessTokenResponseClear(serviceName: string): Promise<void>;
 }
 
+export type ExtractorPipeReturn<
+  T extends AccessTokenResponse,
+  R,
+> = OperatorFunction<AccessTokenResponseInfo<T>, R>;
+
 export interface AccessTokenResponseExtractor<
   T extends AccessTokenResponse,
   R,
 > {
-  fetchExistedExtractedResult?(serviceName: string): Promise<R>;
-  extractAccessTokenResponse(
-    serviceName: string,
-    accessTokenResponseInfo: AccessTokenResponseInfo<T>,
-    throwError: boolean,
-  ): Promise<R | null>;
+  extractPipe(serviceName: string): ExtractorPipeReturn<T, R>;
 }
 
 export class SkipReloadAccessToken implements Error {

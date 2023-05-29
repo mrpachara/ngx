@@ -6,6 +6,7 @@ import {
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
   AccessTokenResponseListener,
+  ExtractorPipeReturn,
   IdTokenClaims,
   IdTokenFullConfig,
   IdTokenInfo,
@@ -15,6 +16,7 @@ import {
 import { ID_TOKEN_FULL_CONFIG } from './tokens';
 import { extractJwt, isJwtEncryptedPayload } from './functions';
 import { IdTokenEncryptedError, IdTokenExpiredError } from './errors';
+import { catchError, pipe, switchMap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -66,24 +68,17 @@ export class IdTokenService
     return idTokenInfo;
   }
 
-  async fetchExistedExtractedResult(serviceName: string): Promise<IdTokenInfo> {
+  private async fetchToken(serviceName: string): Promise<IdTokenInfo> {
     return await this.loadIdTokenInfo(serviceName);
   }
 
-  async extractAccessTokenResponse(
+  extractPipe(
     serviceName: string,
-    _: AccessTokenResponseInfo<IdTokenResponse>,
-    throwError: boolean,
-  ): Promise<IdTokenInfo | null> {
-    try {
-      return await this.fetchExistedExtractedResult(serviceName);
-    } catch (err) {
-      if (throwError) {
-        throw err;
-      }
-
-      return null;
-    }
+  ): ExtractorPipeReturn<IdTokenResponse, IdTokenInfo> {
+    return pipe(
+      switchMap(() => this.fetchToken(serviceName)),
+      catchError(() => this.fetchToken(serviceName)),
+    );
   }
 
   async onAccessTokenResponseUpdate(
