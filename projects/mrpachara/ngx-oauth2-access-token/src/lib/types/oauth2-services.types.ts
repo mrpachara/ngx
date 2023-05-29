@@ -55,7 +55,7 @@ export type AccessTokenInfo = {
   token: string;
 };
 
-export type StateAuthorizationParams = StateData & {
+export type StateAuthorizationCode = StateData & {
   codeVerifier?: string;
 };
 

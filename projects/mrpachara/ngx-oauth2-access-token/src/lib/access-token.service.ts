@@ -200,14 +200,16 @@ export class AccessTokenService {
     );
 
     if (this.config.debug) {
-      console.log(
-        results
-          .filter(
-            (result): result is PromiseRejectedResult =>
-              result.status === 'rejected',
-          )
-          .map((err) => err.reason),
-      );
+      const errors = results
+        .filter(
+          (result): result is PromiseRejectedResult =>
+            result.status === 'rejected',
+        )
+        .map((err) => err.reason);
+
+      if (errors.length > 0) {
+        console.log(errors);
+      }
     }
 
     return results;
@@ -221,14 +223,16 @@ export class AccessTokenService {
     );
 
     if (this.config.debug) {
-      console.log(
-        results
-          .filter(
-            (result): result is PromiseRejectedResult =>
-              result.status === 'rejected',
-          )
-          .map((err) => err.reason),
-      );
+      const errors = results
+        .filter(
+          (result): result is PromiseRejectedResult =>
+            result.status === 'rejected',
+        )
+        .map((err) => err.reason);
+
+      if (errors.length > 0) {
+        console.log(errors);
+      }
     }
 
     return results;
@@ -302,6 +306,8 @@ export class AccessTokenService {
   ): Promise<R | null> {
     if (typeof extractor.fetchExistedExtractedResult === 'function') {
       try {
+        // TODO: When it is in request token process, should we wait until
+        //       the process is finish?
         return await extractor.fetchExistedExtractedResult(this.config.name);
       } catch (err) {
         if (err instanceof SkipReloadAccessToken) {

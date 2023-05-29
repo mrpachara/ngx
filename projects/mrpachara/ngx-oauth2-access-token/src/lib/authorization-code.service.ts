@@ -21,7 +21,8 @@ import {
   AuthorizationCodeParams,
   CodeChallengeMethod,
   Scopes,
-  StateAuthorizationParams,
+  StateAuthorizationCode,
+  StateData,
 } from './types';
 
 const stateIdLength = 32;
@@ -44,19 +45,27 @@ export class AuthorizationCodeService {
     );
   }
 
-  private readonly loadStateData = (stateId: string) =>
-    this.storage.loadStateData(stateId);
-
-  private readonly storeStateData = (
+  private readonly loadStateData = <
+    T extends StateAuthorizationCode = StateAuthorizationCode,
+  >(
     stateId: string,
-    stateData: StateAuthorizationParams,
-  ) => this.storage.storeStateData(stateId, stateData);
+  ) => this.storage.loadStateData<T>(stateId);
 
-  private readonly removeStateData = (stateId: string) =>
-    this.storage.removeStateData(stateId);
+  private readonly storeStateData = <
+    T extends StateAuthorizationCode = StateAuthorizationCode,
+  >(
+    stateId: string,
+    stateData: T,
+  ) => this.storage.storeStateData<T>(stateId, stateData);
+
+  private readonly removeStateData = <
+    T extends StateAuthorizationCode = StateAuthorizationCode,
+  >(
+    stateId: string,
+  ) => this.storage.removeStateData<T>(stateId);
 
   private readonly generateCodeChallenge = async (
-    stateData: StateAuthorizationParams,
+    stateData: StateAuthorizationCode,
   ): Promise<
     | {
         code_challenge: string;
@@ -83,7 +92,7 @@ export class AuthorizationCodeService {
 
   private readonly generateAuthorizationCodeUrl = async (
     stateId: string,
-    stateData: StateAuthorizationParams,
+    stateData: StateAuthorizationCode,
     authorizationCodeParams: GenUrlParams,
   ): Promise<URL> => {
     await this.storeStateData(stateId, stateData);
@@ -104,9 +113,9 @@ export class AuthorizationCodeService {
     return url;
   };
 
-  async fetchAuthorizationCodeUrl(
+  async fetchAuthorizationCodeUrl<T extends StateData>(
     scopes: Scopes,
-    stateData?: StateAuthorizationParams,
+    stateData?: T,
     additionalParams?: { [param: string]: string },
   ): Promise<URL> {
     const scope = validateAndTransformScopes(scopes);
@@ -116,7 +125,7 @@ export class AuthorizationCodeService {
     }
 
     const stateId = randomString(stateIdLength);
-    const storedStateData: StateAuthorizationParams = {
+    const storedStateData: StateAuthorizationCode = {
       ...stateData,
     };
 
@@ -131,22 +140,26 @@ export class AuthorizationCodeService {
     return this.generateAuthorizationCodeUrl(stateId, storedStateData, params);
   }
 
-  async clearState(stateId: string): Promise<StateAuthorizationParams | null> {
-    return await this.removeStateData(stateId);
+  async clearState<T extends StateData = StateData>(
+    stateId: string,
+  ): Promise<(T & StateAuthorizationCode) | null> {
+    return await this.removeStateData<T>(stateId);
   }
 
-  verifyState(stateId: string): Observable<StateAuthorizationParams> {
-    return defer(() => this.loadStateData(stateId));
+  verifyState<T extends StateData = StateData>(
+    stateId: string,
+  ): Observable<T & StateAuthorizationCode> {
+    return defer(() => this.loadStateData<T & StateAuthorizationCode>(stateId));
   }
 
-  exchangeAuthorizationCode(
+  exchangeAuthorizationCode<T extends StateData = StateData>(
     stateId: string,
     authorizationCode: string,
   ): Observable<{
     accessTokenResponse: AccessTokenResponse;
-    stateData: StateAuthorizationParams;
+    stateData: T & StateAuthorizationCode;
   }> {
-    return this.verifyState(stateId).pipe(
+    return this.verifyState<T>(stateId).pipe(
       switchMap((stateData) => {
         const params: AuthorizationCodeGrantParams = {
           grant_type: 'authorization_code',

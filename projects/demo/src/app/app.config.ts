@@ -14,9 +14,11 @@ import {
   AuthorizationCodeService,
   IdTokenConfig,
   Oauth2ClientConfig,
+  RequiredOnly,
   Scopes,
+  StateAction,
   StateActionInfo,
-  parseStateAction,
+  castActionHandler,
   provideAccessToken,
   provideAuthorizationCode,
   provideIdToken,
@@ -24,7 +26,6 @@ import {
   provideOauth2Client,
   provideStateAction,
   randomString,
-  stringifyStateAction,
   withErrorHandler,
   withRenewAccessTokenSource,
 } from '@mrpachara/ngx-oauth2-access-token';
@@ -73,6 +74,23 @@ type BroadcastData =
       error: unknown;
     };
 
+type BroadcastActionInfo = StateActionInfo<
+  'broadcast',
+  {
+    channel: string;
+    close?: boolean;
+    redirectUrl?: string;
+  }
+>;
+
+type SetActionInfo = StateActionInfo<
+  'set',
+  {
+    close?: boolean;
+    redirectUrl?: string;
+  }
+>;
+
 export const appConfig: ApplicationConfig = {
   providers: [
     // NOTE: withComponentInputBinding() will atomatically bind
@@ -108,11 +126,18 @@ export const appConfig: ApplicationConfig = {
                 confirm('Use broadcast');
 
               const stateActionInfo: StateActionInfo = {
-                action: 'unknown',
+                name: 'unknown',
                 data: {},
               };
 
               if (useBroadcast) {
+                const broadcastActionInfo =
+                  stateActionInfo as BroadcastActionInfo;
+
+                // NOTE: The name of action will be performed in the callback URL.
+                //       And the data using in the callback URL.
+                broadcastActionInfo.name = 'broadcast';
+
                 const channelName = randomString(8);
                 const channel = new BroadcastChannel(channelName);
 
@@ -130,20 +155,23 @@ export const appConfig: ApplicationConfig = {
                   channel.close();
                 });
 
-                // NOTE: The name of action will be performed in the callback URL.
-                //       And the data using in the callback URL.
-                stateActionInfo.action = 'broadcast';
-                stateActionInfo.data = {
+                broadcastActionInfo.data = {
                   channel: channelName,
                 };
               } else {
-                stateActionInfo.action = 'set';
+                const setActionInfo = stateActionInfo as SetActionInfo;
+
+                setActionInfo.name = 'set';
               }
 
+              const sharedActionInfo = stateActionInfo as
+                | BroadcastActionInfo
+                | SetActionInfo;
+
               if (isNewTab) {
-                stateActionInfo.data['close'] = false;
+                sharedActionInfo.data.close = false;
               } else {
-                stateActionInfo.data['redirectUrl'] = router.url;
+                sharedActionInfo.data.redirectUrl = router.url;
               }
 
               (async () => {
@@ -151,7 +179,7 @@ export const appConfig: ApplicationConfig = {
                   await authorizationCodeService.fetchAuthorizationCodeUrl(
                     scopes,
                     {
-                      action: stringifyStateAction(stateActionInfo),
+                      action: sharedActionInfo,
                     },
                   );
                 if (isNewTab) {
@@ -173,46 +201,59 @@ export const appConfig: ApplicationConfig = {
 
         return {
           // NOTE: The name of action
-          set: async (accessTokenResponse, data) => {
-            accessTokenResponse =
+          set: castActionHandler<SetActionInfo>(
+            async (accessTokenResponse, stateData) => {
               await accessTokenService.setAccessTokenResponse(
                 accessTokenResponse,
               );
 
-            if (data['redirectUrl']) {
-              return router.navigateByUrl(`${data['redirectUrl']}`, {});
-            } else if (data['close']) {
-              close();
-            }
+              const data = stateData.action.data;
 
-            return 'Access token has been set successfully.';
-          },
+              if (data.redirectUrl) {
+                return router.navigateByUrl(`${data.redirectUrl}`, {});
+              } else if (data.close) {
+                close();
+              }
 
-          broadcast: (accessTokenResponse, data) => {
-            const channelName = data['channel'];
+              return 'Access token has been set successfully.';
+            },
+          ),
 
-            if (!channelName) {
-              throw new Error('Broadcast channel not found.');
-            }
+          broadcast: castActionHandler<BroadcastActionInfo>(
+            (
+              accessTokenResponse,
+              stateData: RequiredOnly<
+                StateAction<BroadcastActionInfo>,
+                'action'
+              >,
+            ) => {
+              const data = stateData.action.data;
 
-            const channel = new BroadcastChannel(`${channelName}`);
-            channel.postMessage({
-              type: 'success',
-              data: accessTokenResponse,
-            } as BroadcastData);
+              const channelName = data.channel;
 
-            return new Promise((resolve) => {
-              channel.addEventListener('message', () => {
-                resolve('Access token has been set by another process.');
+              if (!channelName) {
+                throw new Error('Broadcast channel not found.');
+              }
 
-                channel.close();
+              const channel = new BroadcastChannel(`${channelName}`);
+              channel.postMessage({
+                type: 'success',
+                data: accessTokenResponse,
+              } as BroadcastData);
 
-                if (data['close']) {
-                  close();
-                }
+              return new Promise((resolve) => {
+                channel.addEventListener('message', () => {
+                  resolve('Access token has been set by another process.');
+
+                  channel.close();
+
+                  if (data.close) {
+                    close();
+                  }
+                });
               });
-            });
-          },
+            },
+          ),
         };
       },
 
@@ -227,26 +268,33 @@ export const appConfig: ApplicationConfig = {
           };
 
           if (stateData?.action) {
-            const { data } = parseStateAction(stateData.action);
+            const sharedActionInfo = stateData as
+              | BroadcastActionInfo
+              | SetActionInfo;
 
-            if (data['channel']) {
+            if (sharedActionInfo.name === 'broadcast') {
+              const data = sharedActionInfo.data;
               const channel = new BroadcastChannel(`${data['channel']}`);
 
               channel.addEventListener('message', () => {
                 channel.close();
 
-                if (data['close']) {
+                if (sharedActionInfo.data.close) {
                   close();
                 }
               });
 
               channel.postMessage(errData);
-            } else if (data['redirectUrl']) {
-              router.navigateByUrl(`${data['redirectUrl']}`, {
-                state: {
-                  error: errData,
-                },
-              });
+            } else {
+              const data = sharedActionInfo.data;
+
+              if (data.redirectUrl) {
+                router.navigateByUrl(`${data.redirectUrl}`, {
+                  state: {
+                    error: errData,
+                  },
+                });
+              }
             }
           }
         };

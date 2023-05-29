@@ -15,9 +15,7 @@ export type StoredRefreshToken = {
   token: string;
 };
 
-export type StateData = {
-  [prop: string]: string | undefined;
-};
+export type StateData = object;
 
 export type StoredIdToken = {
   token: JwtTokenType;

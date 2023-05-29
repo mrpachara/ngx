@@ -1,46 +1,39 @@
 import { Injectable, inject } from '@angular/core';
-import { defer, Observable, of, throwError } from 'rxjs';
+import { defer, Observable, throwError } from 'rxjs';
 
 import { StateActionNotFoundError } from './errors';
 import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from './tokens';
-import {
-  AccessTokenResponse,
-  StateActionHandler,
-  StateActionParams,
-} from './types';
-import { parseStateAction } from './functions';
+import { AccessTokenResponse, StateAction, StateActionHandler } from './types';
+import { isStateActionProvided } from './functions';
 
 @Injectable({ providedIn: 'root' })
 export class StateActionService {
   private readonly handlers = inject(STATE_ACTION_HANDLERS);
   private readonly errorHandler = inject(STATE_ACTION_ERROR_HANDLER);
 
-  dispatch<T>(
+  dispatch<S extends StateAction, R>(
     accessToken: AccessTokenResponse,
-    stateData: StateActionParams,
-  ): Observable<T> {
+    stateData: S,
+  ): Observable<void | R> {
     return defer(() => {
-      const stateAction = stateData.action;
-
-      if (!stateAction) {
-        return of(undefined as T);
+      if (!isStateActionProvided(stateData)) {
+        return Promise.resolve();
       }
 
-      const { action, data } = parseStateAction(stateAction);
+      const name = stateData.action.name;
 
-      if (typeof this.handlers[action] !== 'function') {
-        return throwError(() => new StateActionNotFoundError(action));
+      if (typeof this.handlers[name] !== 'function') {
+        return throwError(() => new StateActionNotFoundError(name));
       }
 
-      return (this.handlers[action] as StateActionHandler<T>)(
+      return (this.handlers[stateData.action.name] as StateActionHandler<S, R>)(
         accessToken,
-        data,
         stateData,
       );
     });
   }
 
-  handerError(err: unknown, stateData: StateActionParams | null): void {
+  handerError(err: unknown, stateData: StateAction | null): void {
     this.errorHandler(err, stateData);
   }
 }

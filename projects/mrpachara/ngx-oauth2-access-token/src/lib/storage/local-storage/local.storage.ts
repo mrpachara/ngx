@@ -48,18 +48,22 @@ export class LocalStorage implements KeyValuePairStorage {
     );
   }
 
-  private readonly deepFreeze = <T>(obj: T): T => {
+  private readonly deepFreeze = <T = unknown>(obj: T): T => {
     const frozenObjSet = new Set<unknown>();
     const queue: unknown[] = [];
 
-    const enqueue = (value: unknown) => {
+    const enqueue = (value: unknown): value is object => {
       if (
         typeof value === 'object' &&
         (value ?? null) !== null &&
         !frozenObjSet.has(value)
       ) {
         queue.push(value);
+
+        return true;
       }
+
+      return false;
     };
 
     enqueue(obj);
