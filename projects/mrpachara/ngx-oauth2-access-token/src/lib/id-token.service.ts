@@ -78,7 +78,6 @@ export class IdTokenService
     return idTokenInfo;
   }
 
-  /** @internal */
   async onAccessTokenResponseUpdate(
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
     accessTokenResponseInfo: AccessTokenResponseInfo<IdTokenResponse>,
@@ -92,14 +91,12 @@ export class IdTokenService
     }
   }
 
-  /** @internal */
   async onAccessTokenResponseClear(
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
   ): Promise<void> {
     await this.removeIdToken(serviceInfo);
   }
 
-  /** @internal */
   extractPipe(
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
   ): ExtractorPipeReturn<IdTokenResponse, IdTokenInfo> {

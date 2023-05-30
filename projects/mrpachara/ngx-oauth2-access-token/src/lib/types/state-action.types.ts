@@ -23,7 +23,10 @@ export type StateActionProvided<S extends StateAction> = RequiredOnly<
  * The function will be processed when the Oauth server responds with the access
  * token. It can return arbitrary information (T) to the caller.
  */
-export type StateActionHandler<S extends StateAction, R> = (
+export type StateActionHandler<
+  S extends StateAction = StateAction,
+  R = unknown,
+> = (
   accessTokenResponse: AccessTokenResponse,
   stateAction: StateActionProvided<S>,
 ) => ObservableInput<R>;

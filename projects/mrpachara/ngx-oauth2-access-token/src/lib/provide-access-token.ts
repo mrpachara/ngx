@@ -27,19 +27,9 @@ export function provideAccessToken(
     [RefreshTokenService, configRefreshToken({})],
   ]);
 
-  const selfProviders: AccessTokenProviderFeature[] = [];
-
-  features = features.filter(
-    (
-      feature,
-    ): feature is Exclude<AccessTokenFeatures, AccessTokenProviderFeature> => {
-      if (feature.kind === AccessTokenFeatureKind.AccessTokenProviderFeature) {
-        selfProviders.push(feature);
-        return false;
-      }
-
-      return true;
-    },
+  const selfProviders = features.filter(
+    (feature): feature is AccessTokenProviderFeature =>
+      feature.kind === AccessTokenFeatureKind.AccessTokenProviderFeature,
   );
 
   if (selfProviders.length > 1) {
@@ -48,21 +38,23 @@ export function provideAccessToken(
     );
   }
 
-  const selfProvider: Provider[] =
-    selfProviders.length === 0
-      ? [
-          {
-            provide: AccessTokenService,
-            useFactory: () => {
-              return new AccessTokenService(
-                fullConfig,
-                inject(Oauth2Client),
-                inject(RENEW_ACCESS_TOKEN_SOURCE, { optional: true }),
-              );
-            },
+  if (selfProviders.length === 0) {
+    features.push({
+      kind: AccessTokenFeatureKind.AccessTokenProviderFeature,
+      providers: [
+        {
+          provide: AccessTokenService,
+          useFactory: () => {
+            return new AccessTokenService(
+              fullConfig,
+              inject(Oauth2Client),
+              inject(RENEW_ACCESS_TOKEN_SOURCE, { optional: true }),
+            );
           },
-        ]
-      : selfProviders[0].providers;
+        },
+      ],
+    });
+  }
 
   return makeEnvironmentProviders([
     features.map((feature) => {
@@ -75,8 +67,6 @@ export function provideAccessToken(
 
       return feature.providers;
     }),
-
-    selfProvider,
   ]);
 }
 

@@ -26,13 +26,11 @@ export interface AccessTokenResponseListener<
   T extends AccessTokenResponse = AccessTokenResponse,
   C = unknown,
 > {
-  /** @internal */
   onAccessTokenResponseUpdate(
     serviceInfo: AccessTokenServiceInfo<C>,
     accessTokenResponseInfo: AccessTokenResponseInfo<T>,
   ): Promise<void>;
 
-  /** @internal */
   onAccessTokenResponseClear(
     serviceInfo: AccessTokenServiceInfo<C>,
   ): Promise<void>;
@@ -48,7 +46,6 @@ export interface AccessTokenResponseExtractor<
   C = unknown,
   R = unknown,
 > {
-  /** @internal */
   extractPipe(
     serviceInfo: AccessTokenServiceInfo<C | undefined>,
   ): ExtractorPipeReturn<T, R>;

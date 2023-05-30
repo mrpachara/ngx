@@ -14,11 +14,8 @@ import {
   AuthorizationCodeService,
   IdTokenService,
   Oauth2ClientConfig,
-  RequiredOnly,
   Scopes,
-  StateAction,
   StateActionInfo,
-  castActionHandler,
   configIdToken,
   provideAccessToken,
   provideAuthorizationCode,
@@ -27,8 +24,9 @@ import {
   provideStateAction,
   randomString,
   withAccessTokenResponseListener,
-  withErrorHandler,
   withRenewAccessTokenSource,
+  withStateActionErrorHandler,
+  withStateActionHandler,
 } from '@mrpachara/ngx-oauth2-access-token';
 
 import { routes } from './app.routes';
@@ -96,7 +94,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
 
     // NOTE: The ngx-oauth2-access-token provide functions
-    provideKeyValuePairStorage(2n),
+    provideKeyValuePairStorage(1n), // This is needed now.
     provideOauth2Client(clientConfig),
     provideAuthorizationCode(authorizationCodeConfig),
     provideAccessToken(
@@ -194,70 +192,58 @@ export const appConfig: ApplicationConfig = {
 
     // NOTE: The process in callback URL.
     provideStateAction(
-      () => {
+      // NOTE: Use StateActionInfo to determine the types of handler
+      withStateActionHandler<BroadcastActionInfo>('broadcast', () => {
+        return (accessTokenResponse, stateData) => {
+          const data = stateData.action.data;
+
+          const channelName = data.channel;
+
+          if (!channelName) {
+            throw new Error('Broadcast channel not found.');
+          }
+
+          const channel = new BroadcastChannel(`${channelName}`);
+          channel.postMessage({
+            type: 'success',
+            data: accessTokenResponse,
+          } as BroadcastData);
+
+          return new Promise((resolve) => {
+            channel.addEventListener('message', () => {
+              resolve('Access token has been set by another process.');
+
+              channel.close();
+
+              if (data.close) {
+                close();
+              }
+            });
+          });
+        };
+      }),
+
+      withStateActionHandler<SetActionInfo>('set', () => {
         const accessTokenService = inject(AccessTokenService);
         const router = inject(Router);
 
-        return {
-          // NOTE: The name of action
-          set: castActionHandler<SetActionInfo>(
-            async (accessTokenResponse, stateData) => {
-              await accessTokenService.setAccessTokenResponse(
-                accessTokenResponse,
-              );
+        return async (accessTokenResponse, stateData) => {
+          await accessTokenService.setAccessTokenResponse(accessTokenResponse);
 
-              const data = stateData.action.data;
+          const data = stateData.action.data;
 
-              if (data.redirectUrl) {
-                return router.navigateByUrl(`${data.redirectUrl}`, {});
-              } else if (data.close) {
-                close();
-              }
+          if (data.redirectUrl) {
+            return router.navigateByUrl(`${data.redirectUrl}`, {});
+          } else if (data.close) {
+            close();
+          }
 
-              return 'Access token has been set successfully.';
-            },
-          ),
-
-          broadcast: castActionHandler<BroadcastActionInfo>(
-            (
-              accessTokenResponse,
-              stateData: RequiredOnly<
-                StateAction<BroadcastActionInfo>,
-                'action'
-              >,
-            ) => {
-              const data = stateData.action.data;
-
-              const channelName = data.channel;
-
-              if (!channelName) {
-                throw new Error('Broadcast channel not found.');
-              }
-
-              const channel = new BroadcastChannel(`${channelName}`);
-              channel.postMessage({
-                type: 'success',
-                data: accessTokenResponse,
-              } as BroadcastData);
-
-              return new Promise((resolve) => {
-                channel.addEventListener('message', () => {
-                  resolve('Access token has been set by another process.');
-
-                  channel.close();
-
-                  if (data.close) {
-                    close();
-                  }
-                });
-              });
-            },
-          ),
+          return 'Access token has been set successfully.';
         };
-      },
+      }),
 
       // NOTE: When the server return error
-      withErrorHandler(() => {
+      withStateActionErrorHandler(() => {
         const router = inject(Router);
 
         return (err, stateData) => {

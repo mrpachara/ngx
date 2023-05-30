@@ -92,7 +92,6 @@ export class RefreshTokenService
     });
   };
 
-  /** @internal */
   async onAccessTokenResponseUpdate(
     serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
     accessTokenResponseInfo: AccessTokenResponseInfo<AccessTokenResponse>,
@@ -106,14 +105,12 @@ export class RefreshTokenService
     }
   }
 
-  /** @internal */
   async onAccessTokenResponseClear(
     serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
   ): Promise<void> {
     await this.removeRefreshToken(serviceInfo);
   }
 
-  /** @internal */
   extractPipe(
     serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
   ): ExtractorPipeReturn<AccessTokenResponse, string> {

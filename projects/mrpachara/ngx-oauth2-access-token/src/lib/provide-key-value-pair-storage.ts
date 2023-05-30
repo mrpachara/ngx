@@ -11,6 +11,18 @@ export function provideKeyValuePairStorage(
   version: bigint,
   ...features: KeyValuepairStorageFeatures[]
 ): EnvironmentProviders {
+  const selfProviders = features.filter(
+    (feature): feature is KeyValuepairStorageProviderFeature =>
+      feature.kind ===
+      KeyValuepairStorageFeatureKind.KeyValuepairStorageProviderFeature,
+  );
+
+  if (selfProviders.length > 1) {
+    throw new Error(
+      'Only one accessTokenProvider feature allowed for AuthorizationCode!',
+    );
+  }
+
   return makeEnvironmentProviders([
     {
       provide: STORAGE_VERSION,
@@ -21,7 +33,7 @@ export function provideKeyValuePairStorage(
 }
 
 export enum KeyValuepairStorageFeatureKind {
-  CustomStorageFeature,
+  KeyValuepairStorageProviderFeature,
 }
 
 export interface KeyValuepairStorageFeature<
@@ -31,21 +43,21 @@ export interface KeyValuepairStorageFeature<
   readonly providers: Provider[];
 }
 
-export type CustomStorageFeature =
-  KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.CustomStorageFeature>;
+export type KeyValuepairStorageProviderFeature =
+  KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.KeyValuepairStorageProviderFeature>;
 
-export type KeyValuepairStorageFeatures = CustomStorageFeature;
-
-export function withCustomStorage(
-  storageFactory: () => KeyValuePairStorage,
-): CustomStorageFeature {
+export function withKeyValuepairStorageProvider(
+  factory: () => KeyValuePairStorage,
+): KeyValuepairStorageProviderFeature {
   return {
-    kind: KeyValuepairStorageFeatureKind.CustomStorageFeature,
+    kind: KeyValuepairStorageFeatureKind.KeyValuepairStorageProviderFeature,
     providers: [
       {
         provide: KEY_VALUE_PAIR_STORAGE,
-        useFactory: storageFactory,
+        useFactory: factory,
       },
     ],
   };
 }
+
+export type KeyValuepairStorageFeatures = KeyValuepairStorageProviderFeature;

@@ -3,13 +3,27 @@ import { defer, Observable, throwError } from 'rxjs';
 
 import { StateActionNotFoundError } from './errors';
 import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from './tokens';
-import { AccessTokenResponse, StateAction, StateActionHandler } from './types';
+import {
+  AccessTokenResponse,
+  StateAction,
+  StateActionHandler,
+  StateActionHandlers,
+} from './types';
 import { isStateActionProvided } from './functions';
 
 @Injectable({ providedIn: 'root' })
 export class StateActionService {
-  private readonly handlers = inject(STATE_ACTION_HANDLERS);
+  private readonly handlerEntries = inject(STATE_ACTION_HANDLERS);
   private readonly errorHandler = inject(STATE_ACTION_ERROR_HANDLER);
+
+  private handlers: StateActionHandlers;
+
+  constructor() {
+    this.handlers = this.handlerEntries.reduce((carry, entry) => {
+      carry[entry[0]] = entry[1];
+      return carry;
+    }, {} as StateActionHandlers);
+  }
 
   dispatch<S extends StateAction, R>(
     accessToken: AccessTokenResponse,

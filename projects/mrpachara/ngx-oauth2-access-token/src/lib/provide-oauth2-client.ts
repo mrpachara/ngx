@@ -19,24 +19,9 @@ export function provideOauth2Client(
 ): EnvironmentProviders {
   const fullConfig = configOauth2Client(config);
 
-  const selfProviders: Oauth2ClientProviderFeature[] = [];
-
-  features = features.filter(
-    (
-      feature,
-    ): feature is Exclude<
-      Oauth2ClientFeatures,
-      Oauth2ClientProviderFeature
-    > => {
-      if (
-        feature.kind === Oauth2ClientFeatureKind.Oauth2ClientProviderFeature
-      ) {
-        selfProviders.push(feature);
-        return false;
-      }
-
-      return true;
-    },
+  const selfProviders = features.filter(
+    (feature): feature is Oauth2ClientProviderFeature =>
+      feature.kind === Oauth2ClientFeatureKind.Oauth2ClientProviderFeature,
   );
 
   if (selfProviders.length > 1) {
@@ -45,25 +30,25 @@ export function provideOauth2Client(
     );
   }
 
-  const selfProvider: Provider[] =
-    selfProviders.length === 0
-      ? [
-          {
-            provide: Oauth2Client,
-            useFactory: () => {
-              return new Oauth2Client(
-                fullConfig,
-                inject(OAUTH2_CLIENT_ERROR_TRANSFORMER),
-              );
-            },
+  if (selfProviders.length === 0) {
+    features.push({
+      kind: Oauth2ClientFeatureKind.Oauth2ClientProviderFeature,
+      providers: [
+        {
+          provide: Oauth2Client,
+          useFactory: () => {
+            return new Oauth2Client(
+              fullConfig,
+              inject(OAUTH2_CLIENT_ERROR_TRANSFORMER),
+            );
           },
-        ]
-      : selfProviders[0].providers;
+        },
+      ],
+    });
+  }
 
   return makeEnvironmentProviders([
     features.map((feature) => feature.providers),
-
-    selfProvider,
   ]);
 }
 

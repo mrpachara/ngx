@@ -18,25 +18,10 @@ export function provideAuthorizationCode(
 ): EnvironmentProviders {
   const fullConfig = configAuthorizationCode(config);
 
-  const selfProviders: AuthorizationCodeProviderFeature[] = [];
-
-  features = features.filter(
-    (
-      feature,
-    ): feature is Exclude<
-      AuthorizationCodeFeatures,
-      AuthorizationCodeProviderFeature
-    > => {
-      if (
-        feature.kind ===
-        AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature
-      ) {
-        selfProviders.push(feature);
-        return false;
-      }
-
-      return true;
-    },
+  const selfProviders = features.filter(
+    (feature): feature is AuthorizationCodeProviderFeature =>
+      feature.kind ===
+      AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature,
   );
 
   if (selfProviders.length > 1) {
@@ -45,25 +30,25 @@ export function provideAuthorizationCode(
     );
   }
 
-  const selfProvider: Provider[] =
-    selfProviders.length === 0
-      ? [
-          {
-            provide: AuthorizationCodeService,
-            useFactory: () => {
-              return new AuthorizationCodeService(
-                fullConfig,
-                inject(Oauth2Client),
-              );
-            },
+  if (selfProviders.length === 0) {
+    features.push({
+      kind: AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature,
+      providers: [
+        {
+          provide: AuthorizationCodeService,
+          useFactory: () => {
+            return new AuthorizationCodeService(
+              fullConfig,
+              inject(Oauth2Client),
+            );
           },
-        ]
-      : selfProviders[0].providers;
+        },
+      ],
+    });
+  }
 
   return makeEnvironmentProviders([
     features.map((feature) => feature.providers),
-
-    selfProvider,
   ]);
 }
 
