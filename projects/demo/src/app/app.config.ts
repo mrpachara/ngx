@@ -12,20 +12,21 @@ import {
   AccessTokenService,
   AuthorizationCodeConfig,
   AuthorizationCodeService,
-  IdTokenConfig,
+  IdTokenService,
   Oauth2ClientConfig,
   RequiredOnly,
   Scopes,
   StateAction,
   StateActionInfo,
   castActionHandler,
+  configIdToken,
   provideAccessToken,
   provideAuthorizationCode,
-  provideIdToken,
   provideKeyValuePairStorage,
   provideOauth2Client,
   provideStateAction,
   randomString,
+  withAccessTokenResponseListener,
   withErrorHandler,
   withRenewAccessTokenSource,
 } from '@mrpachara/ngx-oauth2-access-token';
@@ -57,10 +58,6 @@ const authorizationCodeConfig: AuthorizationCodeConfig = {
 
 const accessTokenConfig: AccessTokenConfig = {
   name: 'google',
-  debug: true,
-};
-
-const idTokenConfig: IdTokenConfig = {
   debug: true,
 };
 
@@ -191,6 +188,8 @@ export const appConfig: ApplicationConfig = {
             }),
         );
       }),
+
+      withAccessTokenResponseListener(IdTokenService, configIdToken({})),
     ),
 
     // NOTE: The process in callback URL.
@@ -262,13 +261,14 @@ export const appConfig: ApplicationConfig = {
         const router = inject(Router);
 
         return (err, stateData) => {
+          console.debug(err, stateData);
           const errData: BroadcastData = {
             type: 'error',
             error: err,
           };
 
           if (stateData?.action) {
-            const sharedActionInfo = stateData as
+            const sharedActionInfo = stateData.action as
               | BroadcastActionInfo
               | SetActionInfo;
 
@@ -300,6 +300,5 @@ export const appConfig: ApplicationConfig = {
         };
       }),
     ),
-    provideIdToken(idTokenConfig),
   ],
 };

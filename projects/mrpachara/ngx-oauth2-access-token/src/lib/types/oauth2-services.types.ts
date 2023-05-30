@@ -7,32 +7,51 @@ import {
   JwtTokenType,
 } from './standard.types';
 import { StateData, StoredAccessTokenResponse } from './storages.types';
+import { AccessTokenFullConfig } from './config.types';
+import { Oauth2Client } from '../oauth2.client';
 
 export type Scopes = [string, ...string[]];
+
+export type AccessTokenServiceInfo<C = unknown> = {
+  serviceConfig: AccessTokenFullConfig;
+  config: C;
+  client: Oauth2Client;
+};
 
 export type AccessTokenResponseInfo<
   T extends AccessTokenResponse = AccessTokenResponse,
 > = StoredAccessTokenResponse<T>;
 
-export interface AccessTokenResponseListener<T extends AccessTokenResponse> {
+export interface AccessTokenResponseListener<
+  T extends AccessTokenResponse = AccessTokenResponse,
+  C = unknown,
+> {
+  /** @internal */
   onAccessTokenResponseUpdate(
-    serviceName: string,
+    serviceInfo: AccessTokenServiceInfo<C>,
     accessTokenResponseInfo: AccessTokenResponseInfo<T>,
   ): Promise<void>;
 
-  onAccessTokenResponseClear(serviceName: string): Promise<void>;
+  /** @internal */
+  onAccessTokenResponseClear(
+    serviceInfo: AccessTokenServiceInfo<C>,
+  ): Promise<void>;
 }
 
 export type ExtractorPipeReturn<
-  T extends AccessTokenResponse,
-  R,
+  T extends AccessTokenResponse = AccessTokenResponse,
+  R = unknown,
 > = OperatorFunction<AccessTokenResponseInfo<T>, R>;
 
 export interface AccessTokenResponseExtractor<
-  T extends AccessTokenResponse,
-  R,
+  T extends AccessTokenResponse = AccessTokenResponse,
+  C = unknown,
+  R = unknown,
 > {
-  extractPipe(serviceName: string): ExtractorPipeReturn<T, R>;
+  /** @internal */
+  extractPipe(
+    serviceInfo: AccessTokenServiceInfo<C | undefined>,
+  ): ExtractorPipeReturn<T, R>;
 }
 
 export class SkipReloadAccessToken implements Error {

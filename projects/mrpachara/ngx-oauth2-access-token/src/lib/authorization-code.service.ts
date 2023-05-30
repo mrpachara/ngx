@@ -1,4 +1,4 @@
-import { Inject, Injectable, inject } from '@angular/core';
+import { inject } from '@angular/core';
 import { defer, from, map, Observable, switchMap } from 'rxjs';
 
 import { InvalidScopeError } from './errors';
@@ -13,7 +13,6 @@ import {
   AuthorizationCodeStorage,
   AuthorizationCodeStorageFactory,
 } from './storage';
-import { AUTHORIZATION_CODE_FULL_CONFIG } from './tokens';
 import {
   AccessTokenResponse,
   AuthorizationCodeFullConfig,
@@ -29,13 +28,11 @@ const stateIdLength = 32;
 
 type GenUrlParams = Omit<AuthorizationCodeParams, 'state'>;
 
-@Injectable({ providedIn: 'root' })
 export class AuthorizationCodeService {
   protected readonly storageFactory = inject(AuthorizationCodeStorageFactory);
   protected readonly storage: AuthorizationCodeStorage;
 
   constructor(
-    @Inject(AUTHORIZATION_CODE_FULL_CONFIG)
     protected readonly config: AuthorizationCodeFullConfig,
     protected readonly client: Oauth2Client,
   ) {

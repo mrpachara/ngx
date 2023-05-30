@@ -9,6 +9,7 @@ import {
   UnaryFunction,
 } from 'rxjs';
 
+import { deepFreeze } from '../../functions';
 import { libPrefix } from '../../predefined';
 import { STORAGE_VERSION } from '../../tokens';
 import { KeyValuePairStorage } from '../../types';
@@ -48,39 +49,6 @@ export class LocalStorage implements KeyValuePairStorage {
     );
   }
 
-  private readonly deepFreeze = <T = unknown>(obj: T): T => {
-    const frozenObjSet = new Set<unknown>();
-    const queue: unknown[] = [];
-
-    const enqueue = (value: unknown): value is object => {
-      if (
-        typeof value === 'object' &&
-        (value ?? null) !== null &&
-        !frozenObjSet.has(value)
-      ) {
-        queue.push(value);
-
-        return true;
-      }
-
-      return false;
-    };
-
-    enqueue(obj);
-
-    while (queue.length > 0) {
-      const frozenObj = Object.freeze(queue.shift());
-      frozenObjSet.add(frozenObj);
-
-      Object.keys(frozenObj).forEach((key) => {
-        const nextObj = (frozenObj as { [prop: string]: unknown })[key];
-        enqueue(nextObj);
-      });
-    }
-
-    return obj;
-  };
-
   private readonly transformToStorage = <T>(value: T | null): string => {
     return JSON.stringify(value);
   };
@@ -88,7 +56,7 @@ export class LocalStorage implements KeyValuePairStorage {
   private readonly transformToValue = <T = unknown>(
     value: string | null,
   ): T | null => {
-    return this.deepFreeze(JSON.parse(value ?? 'null'));
+    return deepFreeze(JSON.parse(value ?? 'null'));
   };
 
   private readonly newTransformerPipe = <T = unknown>(

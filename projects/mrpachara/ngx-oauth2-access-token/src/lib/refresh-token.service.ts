@@ -1,4 +1,4 @@
-import { Inject, Injectable, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   Observable,
   catchError,
@@ -9,23 +9,22 @@ import {
 } from 'rxjs';
 
 import { InvalidScopeError, RefreshTokenExpiredError } from './errors';
+import { validateAndTransformScopes } from './functions';
 import {
   RefreshTokenStorage,
   RefreshTokenStorageFactory,
 } from './storage/refresh-token.storage.factory';
-import { Oauth2Client } from './oauth2.client';
-import { ACCESS_TOKEN_FULL_CONFIG } from './tokens';
 import {
-  AccessTokenFullConfig,
   AccessTokenResponse,
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
   AccessTokenResponseListener,
+  AccessTokenServiceInfo,
   ExtractorPipeReturn,
+  RefreshTokenFullConfig,
   Scopes,
   StandardGrantsParams,
 } from './types';
-import { validateAndTransformScopes } from './functions';
 
 const latencyTime = 2 * 5 * 1000;
 
@@ -34,87 +33,101 @@ const latencyTime = 2 * 5 * 1000;
 })
 export class RefreshTokenService
   implements
-    AccessTokenResponseListener<AccessTokenResponse>,
-    AccessTokenResponseExtractor<AccessTokenResponse, string>
+    AccessTokenResponseListener<AccessTokenResponse, RefreshTokenFullConfig>,
+    AccessTokenResponseExtractor<
+      AccessTokenResponse,
+      RefreshTokenFullConfig,
+      string
+    >
 {
   private readonly storageFactory = inject(RefreshTokenStorageFactory);
   private readonly storage: RefreshTokenStorage;
 
-  constructor(
-    @Inject(ACCESS_TOKEN_FULL_CONFIG)
-    protected readonly config: AccessTokenFullConfig,
-    protected readonly client: Oauth2Client,
-  ) {
+  constructor() {
     this.storage = this.storageFactory.create();
   }
 
-  private readonly loadRefreshToken = async (serviceName: string) => {
-    const storedRefreshToken = await this.storage.loadRefreshToken(serviceName);
+  private readonly loadRefreshToken = async (
+    serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
+  ) => {
+    const storedRefreshToken = await this.storage.loadRefreshToken(
+      serviceInfo.serviceConfig.name,
+    );
 
     if (storedRefreshToken.expiresAt < Date.now()) {
-      throw new RefreshTokenExpiredError(serviceName);
+      throw new RefreshTokenExpiredError(serviceInfo.serviceConfig.name);
     }
 
     return storedRefreshToken.token;
   };
 
   private readonly storeRefreshToken = (
-    serviceName: string,
+    serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
     token: string,
     currentTime: number,
-  ) =>
-    this.storage.storeRefreshToken(serviceName, {
-      expiresAt: currentTime + this.config.refreshTokenTtl - latencyTime,
+  ) => {
+    console.debug(
+      serviceInfo,
+      currentTime,
+      serviceInfo.config.refreshTokenTtl,
+      latencyTime,
+    );
+    return this.storage.storeRefreshToken(serviceInfo.serviceConfig.name, {
+      expiresAt: currentTime + serviceInfo.config.refreshTokenTtl - latencyTime,
       token,
     });
+  };
 
-  private readonly removeRefreshToken = (serviceName: string) =>
-    this.storage.removeRefreshToken(serviceName);
+  private readonly removeRefreshToken = (
+    serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
+  ) => this.storage.removeRefreshToken(serviceInfo.serviceConfig.name);
 
   private readonly requestAccessToken = (
+    serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
     params: StandardGrantsParams,
   ): Observable<AccessTokenResponse> => {
-    return this.client.requestAccessToken({
-      ...this.config.additionalParams,
+    return serviceInfo.client.requestAccessToken({
+      ...serviceInfo.serviceConfig.additionalParams,
       ...params,
     });
   };
 
+  /** @internal */
   async onAccessTokenResponseUpdate(
-    serviceName: string,
+    serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
     accessTokenResponseInfo: AccessTokenResponseInfo<AccessTokenResponse>,
   ): Promise<void> {
     if (accessTokenResponseInfo.response.refresh_token) {
       await this.storeRefreshToken(
-        serviceName,
+        serviceInfo,
         accessTokenResponseInfo.response.refresh_token,
         accessTokenResponseInfo.createdAt,
       );
     }
   }
 
-  async onAccessTokenResponseClear(serviceName: string): Promise<void> {
-    await this.removeRefreshToken(serviceName);
+  /** @internal */
+  async onAccessTokenResponseClear(
+    serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
+  ): Promise<void> {
+    await this.removeRefreshToken(serviceInfo);
   }
 
+  /** @internal */
   extractPipe(
-    serviceName: string,
+    serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
   ): ExtractorPipeReturn<AccessTokenResponse, string> {
     return pipe(
-      switchMap(() => this.loadRefreshToken(serviceName)),
-      catchError(() => this.loadRefreshToken(serviceName)),
+      switchMap(() => this.loadRefreshToken(serviceInfo)),
+      catchError(() => this.loadRefreshToken(serviceInfo)),
     );
   }
 
-  async fetchToken(serviceName: string): Promise<string> {
-    return await this.loadRefreshToken(serviceName);
-  }
-
   exchangeRefreshToken(
-    serviceName: string,
+    serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
     scopes?: Scopes,
   ): Observable<AccessTokenResponse> {
-    return defer(() => this.loadRefreshToken(serviceName)).pipe(
+    return defer(() => this.loadRefreshToken(serviceInfo)).pipe(
       switchMap((token) => {
         const scope = scopes ? validateAndTransformScopes(scopes) : null;
 
@@ -122,7 +135,7 @@ export class RefreshTokenService
           return throwError(() => scope);
         }
 
-        return this.requestAccessToken({
+        return this.requestAccessToken(serviceInfo, {
           grant_type: 'refresh_token',
           refresh_token: token,
           ...(scope ? { scope } : {}),

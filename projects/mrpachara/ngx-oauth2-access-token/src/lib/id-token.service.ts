@@ -1,11 +1,15 @@
-import { Inject, Injectable, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { catchError, pipe, switchMap } from 'rxjs';
 
+import { IdTokenEncryptedError, IdTokenExpiredError } from './errors';
+import { extractJwt, isJwtEncryptedPayload } from './functions';
 import { IdTokenStorage, IdTokenStorageFactory } from './storage';
 import {
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
   AccessTokenResponseListener,
+  AccessTokenServiceInfo,
   ExtractorPipeReturn,
   IdTokenClaims,
   IdTokenFullConfig,
@@ -13,41 +17,49 @@ import {
   IdTokenResponse,
   JwtTokenType,
 } from './types';
-import { ID_TOKEN_FULL_CONFIG } from './tokens';
-import { extractJwt, isJwtEncryptedPayload } from './functions';
-import { IdTokenEncryptedError, IdTokenExpiredError } from './errors';
-import { catchError, pipe, switchMap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class IdTokenService
   implements
-    AccessTokenResponseExtractor<IdTokenResponse, IdTokenInfo>,
-    AccessTokenResponseListener<IdTokenResponse>
+    AccessTokenResponseExtractor<
+      IdTokenResponse,
+      IdTokenFullConfig,
+      IdTokenInfo
+    >,
+    AccessTokenResponseListener<IdTokenResponse, IdTokenFullConfig>
 {
   private readonly http = inject(HttpClient);
 
   private readonly storageFactory = inject(IdTokenStorageFactory);
   private readonly storage: IdTokenStorage;
 
-  constructor(
-    @Inject(ID_TOKEN_FULL_CONFIG) private readonly config: IdTokenFullConfig,
-  ) {
+  constructor() {
     this.storage = this.storageFactory.create();
   }
 
-  private readonly storeIdToken = (serviceName: string, token: JwtTokenType) =>
-    this.storage.storeIdToken(serviceName, token);
+  private readonly storeIdToken = (
+    serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
+    token: JwtTokenType,
+  ) => this.storage.storeIdToken(serviceInfo.serviceConfig.name, token);
 
-  private readonly loadIdTokenInfo = async (serviceName: string) => {
-    const token = await this.storage.loadIdToken(serviceName);
+  private readonly loadIdTokenInfo = async (
+    serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
+  ) => {
+    const token = await this.storage.loadIdToken(
+      serviceInfo.serviceConfig.name,
+    );
 
-    return this.extractAndValidateIdToken(serviceName, token);
+    return this.extractAndValidateIdToken(
+      serviceInfo.serviceConfig.name,
+      token,
+    );
   };
 
-  private readonly removeIdToken = async (serviceName: string) =>
-    await this.storage.removeIdToken(serviceName);
+  private readonly removeIdToken = async (
+    serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
+  ) => await this.storage.removeIdToken(serviceInfo.serviceConfig.name);
 
   private extractAndValidateIdToken(
     serviceName: string,
@@ -66,29 +78,34 @@ export class IdTokenService
     return idTokenInfo;
   }
 
-  extractPipe(
-    serviceName: string,
-  ): ExtractorPipeReturn<IdTokenResponse, IdTokenInfo> {
-    return pipe(
-      switchMap(() => this.loadIdTokenInfo(serviceName)),
-      catchError(() => this.loadIdTokenInfo(serviceName)),
-    );
-  }
-
+  /** @internal */
   async onAccessTokenResponseUpdate(
-    serviceName: string,
+    serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
     accessTokenResponseInfo: AccessTokenResponseInfo<IdTokenResponse>,
   ): Promise<void> {
-    const token = this.config.providedInAccessToken
+    const token = serviceInfo.config.providedInAccessToken
       ? (accessTokenResponseInfo.response.access_token as JwtTokenType)
       : accessTokenResponseInfo.response.id_token;
 
     if (token) {
-      await this.storeIdToken(serviceName, token);
+      await this.storeIdToken(serviceInfo, token);
     }
   }
 
-  async onAccessTokenResponseClear(serviceName: string): Promise<void> {
-    await this.removeIdToken(serviceName);
+  /** @internal */
+  async onAccessTokenResponseClear(
+    serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
+  ): Promise<void> {
+    await this.removeIdToken(serviceInfo);
+  }
+
+  /** @internal */
+  extractPipe(
+    serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
+  ): ExtractorPipeReturn<IdTokenResponse, IdTokenInfo> {
+    return pipe(
+      switchMap(() => this.loadIdTokenInfo(serviceInfo)),
+      catchError(() => this.loadIdTokenInfo(serviceInfo)),
+    );
   }
 }

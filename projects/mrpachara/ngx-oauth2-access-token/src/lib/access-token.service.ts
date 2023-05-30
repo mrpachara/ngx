@@ -1,4 +1,4 @@
-import { Inject, Injectable, Optional, inject } from '@angular/core';
+import { inject } from '@angular/core';
 import {
   catchError,
   defer,
@@ -27,16 +27,13 @@ import {
 import { Oauth2Client } from './oauth2.client';
 import { AccessTokenStorage, AccessTokenStorageFactory } from './storage';
 import {
-  ACCESS_TOKEN_FULL_CONFIG,
-  ACCESS_TOKEN_RESPONSE_LISTENERS,
-  RENEW_ACCESS_TOKEN_SOURCE,
-} from './tokens';
-import {
   AccessTokenFullConfig,
   AccessTokenInfo,
   AccessTokenResponse,
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
+  AccessTokenResponseListener,
+  AccessTokenServiceInfo,
   StandardGrantsParams,
   StoredAccessTokenResponse,
 } from './types';
@@ -44,23 +41,32 @@ import { RefreshTokenService } from './refresh-token.service';
 
 const latencyTime = 2 * 5 * 1000;
 
-@Injectable({ providedIn: 'root' })
 export class AccessTokenService {
-  protected readonly storageFactory = inject(AccessTokenStorageFactory);
-  protected readonly storage: AccessTokenStorage;
-  protected readonly refreshTokenService = inject(RefreshTokenService);
-  protected readonly listeners = inject(ACCESS_TOKEN_RESPONSE_LISTENERS);
+  private readonly storageFactory = inject(AccessTokenStorageFactory);
+  private readonly storage: AccessTokenStorage;
+  private readonly refreshTokenService = inject(RefreshTokenService);
+  private readonly listenerMap: Map<AccessTokenResponseListener, unknown>;
+  private readonly listeners: AccessTokenResponseListener[];
 
   private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse>;
 
   constructor(
-    @Inject(ACCESS_TOKEN_FULL_CONFIG)
-    protected readonly config: AccessTokenFullConfig,
-    protected readonly client: Oauth2Client,
-    @Optional()
-    @Inject(RENEW_ACCESS_TOKEN_SOURCE)
-    protected readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
+    private readonly config: AccessTokenFullConfig,
+    private readonly client: Oauth2Client,
+    private readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
   ) {
+    const uniqueMap = new Map(
+      this.config.listeners.map(([type, config]) => [type, config] as const),
+    );
+
+    this.listenerMap = new Map(
+      [...uniqueMap.entries()].map(
+        ([type, config]) => [inject(type), config] as const,
+      ),
+    );
+
+    this.listeners = [...this.listenerMap.keys()];
+
     this.storage = this.storageFactory.create(this.config.name);
 
     const ready = new Promise<void>((resolve) => {
@@ -85,7 +91,9 @@ export class AccessTokenService {
           defer(() => this.loadStoredAccessTokenResponse()).pipe(
             catchError((accessTokenErr: unknown) => {
               return this.refreshTokenService
-                .exchangeRefreshToken(this.config.name)
+                .exchangeRefreshToken(
+                  this.serviceInfo(this.refreshTokenService),
+                )
                 .pipe(
                   this.storeTokenPipe,
                   catchError((refreshTokenErr: unknown) => {
@@ -136,6 +144,28 @@ export class AccessTokenService {
     );
   }
 
+  private serviceInfo<T extends AccessTokenResponse, C>(
+    listener: AccessTokenResponseListener<T, C>,
+  ): AccessTokenServiceInfo<C>;
+
+  private serviceInfo<T extends AccessTokenResponse, C>(
+    listener: AccessTokenResponseExtractor<T, C>,
+  ): AccessTokenServiceInfo<C | undefined>;
+
+  private serviceInfo<T extends AccessTokenResponse, C>(
+    listener:
+      | AccessTokenResponseListener<T, C>
+      | AccessTokenResponseExtractor<T, C>,
+  ): AccessTokenServiceInfo<C | undefined> {
+    return {
+      serviceConfig: this.config,
+      config: this.listenerMap.get(
+        listener as AccessTokenResponseListener<T, C>,
+      ) as C | undefined,
+      client: this.client,
+    };
+  }
+
   private readonly loadStoredAccessTokenResponse = async () => {
     const storedAccessTokenResponse =
       await this.storage.loadAccessTokenResponse();
@@ -182,7 +212,7 @@ export class AccessTokenService {
     const results = await Promise.allSettled(
       this.listeners.map((listener) =>
         listener.onAccessTokenResponseUpdate(
-          this.config.name,
+          this.serviceInfo(listener),
           storingAccessTokenResponse,
         ),
       ),
@@ -207,7 +237,7 @@ export class AccessTokenService {
   private readonly clearToListeners = async () => {
     const results = await Promise.allSettled(
       this.listeners.map((listener) =>
-        listener.onAccessTokenResponseClear(this.config.name),
+        listener.onAccessTokenResponseClear(this.serviceInfo(listener)),
       ),
     );
 
@@ -270,11 +300,11 @@ export class AccessTokenService {
     return this.accessTokenResponse$ as Observable<AccessTokenResponseInfo<R>>;
   }
 
-  extract<T extends AccessTokenResponse, R>(
-    extractor: AccessTokenResponseExtractor<T, R>,
+  extract<T extends AccessTokenResponse, C, R>(
+    extractor: AccessTokenResponseExtractor<T, C, R>,
   ): Observable<R> {
     return this.fetchResponse<T>().pipe(
-      extractor.extractPipe(this.config.name),
+      extractor.extractPipe(this.serviceInfo(extractor)),
     );
   }
 

@@ -1,14 +1,14 @@
+<h2>Access Token</h2>
 <ng-container *ngIf="accessToken() as accessToken; else loading">
-  <h2>Access Token</h2>
   <pre>{{ accessToken | json }}</pre>
 </ng-container>
 <div *ngIf="errorAccessTokenMessage() as errorMessage">
-  <b>AccessToken:</b>
+  <b class="cl-warn">AccessToken:</b>
   <code>{{ errorMessage }}</code>
 </div>
 
+<h2>ID Token</h2>
 <ng-container *ngIf="idToken() as idToken; else loading">
-  <h2>ID Token</h2>
   <h3>Header</h3>
   <pre>{{ idToken.header | json }}</pre>
   <h3>Payload</h3>
@@ -19,7 +19,7 @@
   <pre>{{ idToken.signature }}</pre>
 </ng-container>
 <div *ngIf="errorIdTokenMessage() as errorMessage">
-  <b>IdToken:</b>
+  <b class="cl-warn">IdToken:</b>
   <code>{{ errorMessage }}</code>
 </div>
 

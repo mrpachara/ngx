@@ -3,14 +3,10 @@ import {
   HttpContext,
   HttpErrorResponse,
 } from '@angular/common/http';
-import { Inject, Injectable, inject } from '@angular/core';
+import { inject } from '@angular/core';
 import { catchError, Observable, throwError } from 'rxjs';
 
-import {
-  OAUTH2_CLIENT_ERROR_TRANSFORMER,
-  OAUTH2_CLIENT_FULL_CONFIG,
-  SKIP_ASSIGNING_ACCESS_TOKEN,
-} from './tokens';
+import { SKIP_ASSIGNING_ACCESS_TOKEN } from './tokens';
 import {
   AccessTokenResponse,
   Oauth2ClientErrorTransformer,
@@ -19,14 +15,11 @@ import {
 } from './types';
 import { Oauth2ClientResponseError } from './errors';
 
-@Injectable({ providedIn: 'root' })
 export class Oauth2Client {
   protected readonly http = inject(HttpClient);
 
   constructor(
-    @Inject(OAUTH2_CLIENT_FULL_CONFIG)
     protected readonly config: Oauth2ClientFullConfig,
-    @Inject(OAUTH2_CLIENT_ERROR_TRANSFORMER)
     protected readonly errorTransformer: Oauth2ClientErrorTransformer,
   ) {}
 

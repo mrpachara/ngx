@@ -1,60 +1,107 @@
 import {
   EnvironmentProviders,
+  InjectionToken,
   Provider,
+  Type,
+  inject,
   makeEnvironmentProviders,
 } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import {
-  ACCESS_TOKEN_FULL_CONFIG,
-  ACCESS_TOKEN_RESPONSE_LISTENERS,
-  RENEW_ACCESS_TOKEN_SOURCE,
-} from './tokens';
+import { RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
 import {
   AccessTokenConfig,
-  AccessTokenFullConfig,
   AccessTokenResponse,
-  PickOptional,
+  AccessTokenResponseListener,
 } from './types';
 import { RefreshTokenService } from './refresh-token.service';
-
-const defaultAccessTokenTtl = 10 * 60 * 1000;
-const defaultRefreshTokenTtl = 30 * 24 * 60 * 60 * 1000;
-
-const defaultConfig: PickOptional<AccessTokenConfig> = {
-  debug: false,
-  additionalParams: {},
-  accessTokenTtl: defaultAccessTokenTtl,
-  refreshTokenTtl: defaultRefreshTokenTtl,
-};
+import { configAccessToken, configRefreshToken } from './functions';
+import { AccessTokenService } from './access-token.service';
+import { Oauth2Client } from './oauth2.client';
 
 export function provideAccessToken(
   config: AccessTokenConfig,
   ...features: AccessTokenFeatures[]
 ): EnvironmentProviders {
-  const fullConfig: AccessTokenFullConfig = {
-    ...defaultConfig,
-    ...config,
-  };
+  const fullConfig = configAccessToken(config, [
+    [RefreshTokenService, configRefreshToken({})],
+  ]);
+
+  const selfProviders: AccessTokenProviderFeature[] = [];
+
+  features = features.filter(
+    (
+      feature,
+    ): feature is Exclude<AccessTokenFeatures, AccessTokenProviderFeature> => {
+      if (feature.kind === AccessTokenFeatureKind.AccessTokenProviderFeature) {
+        selfProviders.push(feature);
+        return false;
+      }
+
+      return true;
+    },
+  );
+
+  if (selfProviders.length > 1) {
+    throw new Error(
+      'Only one accessTokenProvider feature allowed for AccessToken!',
+    );
+  }
+
+  const selfProvider: Provider[] =
+    selfProviders.length === 0
+      ? [
+          {
+            provide: AccessTokenService,
+            useFactory: () => {
+              return new AccessTokenService(
+                fullConfig,
+                inject(Oauth2Client),
+                inject(RENEW_ACCESS_TOKEN_SOURCE, { optional: true }),
+              );
+            },
+          },
+        ]
+      : selfProviders[0].providers;
 
   return makeEnvironmentProviders([
-    { provide: ACCESS_TOKEN_FULL_CONFIG, useValue: fullConfig },
-    {
-      provide: ACCESS_TOKEN_RESPONSE_LISTENERS,
-      multi: true,
-      useExisting: RefreshTokenService,
-    },
-    features.map((feature) => feature.providers),
+    features.map((feature) => {
+      if (
+        feature.kind ===
+        AccessTokenFeatureKind.AccessListenerResponseListenerFeature
+      ) {
+        fullConfig.listeners.push([feature.type, feature.config]);
+      }
+
+      return feature.providers;
+    }),
+
+    selfProvider,
   ]);
 }
 
 export enum AccessTokenFeatureKind {
+  AccessTokenProviderFeature,
   RenewAccessTokenSourceFeature,
+  AccessListenerResponseListenerFeature,
 }
 
 export interface AccessTokenFeature<K extends AccessTokenFeatureKind> {
   readonly kind: K;
   readonly providers: Provider[];
+}
+
+export type AccessTokenProviderFeature =
+  AccessTokenFeature<AccessTokenFeatureKind.AccessTokenProviderFeature>;
+
+export function withAccessTokenProvider<T extends AccessTokenService>(
+  injectionToken: Type<T> | InjectionToken<T>,
+  factory: () => T,
+): AccessTokenProviderFeature {
+  return {
+    kind: AccessTokenFeatureKind.AccessTokenProviderFeature,
+    providers: [{ provide: injectionToken, useFactory: factory }],
+  };
 }
 
 export type RenewAccessTokenSourceFeature =
@@ -74,4 +121,30 @@ export function withRenewAccessTokenSource(
   };
 }
 
-export type AccessTokenFeatures = RenewAccessTokenSourceFeature;
+export type AccessListenerResponseListenerFeature<
+  T extends AccessTokenResponse = AccessTokenResponse,
+  C = unknown,
+> = AccessTokenFeature<AccessTokenFeatureKind.AccessListenerResponseListenerFeature> & {
+  type: Type<AccessTokenResponseListener<T, C>>;
+  config: C;
+};
+
+export function withAccessTokenResponseListener<
+  T extends AccessTokenResponse,
+  C,
+>(
+  type: Type<AccessTokenResponseListener<T, C>>,
+  config: C,
+): AccessListenerResponseListenerFeature<T, C> {
+  return {
+    kind: AccessTokenFeatureKind.AccessListenerResponseListenerFeature,
+    type: type,
+    config: config,
+    providers: [],
+  };
+}
+
+export type AccessTokenFeatures =
+  | AccessTokenProviderFeature
+  | RenewAccessTokenSourceFeature
+  | AccessListenerResponseListenerFeature;

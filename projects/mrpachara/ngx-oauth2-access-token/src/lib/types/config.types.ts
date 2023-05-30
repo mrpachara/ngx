@@ -1,4 +1,6 @@
-import { CodeChallengeMethod } from './standard.types';
+import { Type } from '@angular/core';
+import { AccessTokenResponseListener } from './oauth2-services.types';
+import { AccessTokenResponse, CodeChallengeMethod } from './standard.types';
 import { RequiredExcept } from './utils.type';
 
 type NameableConfig = {
@@ -30,9 +32,16 @@ export type AccessTokenConfig = NameableConfig &
   Partial<DebugableConfig> &
   Partial<AdditionalParams> & {
     readonly accessTokenTtl?: number;
-    readonly refreshTokenTtl?: number;
   };
-export type AccessTokenFullConfig = Required<AccessTokenConfig>;
+
+export type AccessTokenResponseListenerInfo<
+  T extends AccessTokenResponse = AccessTokenResponse,
+  C = unknown,
+> = readonly [Type<AccessTokenResponseListener<T, C>>, C];
+
+export type AccessTokenFullConfig = Required<AccessTokenConfig> & {
+  listeners: AccessTokenResponseListenerInfo[];
+};
 
 export type AuthorizationCodeConfig = NameableConfig &
   Partial<DebugableConfig> &
@@ -46,8 +55,14 @@ export type AuthorizationCodeConfig = NameableConfig &
 
 export type AuthorizationCodeFullConfig = Required<AuthorizationCodeConfig>;
 
-export type IdTokenConfig = Partial<DebugableConfig> & {
-  providedInAccessToken?: boolean;
+export type RefreshTokenConfig = {
+  readonly refreshTokenTtl?: number;
+};
+
+export type RefreshTokenFullConfig = Required<RefreshTokenConfig>;
+
+export type IdTokenConfig = {
+  readonly providedInAccessToken?: boolean;
 };
 
 export type IdTokenFullConfig = Required<IdTokenConfig>;
