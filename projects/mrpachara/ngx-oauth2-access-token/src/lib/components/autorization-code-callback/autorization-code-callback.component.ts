@@ -28,12 +28,12 @@ type MessageInfo = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AutorizationCodeCallbackComponent implements OnInit {
-  protected readonly messageInfo = signal<MessageInfo>({
+  private readonly messageInfo = signal<MessageInfo>({
     type: null,
     message: null,
   });
 
-  protected readonly messageClass = computed(
+  private readonly messageClass = computed(
     () => `cl-${this.messageInfo().type}`,
   );
 

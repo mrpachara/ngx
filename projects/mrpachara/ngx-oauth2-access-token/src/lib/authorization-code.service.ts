@@ -29,12 +29,12 @@ const stateIdLength = 32;
 type GenUrlParams = Omit<AuthorizationCodeParams, 'state'>;
 
 export class AuthorizationCodeService {
-  protected readonly storageFactory = inject(AuthorizationCodeStorageFactory);
-  protected readonly storage: AuthorizationCodeStorage;
+  private readonly storageFactory = inject(AuthorizationCodeStorageFactory);
+  private readonly storage: AuthorizationCodeStorage;
 
   constructor(
-    protected readonly config: AuthorizationCodeFullConfig,
-    protected readonly client: Oauth2Client,
+    private readonly config: AuthorizationCodeFullConfig,
+    private readonly client: Oauth2Client,
   ) {
     this.storage = this.storageFactory.create(
       this.config.name,

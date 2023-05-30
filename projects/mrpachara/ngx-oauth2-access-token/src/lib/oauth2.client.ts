@@ -16,11 +16,11 @@ import {
 import { Oauth2ClientResponseError } from './errors';
 
 export class Oauth2Client {
-  protected readonly http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   constructor(
-    protected readonly config: Oauth2ClientFullConfig,
-    protected readonly errorTransformer: Oauth2ClientErrorTransformer,
+    private readonly config: Oauth2ClientFullConfig,
+    private readonly errorTransformer: Oauth2ClientErrorTransformer,
   ) {}
 
   private generateClientHeaderIfNeeded():
