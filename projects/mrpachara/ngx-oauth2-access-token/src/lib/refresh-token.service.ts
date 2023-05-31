@@ -63,18 +63,11 @@ export class RefreshTokenService
     serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
     token: string,
     currentTime: number,
-  ) => {
-    console.debug(
-      serviceInfo,
-      currentTime,
-      serviceInfo.config.refreshTokenTtl,
-      latencyTime,
-    );
-    return this.storage.storeRefreshToken(serviceInfo.serviceConfig.name, {
+  ) =>
+    this.storage.storeRefreshToken(serviceInfo.serviceConfig.name, {
       expiresAt: currentTime + serviceInfo.config.refreshTokenTtl - latencyTime,
       token,
     });
-  };
 
   private readonly removeRefreshToken = (
     serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,

@@ -59,6 +59,12 @@ const accessTokenConfig: AccessTokenConfig = {
   debug: true,
 };
 
+// NOTE: configIdToken() returns the full configuration
+//       from the given optional configuration.
+const idTokenFullConfig = configIdToken({
+  providedInAccessToken: false,
+});
+
 type BroadcastData =
   | {
       type: 'success';
@@ -110,7 +116,9 @@ export const appConfig: ApplicationConfig = {
               const scopeText = prompt('Input scope');
 
               if (scopeText === null) {
-                throw new Error('Authorization is canceled.');
+                // NOTE: It's safe to throw here because it's out of asynchronous process.
+                //       In asychronous process, we have to use reject();
+                throw new Error('Authorization was canceled.');
               }
 
               const scopes = scopeText.split(/\s+/) as Scopes;
@@ -136,6 +144,10 @@ export const appConfig: ApplicationConfig = {
                 const channelName = randomString(8);
                 const channel = new BroadcastChannel(channelName);
 
+                const teardown = () => {
+                  channel.close();
+                };
+
                 channel.addEventListener('message', (ev) => {
                   const data = ev.data as BroadcastData;
 
@@ -147,7 +159,7 @@ export const appConfig: ApplicationConfig = {
                     channel.postMessage(false);
                   }
 
-                  channel.close();
+                  teardown();
                 });
 
                 broadcastActionInfo.data = {
@@ -187,7 +199,9 @@ export const appConfig: ApplicationConfig = {
         );
       }),
 
-      withAccessTokenResponseExtractor(IdTokenService, configIdToken({})),
+      // NOTE: Add ID token extractor for getting information
+      //       from access token response.
+      withAccessTokenResponseExtractor(IdTokenService, idTokenFullConfig),
     ),
 
     // NOTE: The process in callback URL.
@@ -199,25 +213,25 @@ export const appConfig: ApplicationConfig = {
 
           const channelName = data.channel;
 
-          if (!channelName) {
-            throw new Error('Broadcast channel not found.');
-          }
-
           const channel = new BroadcastChannel(`${channelName}`);
           channel.postMessage({
             type: 'success',
             data: accessTokenResponse,
           } as BroadcastData);
 
+          const teardown = () => {
+            channel.close();
+
+            if (data.close) {
+              close();
+            }
+          };
+
           return new Promise((resolve) => {
             channel.addEventListener('message', () => {
               resolve('Access token has been set by another process.');
 
-              channel.close();
-
-              if (data.close) {
-                close();
-              }
+              teardown();
             });
           });
         };
@@ -247,7 +261,6 @@ export const appConfig: ApplicationConfig = {
         const router = inject(Router);
 
         return (err, stateData) => {
-          console.debug(err, stateData);
           const errData: BroadcastData = {
             type: 'error',
             error: err,
@@ -259,19 +272,29 @@ export const appConfig: ApplicationConfig = {
               | SetActionInfo;
 
             if (sharedActionInfo.name === 'broadcast') {
+              // NOTE: From literal type, sharedActionInfo must automatically
+              //       be BroadcastActionInfo.
+
               const data = sharedActionInfo.data;
               const channel = new BroadcastChannel(`${data['channel']}`);
 
-              channel.addEventListener('message', () => {
+              const teardown = () => {
                 channel.close();
 
                 if (sharedActionInfo.data.close) {
                   close();
                 }
+              };
+
+              channel.addEventListener('message', () => {
+                teardown();
               });
 
               channel.postMessage(errData);
             } else {
+              // NOTE: From literal type, sharedActionInfo must automatically
+              //       be SetActionInfo.
+
               const data = sharedActionInfo.data;
 
               if (data.redirectUrl) {

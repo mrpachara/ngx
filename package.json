@@ -5,6 +5,7 @@
   "keywords": [
     "angular"
   ],
+  "description": "Monorepo for Angular libaries",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

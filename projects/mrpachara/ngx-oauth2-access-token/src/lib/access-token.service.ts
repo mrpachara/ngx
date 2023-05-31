@@ -119,7 +119,7 @@ export class AccessTokenService {
             }),
             tap(() => {
               if (this.config.debug) {
-                console.debug('access-token-race:', 'I am a winner!!!');
+                console.log('access-token-race:', 'I am a winner!!!');
               }
             }),
           ),
@@ -135,7 +135,7 @@ export class AccessTokenService {
             take(1),
             tap(() => {
               if (this.config.debug) {
-                console.debug('access-token-race:', 'I am a loser!!!');
+                console.log('access-token-race:', 'I am a loser!!!');
               }
             }),
           ),
