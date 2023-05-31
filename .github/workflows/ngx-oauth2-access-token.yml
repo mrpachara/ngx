@@ -1,15 +1,12 @@
 name: Create and publish ngx-oauth2-access-token
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - 'ngx-oauth2-access-token/v[0-9]+.[0-9]+.[0-9]+*'
+  release:
+    types: [published]
 
 jobs:
   build-and-release-package:
-    # if: ${{ startsWith(github.event.release.tag_name, 'ngx-oauth2-access-token_v') }}
+    if: ${{ github.event.release.tag_name }} =~ ^ngx-oauth2-access-token/release/v[0-9]+\.[0-9]+\.[0-9]
     runs-on: ubuntu-latest
     permissions:
       contents: read
