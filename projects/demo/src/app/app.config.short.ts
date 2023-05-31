@@ -30,9 +30,8 @@ import { defer } from 'rxjs';
 const clientConfig: Oauth2ClientConfig = {
   name: 'google',
   debug: true,
-  clientId:
-    '209689905225-dj1bo29m0c7or5926cv4bb1nu5aru0cv.apps.googleusercontent.com',
-  clientSecret: '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',
+  clientId: 'CLIENT_ID',
+  clientSecret: 'CLIENT_SECRET',
   accessTokenUrl: 'https://oauth2.googleapis.com/token',
 };
 
