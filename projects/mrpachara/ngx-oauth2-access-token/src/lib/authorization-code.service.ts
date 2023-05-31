@@ -1,4 +1,4 @@
-import { Inject, Injectable, inject } from '@angular/core';
+import { inject } from '@angular/core';
 import { defer, from, map, Observable, switchMap } from 'rxjs';
 
 import { InvalidScopeError } from './errors';
@@ -13,14 +13,14 @@ import {
   AuthorizationCodeStorage,
   AuthorizationCodeStorageFactory,
 } from './storage';
-import { AUTHORIZATION_CODE_FULL_CONFIG } from './tokens';
 import {
-  AccessToken,
+  AccessTokenResponse,
   AuthorizationCodeFullConfig,
   AuthorizationCodeGrantParams,
   AuthorizationCodeParams,
   CodeChallengeMethod,
   Scopes,
+  StateAuthorizationCode,
   StateData,
 } from './types';
 
@@ -28,19 +28,41 @@ const stateIdLength = 32;
 
 type GenUrlParams = Omit<AuthorizationCodeParams, 'state'>;
 
-@Injectable({ providedIn: 'root' })
 export class AuthorizationCodeService {
-  private readonly loadStateData = (stateId: string) =>
-    this.storage.loadStateData(stateId);
+  private readonly storageFactory = inject(AuthorizationCodeStorageFactory);
+  private readonly storage: AuthorizationCodeStorage;
 
-  private readonly storeStateData = (stateId: string, stateData: StateData) =>
-    this.storage.storeStateData(stateId, stateData);
+  constructor(
+    private readonly config: AuthorizationCodeFullConfig,
+    private readonly client: Oauth2Client,
+  ) {
+    this.storage = this.storageFactory.create(
+      this.config.name,
+      this.config.stateTtl,
+    );
+  }
 
-  private readonly removeStateData = (stateId: string) =>
-    this.storage.removeStateData(stateId);
+  private readonly loadStateData = <
+    T extends StateAuthorizationCode = StateAuthorizationCode,
+  >(
+    stateId: string,
+  ) => this.storage.loadStateData<T>(stateId);
+
+  private readonly storeStateData = <
+    T extends StateAuthorizationCode = StateAuthorizationCode,
+  >(
+    stateId: string,
+    stateData: T,
+  ) => this.storage.storeStateData<T>(stateId, stateData);
+
+  private readonly removeStateData = <
+    T extends StateAuthorizationCode = StateAuthorizationCode,
+  >(
+    stateId: string,
+  ) => this.storage.removeStateData<T>(stateId);
 
   private readonly generateCodeChallenge = async (
-    stateData: StateData,
+    stateData: StateAuthorizationCode,
   ): Promise<
     | {
         code_challenge: string;
@@ -67,7 +89,7 @@ export class AuthorizationCodeService {
 
   private readonly generateAuthorizationCodeUrl = async (
     stateId: string,
-    stateData: StateData,
+    stateData: StateAuthorizationCode,
     authorizationCodeParams: GenUrlParams,
   ): Promise<URL> => {
     await this.storeStateData(stateId, stateData);
@@ -88,23 +110,9 @@ export class AuthorizationCodeService {
     return url;
   };
 
-  protected readonly storageFactory = inject(AuthorizationCodeStorageFactory);
-  protected readonly storage: AuthorizationCodeStorage;
-
-  constructor(
-    @Inject(AUTHORIZATION_CODE_FULL_CONFIG)
-    protected readonly config: AuthorizationCodeFullConfig,
-    protected readonly client: Oauth2Client,
-  ) {
-    this.storage = this.storageFactory.create(
-      this.config.name,
-      this.config.stateTtl,
-    );
-  }
-
-  async fetchAuthorizationCodeUrl(
+  async fetchAuthorizationCodeUrl<T extends StateData>(
     scopes: Scopes,
-    stateData?: StateData,
+    stateData?: T,
     additionalParams?: { [param: string]: string },
   ): Promise<URL> {
     const scope = validateAndTransformScopes(scopes);
@@ -114,7 +122,7 @@ export class AuthorizationCodeService {
     }
 
     const stateId = randomString(stateIdLength);
-    const storedStateData: StateData = {
+    const storedStateData: StateAuthorizationCode = {
       ...stateData,
     };
 
@@ -129,22 +137,26 @@ export class AuthorizationCodeService {
     return this.generateAuthorizationCodeUrl(stateId, storedStateData, params);
   }
 
-  async clearState(stateId: string): Promise<StateData | null> {
-    return await this.removeStateData(stateId);
+  async clearState<T extends StateData = StateData>(
+    stateId: string,
+  ): Promise<(T & StateAuthorizationCode) | null> {
+    return await this.removeStateData<T>(stateId);
   }
 
-  verifyState(stateId: string): Observable<StateData> {
-    return defer(() => this.loadStateData(stateId));
+  verifyState<T extends StateData = StateData>(
+    stateId: string,
+  ): Observable<T & StateAuthorizationCode> {
+    return defer(() => this.loadStateData<T & StateAuthorizationCode>(stateId));
   }
 
-  exchangeAuthorizationCode(
+  exchangeAuthorizationCode<T extends StateData = StateData>(
     stateId: string,
     authorizationCode: string,
   ): Observable<{
-    accessToken: AccessToken;
-    stateData: StateData;
+    accessTokenResponse: AccessTokenResponse;
+    stateData: T & StateAuthorizationCode;
   }> {
-    return this.verifyState(stateId).pipe(
+    return this.verifyState<T>(stateId).pipe(
       switchMap((stateData) => {
         const params: AuthorizationCodeGrantParams = {
           grant_type: 'authorization_code',
@@ -157,9 +169,9 @@ export class AuthorizationCodeService {
         }
 
         return this.client.requestAccessToken(params).pipe(
-          switchMap((accessToken) => {
+          switchMap((accessTokenResponse) => {
             return from(this.clearState(stateId)).pipe(
-              map(() => ({ accessToken, stateData })),
+              map(() => ({ accessTokenResponse, stateData })),
             );
           }),
         );

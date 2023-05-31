@@ -10,23 +10,6 @@ export function randomString(length: number): string {
   ).join('');
 }
 
-// export function sha256(plain: string): Observable<string> {
-//   const encoder = new TextEncoder();
-//   const data = encoder.encode(plain);
-//   return from(crypto.subtle.digest('SHA-256', data)).pipe(
-//     map((hashed) => {
-//       let str = '';
-//       const bytes = new Uint8Array(hashed);
-//       const len = bytes.byteLength;
-//       for (let i = 0; i < len; i++) {
-//         str += String.fromCharCode(bytes[i]);
-//       }
-
-//       return str;
-//     }),
-//   );
-// }
-
 export async function sha256(plain: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(plain);
@@ -39,4 +22,8 @@ export async function sha256(plain: string): Promise<string> {
 
 export function base64UrlEncode(plain: string): string {
   return btoa(plain).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export function base64UrlDecode(base64: string): string {
+  return atob(base64.replace(/_/g, '/').replace(/-/g, '+'));
 }

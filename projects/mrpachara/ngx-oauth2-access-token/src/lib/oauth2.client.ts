@@ -3,31 +3,24 @@ import {
   HttpContext,
   HttpErrorResponse,
 } from '@angular/common/http';
-import { Inject, Injectable, inject } from '@angular/core';
+import { inject } from '@angular/core';
 import { catchError, Observable, throwError } from 'rxjs';
 
+import { SKIP_ASSIGNING_ACCESS_TOKEN } from './tokens';
 import {
-  OAUTH2_CLIENT_ERROR_TRANSFORMER,
-  OAUTH2_CLIENT_FULL_CONFIG,
-  SKIP_ASSIGNING_ACCESS_TOKEN,
-} from './tokens';
-import {
-  AccessToken,
+  AccessTokenResponse,
   Oauth2ClientErrorTransformer,
   Oauth2ClientFullConfig,
   StandardGrantsParams,
 } from './types';
 import { Oauth2ClientResponseError } from './errors';
 
-@Injectable({ providedIn: 'root' })
 export class Oauth2Client {
-  protected readonly http = inject(HttpClient);
+  private readonly http = inject(HttpClient);
 
   constructor(
-    @Inject(OAUTH2_CLIENT_FULL_CONFIG)
-    protected readonly config: Oauth2ClientFullConfig,
-    @Inject(OAUTH2_CLIENT_ERROR_TRANSFORMER)
-    protected readonly errorTransformer: Oauth2ClientErrorTransformer,
+    private readonly config: Oauth2ClientFullConfig,
+    private readonly errorTransformer: Oauth2ClientErrorTransformer,
   ) {}
 
   private generateClientHeaderIfNeeded():
@@ -77,9 +70,9 @@ export class Oauth2Client {
 
   requestAccessToken<T extends StandardGrantsParams>(
     params: T,
-  ): Observable<AccessToken> {
+  ): Observable<AccessTokenResponse> {
     return this.http
-      .post<AccessToken>(
+      .post<AccessTokenResponse>(
         this.config.accessTokenUrl,
         {
           ...params,

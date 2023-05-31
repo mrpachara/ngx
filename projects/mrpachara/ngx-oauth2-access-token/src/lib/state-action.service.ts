@@ -1,63 +1,53 @@
-import { Injectable, Injector, inject } from '@angular/core';
-import { defer, Observable, of, throwError } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { defer, Observable, throwError } from 'rxjs';
 
 import { StateActionNotFoundError } from './errors';
 import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from './tokens';
 import {
-  AccessToken,
-  StateActionErrorHandler,
+  AccessTokenResponse,
+  StateAction,
   StateActionHandler,
   StateActionHandlers,
-  StateData,
 } from './types';
-import { parseStateAction } from './functions';
+import { isStateActionProvided } from './functions';
 
 @Injectable({ providedIn: 'root' })
 export class StateActionService {
-  private readonly injector = inject(Injector);
+  private readonly handlerEntries = inject(STATE_ACTION_HANDLERS);
+  private readonly errorHandler = inject(STATE_ACTION_ERROR_HANDLER);
 
-  // NOTE: for preventing circular reference, set handlers if needed
-  private _handlers: StateActionHandlers | null = null;
-  private get handlers() {
-    if (this._handlers === null) {
-      this._handlers = this.injector.get(STATE_ACTION_HANDLERS);
-    }
+  private handlers: StateActionHandlers;
 
-    return this._handlers;
+  constructor() {
+    this.handlers = this.handlerEntries.reduce((carry, entry) => {
+      carry[entry[0]] = entry[1];
+      return carry;
+    }, {} as StateActionHandlers);
   }
 
-  private _errorHandler: StateActionErrorHandler | null = null;
-  private get errorHandler() {
-    if (this._errorHandler === null) {
-      this._errorHandler = this.injector.get(STATE_ACTION_ERROR_HANDLER);
-    }
-
-    return this._errorHandler;
-  }
-
-  dispatch<T>(accessToken: AccessToken, stateData: StateData): Observable<T> {
+  dispatch<S extends StateAction, R>(
+    accessToken: AccessTokenResponse,
+    stateData: S,
+  ): Observable<void | R> {
     return defer(() => {
-      const stateAction = stateData.action;
-
-      if (!stateAction) {
-        return of(undefined as T);
+      if (!isStateActionProvided(stateData)) {
+        return Promise.resolve();
       }
 
-      const { action, data } = parseStateAction(stateAction);
+      const name = stateData.action.name;
 
-      if (typeof this.handlers[action] !== 'function') {
-        return throwError(() => new StateActionNotFoundError(action));
+      if (typeof this.handlers[name] !== 'function') {
+        return throwError(() => new StateActionNotFoundError(name));
       }
 
-      return (this.handlers[action] as StateActionHandler<T>)(
+      return (this.handlers[stateData.action.name] as StateActionHandler<S, R>)(
         accessToken,
-        data,
         stateData,
       );
     });
   }
 
-  handerError(err: unknown, stateData: StateData | null): void {
+  handerError(err: unknown, stateData: StateAction | null): void {
     this.errorHandler(err, stateData);
   }
 }

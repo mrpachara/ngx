@@ -4,34 +4,18 @@ import { StateExpiredError, StateNotFoundError } from '../errors';
 import { KeyValuePairStorage, StateData } from '../types';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 
-const stateDataKeyName = `oauth-code-state`;
+const stateDataKeyName = `oauth-code-state` as const;
 
 const stateClearTtl = 10 * 60 * 1000;
 
-export type StateDataContainer = {
-  expires_at: number;
-  data: StateData;
+type StateDataContainer<T extends StateData> = {
+  expiresAt: number;
+  data: T;
 };
 
 export class AuthorizationCodeStorage {
-  private readonly stateKey = (stateId: string): string =>
-    `${this.name}-${stateDataKeyName}-${stateId}`;
-
-  private readonly loadStateDataContainer = async (
-    stateKey: string,
-  ): Promise<StateDataContainer | null> => {
-    const stateDataContainer = await this.storage.loadItem<StateDataContainer>(
-      stateKey,
-    );
-
-    if (stateDataContainer === null) {
-      return null;
-    }
-
-    Object.freeze(stateDataContainer.data);
-
-    return stateDataContainer;
-  };
+  private readonly stateKey = (stateId: string) =>
+    `${this.name}-${stateDataKeyName}-${stateId}` as const;
 
   private readonly ready: Promise<void>;
 
@@ -43,10 +27,25 @@ export class AuthorizationCodeStorage {
     this.ready = this.clearStateDataContainers();
   }
 
+  private readonly loadStateDataContainer = async <
+    T extends StateData = StateData,
+  >(
+    stateKey: string,
+  ) => {
+    const stateDataContainer = await this.storage.loadItem<
+      StateDataContainer<T>
+    >(stateKey);
+
+    return stateDataContainer;
+  };
+
   private async clearStateDataContainers(): Promise<void> {
     const currentTime = Date.now();
+
+    const prefix = this.stateKey('');
+
     const stateKeys = (await this.storage.keys()).filter((key) =>
-      key.startsWith(this.stateKey('')),
+      key.startsWith(prefix),
     );
 
     for (const stateKey of stateKeys) {
@@ -56,19 +55,21 @@ export class AuthorizationCodeStorage {
 
       if (
         storedStateDataContainer &&
-        storedStateDataContainer?.expires_at + stateClearTtl < currentTime
+        storedStateDataContainer?.expiresAt + stateClearTtl < currentTime
       ) {
         await this.storage.removeItem(stateKey);
       }
     }
   }
 
-  async loadStateData(stateId: string): Promise<StateData> {
+  async loadStateData<T extends StateData = StateData>(
+    stateId: string,
+  ): Promise<T> {
     await this.ready;
 
     const currentTime = Date.now();
 
-    const storedStateDataContainer = await this.loadStateDataContainer(
+    const storedStateDataContainer = await this.loadStateDataContainer<T>(
       this.stateKey(stateId),
     );
 
@@ -76,17 +77,17 @@ export class AuthorizationCodeStorage {
       throw new StateNotFoundError();
     }
 
-    if (storedStateDataContainer.expires_at < currentTime) {
+    if (storedStateDataContainer.expiresAt < currentTime) {
       throw new StateExpiredError();
     }
 
     return storedStateDataContainer.data;
   }
 
-  async storeStateData(
+  async storeStateData<T extends StateData = StateData>(
     stateId: string,
-    stateData: StateData,
-  ): Promise<StateData> {
+    stateData: T,
+  ): Promise<T> {
     await this.ready;
 
     await this.storage.storeItem(this.stateKey(stateId), {
@@ -97,11 +98,13 @@ export class AuthorizationCodeStorage {
     return stateData;
   }
 
-  async removeStateData(stateId: string): Promise<StateData | null> {
+  async removeStateData<T extends StateData = StateData>(
+    stateId: string,
+  ): Promise<T | null> {
     await this.ready;
 
     try {
-      const stateData = await this.loadStateData(stateId);
+      const stateData = await this.loadStateData<T>(stateId);
       await this.storage.removeItem(this.stateKey(stateId));
       return stateData;
     } catch (err) {

@@ -75,8 +75,8 @@ export function oauth2Callback(
     switchMap(({ stateId, code }) => {
       return authorizationCodeService.exchangeAuthorizationCode(stateId, code);
     }),
-    switchMap(({ accessToken, stateData }) => {
-      return stateActionService.dispatch(accessToken, stateData);
+    switchMap(({ accessTokenResponse, stateData }) => {
+      return stateActionService.dispatch(accessTokenResponse, stateData);
     }),
     catchError((err) => {
       const stateData =

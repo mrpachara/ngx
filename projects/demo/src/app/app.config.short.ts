@@ -1,24 +1,6 @@
-# NgxOauth2AccessToken
-
-This library is for simply getting access tokens from [OAuth 2.0](https://oauth.net/2/) in the standard scenario.
-
-![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/mrpachara/ngx?filename=projects%2Fmrpachara%2Fngx-oauth2-access-token%2Fpackage.json)
-![GitHub](https://img.shields.io/github/license/mrpachara/ngx)
-
-## Installation
-
-npm
-
-```bash
-$ npm install @mrpachara/ngx-oauth2-access-token
-```
-
-## Configuration Example
-
-File: `src/app/app.config.ts`
-
-```typescript
-// ... import other modules
+import { ApplicationConfig, inject } from '@angular/core';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
 
 import {
   AccessTokenConfig,
@@ -48,8 +30,9 @@ import { defer } from 'rxjs';
 const clientConfig: Oauth2ClientConfig = {
   name: 'google',
   debug: true,
-  clientId: 'CLIENT_ID',
-  clientSecret: 'CLIENT_SECRET',
+  clientId:
+    '209689905225-dj1bo29m0c7or5926cv4bb1nu5aru0cv.apps.googleusercontent.com',
+  clientSecret: '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',
   accessTokenUrl: 'https://oauth2.googleapis.com/token',
 };
 
@@ -222,27 +205,3 @@ export const appConfig: ApplicationConfig = {
     ),
   ],
 };
-```
-
-FILE: `src/app/app.routes.ts`
-
-```typescript
-import { Routes } from '@angular/router';
-
-import { AutorizationCodeCallbackComponent } from '@mrpachara/ngx-oauth2-access-token';
-
-import { HomeComponent } from './core/home/home.component';
-
-export const routes: Routes = [
-  { path: '', redirectTo: 'home', pathMatch: 'full' },
-
-  // NOTE: HomeComponent should call AccessTokenService.fetchToken()
-  //       or AccessTokenService.extract(idTokenService).
-  { path: 'home', component: HomeComponent },
-
-  {
-    path: 'google/authorization',
-    component: AutorizationCodeCallbackComponent,
-  },
-];
-```

@@ -1,31 +1,81 @@
-import { EnvironmentProviders, makeEnvironmentProviders } from '@angular/core';
 import {
-  AuthorizationCodeConfig,
-  AuthorizationCodeFullConfig,
-  PickOptional,
-} from './types';
-import { AUTHORIZATION_CODE_FULL_CONFIG } from './tokens';
+  EnvironmentProviders,
+  InjectionToken,
+  Provider,
+  Type,
+  inject,
+  makeEnvironmentProviders,
+} from '@angular/core';
+import { AuthorizationCodeConfig } from './types';
+import { configAuthorizationCode } from './functions';
 
-const defaultStateTtl = 10 * 60 * 1000;
-const defaultCodeVerifierLength = 56;
-
-const defaultConfig: PickOptional<AuthorizationCodeConfig> = {
-  debug: false,
-  pkce: 'none',
-  stateTtl: defaultStateTtl,
-  codeVerifierLength: defaultCodeVerifierLength,
-  additionalParams: {},
-};
+import { AuthorizationCodeService } from './authorization-code.service';
+import { Oauth2Client } from './oauth2.client';
 
 export function provideAuthorizationCode(
   config: AuthorizationCodeConfig,
+  ...features: AuthorizationCodeFeatures[]
 ): EnvironmentProviders {
-  const fullConfig: AuthorizationCodeFullConfig = {
-    ...defaultConfig,
-    ...config,
-  };
+  const fullConfig = configAuthorizationCode(config);
+
+  const selfProviders = features.filter(
+    (feature): feature is AuthorizationCodeProviderFeature =>
+      feature.kind ===
+      AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature,
+  );
+
+  if (selfProviders.length > 1) {
+    throw new Error(
+      'Only one accessTokenProvider feature allowed for AuthorizationCode!',
+    );
+  }
+
+  if (selfProviders.length === 0) {
+    features.push({
+      kind: AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature,
+      providers: [
+        {
+          provide: AuthorizationCodeService,
+          useFactory: () => {
+            return new AuthorizationCodeService(
+              fullConfig,
+              inject(Oauth2Client),
+            );
+          },
+        },
+      ],
+    });
+  }
 
   return makeEnvironmentProviders([
-    { provide: AUTHORIZATION_CODE_FULL_CONFIG, useValue: fullConfig },
+    features.map((feature) => feature.providers),
   ]);
 }
+
+export enum AuthorizationCodeFeatureKind {
+  AuthorizationCodeProviderFeature,
+}
+
+export interface AuthorizationCodeFeature<
+  K extends AuthorizationCodeFeatureKind,
+> {
+  readonly kind: K;
+  readonly providers: Provider[];
+}
+
+export type AuthorizationCodeProviderFeature =
+  AuthorizationCodeFeature<AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature>;
+
+export function withAuthorizationCodeProvider<
+  T extends AuthorizationCodeService,
+>(
+  injectionToken: Type<T> | InjectionToken<T>,
+  factory: () => T,
+): AuthorizationCodeProviderFeature {
+  return {
+    kind: AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature,
+    providers: [{ provide: injectionToken, useFactory: factory }],
+  };
+}
+
+export type AuthorizationCodeFeatures = AuthorizationCodeProviderFeature;
