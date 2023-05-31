@@ -8,7 +8,6 @@ import { IdTokenStorage, IdTokenStorageFactory } from './storage';
 import {
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
-  AccessTokenResponseListener,
   AccessTokenServiceInfo,
   ExtractorPipeReturn,
   IdTokenClaims,
@@ -27,8 +26,7 @@ export class IdTokenService
       IdTokenResponse,
       IdTokenFullConfig,
       IdTokenInfo
-    >,
-    AccessTokenResponseListener<IdTokenResponse, IdTokenFullConfig>
+    >
 {
   private readonly http = inject(HttpClient);
 

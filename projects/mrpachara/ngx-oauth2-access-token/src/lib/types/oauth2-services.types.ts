@@ -22,20 +22,6 @@ export type AccessTokenResponseInfo<
   T extends AccessTokenResponse = AccessTokenResponse,
 > = StoredAccessTokenResponse<T>;
 
-export interface AccessTokenResponseListener<
-  T extends AccessTokenResponse = AccessTokenResponse,
-  C = unknown,
-> {
-  onAccessTokenResponseUpdate(
-    serviceInfo: AccessTokenServiceInfo<C>,
-    accessTokenResponseInfo: AccessTokenResponseInfo<T>,
-  ): Promise<void>;
-
-  onAccessTokenResponseClear(
-    serviceInfo: AccessTokenServiceInfo<C>,
-  ): Promise<void>;
-}
-
 export type ExtractorPipeReturn<
   T extends AccessTokenResponse = AccessTokenResponse,
   R = unknown,
@@ -46,25 +32,18 @@ export interface AccessTokenResponseExtractor<
   C = unknown,
   R = unknown,
 > {
+  onAccessTokenResponseUpdate?(
+    serviceInfo: AccessTokenServiceInfo<C>,
+    accessTokenResponseInfo: AccessTokenResponseInfo<T>,
+  ): Promise<void>;
+
+  onAccessTokenResponseClear?(
+    serviceInfo: AccessTokenServiceInfo<C>,
+  ): Promise<void>;
+
   extractPipe(
     serviceInfo: AccessTokenServiceInfo<C | undefined>,
   ): ExtractorPipeReturn<T, R>;
-}
-
-export class SkipReloadAccessToken implements Error {
-  readonly name: string;
-  readonly message: string;
-  readonly stack: string;
-
-  constructor(readonly skipedName: string, readonly cause: unknown) {
-    this.name = this.constructor.name;
-    this.message = `Skip reload access token for ${this.skipedName}`;
-    this.stack = `${this}\n`;
-  }
-
-  toString(): string {
-    return `${this.name}: ${this.message}`;
-  }
 }
 
 export type AccessTokenInfo = {

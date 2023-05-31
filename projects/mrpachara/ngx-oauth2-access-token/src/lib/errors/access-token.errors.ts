@@ -11,3 +11,17 @@ export class AccessTokenExpiredError extends Error {
     this.name = this.constructor.name;
   }
 }
+
+export class NonRegisteredExtractorError extends Error {
+  constructor(
+    extractorName: string,
+    serviceName: string,
+    options?: ErrorOptions,
+  ) {
+    super(
+      `Extractor '${extractorName}' was not registered in '${serviceName}'.`,
+      options,
+    );
+    this.name = this.constructor.name;
+  }
+}

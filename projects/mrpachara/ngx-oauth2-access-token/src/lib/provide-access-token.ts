@@ -12,7 +12,7 @@ import { RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
 import {
   AccessTokenConfig,
   AccessTokenResponse,
-  AccessTokenResponseListener,
+  AccessTokenResponseExtractor,
 } from './types';
 import { RefreshTokenService } from './refresh-token.service';
 import { configAccessToken, configRefreshToken } from './functions';
@@ -60,9 +60,9 @@ export function provideAccessToken(
     features.map((feature) => {
       if (
         feature.kind ===
-        AccessTokenFeatureKind.AccessListenerResponseListenerFeature
+        AccessTokenFeatureKind.AccessTokenResponseExtractorFeature
       ) {
-        fullConfig.listeners.push([feature.type, feature.config]);
+        fullConfig.extractors.push([feature.type, feature.config]);
       }
 
       return feature.providers;
@@ -73,7 +73,7 @@ export function provideAccessToken(
 export enum AccessTokenFeatureKind {
   AccessTokenProviderFeature,
   RenewAccessTokenSourceFeature,
-  AccessListenerResponseListenerFeature,
+  AccessTokenResponseExtractorFeature,
 }
 
 export interface AccessTokenFeature<K extends AccessTokenFeatureKind> {
@@ -111,23 +111,23 @@ export function withRenewAccessTokenSource(
   };
 }
 
-export type AccessListenerResponseListenerFeature<
+export type AccessTokenResponseExtractorFeature<
   T extends AccessTokenResponse = AccessTokenResponse,
   C = unknown,
-> = AccessTokenFeature<AccessTokenFeatureKind.AccessListenerResponseListenerFeature> & {
-  type: Type<AccessTokenResponseListener<T, C>>;
+> = AccessTokenFeature<AccessTokenFeatureKind.AccessTokenResponseExtractorFeature> & {
+  type: Type<AccessTokenResponseExtractor<T, C>>;
   config: C;
 };
 
-export function withAccessTokenResponseListener<
+export function withAccessTokenResponseExtractor<
   T extends AccessTokenResponse,
   C,
 >(
-  type: Type<AccessTokenResponseListener<T, C>>,
+  type: Type<AccessTokenResponseExtractor<T, C>>,
   config: C,
-): AccessListenerResponseListenerFeature<T, C> {
+): AccessTokenResponseExtractorFeature<T, C> {
   return {
-    kind: AccessTokenFeatureKind.AccessListenerResponseListenerFeature,
+    kind: AccessTokenFeatureKind.AccessTokenResponseExtractorFeature,
     type: type,
     config: config,
     providers: [],
@@ -137,4 +137,4 @@ export function withAccessTokenResponseListener<
 export type AccessTokenFeatures =
   | AccessTokenProviderFeature
   | RenewAccessTokenSourceFeature
-  | AccessListenerResponseListenerFeature;
+  | AccessTokenResponseExtractorFeature;

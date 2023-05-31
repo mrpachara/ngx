@@ -18,7 +18,6 @@ import {
   AccessTokenResponse,
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
-  AccessTokenResponseListener,
   AccessTokenServiceInfo,
   ExtractorPipeReturn,
   RefreshTokenFullConfig,
@@ -33,7 +32,6 @@ const latencyTime = 2 * 5 * 1000;
 })
 export class RefreshTokenService
   implements
-    AccessTokenResponseListener<AccessTokenResponse, RefreshTokenFullConfig>,
     AccessTokenResponseExtractor<
       AccessTokenResponse,
       RefreshTokenFullConfig,

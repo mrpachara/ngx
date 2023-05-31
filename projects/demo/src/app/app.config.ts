@@ -23,7 +23,7 @@ import {
   provideOauth2Client,
   provideStateAction,
   randomString,
-  withAccessTokenResponseListener,
+  withAccessTokenResponseExtractor,
   withRenewAccessTokenSource,
   withStateActionErrorHandler,
   withStateActionHandler,
@@ -187,7 +187,7 @@ export const appConfig: ApplicationConfig = {
         );
       }),
 
-      withAccessTokenResponseListener(IdTokenService, configIdToken({})),
+      withAccessTokenResponseExtractor(IdTokenService, configIdToken({})),
     ),
 
     // NOTE: The process in callback URL.

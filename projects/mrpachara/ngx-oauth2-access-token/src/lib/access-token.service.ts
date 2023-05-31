@@ -21,6 +21,7 @@ import {
 
 import {
   AccessTokenExpiredError,
+  NonRegisteredExtractorError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
 } from './errors';
@@ -32,8 +33,8 @@ import {
   AccessTokenResponse,
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
-  AccessTokenResponseListener,
   AccessTokenServiceInfo,
+  Provided,
   StandardGrantsParams,
   StoredAccessTokenResponse,
 } from './types';
@@ -45,8 +46,8 @@ export class AccessTokenService {
   private readonly storageFactory = inject(AccessTokenStorageFactory);
   private readonly storage: AccessTokenStorage;
   private readonly refreshTokenService = inject(RefreshTokenService);
-  private readonly listenerMap: Map<AccessTokenResponseListener, unknown>;
-  private readonly listeners: AccessTokenResponseListener[];
+  private readonly extractorMap: Map<AccessTokenResponseExtractor, unknown>;
+  private readonly listeners: AccessTokenResponseExtractor[];
 
   private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse>;
 
@@ -56,16 +57,16 @@ export class AccessTokenService {
     private readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
   ) {
     const uniqueMap = new Map(
-      this.config.listeners.map(([type, config]) => [type, config] as const),
+      this.config.extractors.map(([type, config]) => [type, config] as const),
     );
 
-    this.listenerMap = new Map(
+    this.extractorMap = new Map(
       [...uniqueMap.entries()].map(
         ([type, config]) => [inject(type), config] as const,
       ),
     );
 
-    this.listeners = [...this.listenerMap.keys()];
+    this.listeners = [...this.extractorMap.keys()];
 
     this.storage = this.storageFactory.create(this.config.name);
 
@@ -145,23 +146,20 @@ export class AccessTokenService {
   }
 
   private serviceInfo<T extends AccessTokenResponse, C>(
-    listener: AccessTokenResponseListener<T, C>,
-  ): AccessTokenServiceInfo<C>;
+    extractor: AccessTokenResponseExtractor<T, C>,
+  ): AccessTokenServiceInfo<C> {
+    if (!this.extractorMap.has(extractor as AccessTokenResponseExtractor)) {
+      throw new NonRegisteredExtractorError(
+        extractor.constructor.name,
+        this.constructor.name,
+      );
+    }
 
-  private serviceInfo<T extends AccessTokenResponse, C>(
-    listener: AccessTokenResponseExtractor<T, C>,
-  ): AccessTokenServiceInfo<C | undefined>;
-
-  private serviceInfo<T extends AccessTokenResponse, C>(
-    listener:
-      | AccessTokenResponseListener<T, C>
-      | AccessTokenResponseExtractor<T, C>,
-  ): AccessTokenServiceInfo<C | undefined> {
     return {
       serviceConfig: this.config,
-      config: this.listenerMap.get(
-        listener as AccessTokenResponseListener<T, C>,
-      ) as C | undefined,
+      config: this.extractorMap.get(
+        extractor as AccessTokenResponseExtractor,
+      ) as C,
       client: this.client,
     };
   }
@@ -210,12 +208,21 @@ export class AccessTokenService {
     storingAccessTokenResponse: StoredAccessTokenResponse,
   ) => {
     const results = await Promise.allSettled(
-      this.listeners.map((listener) =>
-        listener.onAccessTokenResponseUpdate(
-          this.serviceInfo(listener),
-          storingAccessTokenResponse,
+      this.listeners
+        .filter(
+          (
+            listener,
+          ): listener is Provided<
+            typeof listener,
+            'onAccessTokenResponseUpdate'
+          > => typeof listener.onAccessTokenResponseUpdate === 'function',
+        )
+        .map((listener) =>
+          listener.onAccessTokenResponseUpdate(
+            this.serviceInfo(listener),
+            storingAccessTokenResponse,
+          ),
         ),
-      ),
     );
 
     if (this.config.debug) {
@@ -236,9 +243,18 @@ export class AccessTokenService {
 
   private readonly clearToListeners = async () => {
     const results = await Promise.allSettled(
-      this.listeners.map((listener) =>
-        listener.onAccessTokenResponseClear(this.serviceInfo(listener)),
-      ),
+      this.listeners
+        .filter(
+          (
+            listener,
+          ): listener is Provided<
+            typeof listener,
+            'onAccessTokenResponseClear'
+          > => typeof listener.onAccessTokenResponseClear === 'function',
+        )
+        .map((listener) =>
+          listener.onAccessTokenResponseClear(this.serviceInfo(listener)),
+        ),
     );
 
     if (this.config.debug) {

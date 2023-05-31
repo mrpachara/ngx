@@ -19,3 +19,5 @@ export type RequiredOnly<T, K extends keyof T> = T & {
 export type UndefinedOnly<T, K extends keyof T> = T & {
   [P in K]: undefined;
 };
+
+export type Provided<T, K extends keyof T> = RequiredOnly<T, K>;

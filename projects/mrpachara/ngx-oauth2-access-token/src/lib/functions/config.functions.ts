@@ -1,7 +1,7 @@
 import {
   AccessTokenConfig,
   AccessTokenFullConfig,
-  AccessTokenResponseListenerInfo,
+  AccessTokenResponseExtractorInfo,
   AuthorizationCodeConfig,
   AuthorizationCodeFullConfig,
   IdTokenConfig,
@@ -39,12 +39,12 @@ export const defaultAccessTokenConfig: PickOptional<AccessTokenConfig> = {
 
 export function configAccessToken(
   config: AccessTokenConfig,
-  listeners: AccessTokenResponseListenerInfo[],
+  extractors: AccessTokenResponseExtractorInfo[],
 ): AccessTokenFullConfig {
   return {
     ...defaultAccessTokenConfig,
     ...config,
-    listeners,
+    extractors,
   };
 }
 

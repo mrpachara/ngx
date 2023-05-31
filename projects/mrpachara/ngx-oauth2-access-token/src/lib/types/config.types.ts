@@ -1,5 +1,6 @@
 import { Type } from '@angular/core';
-import { AccessTokenResponseListener } from './oauth2-services.types';
+
+import { AccessTokenResponseExtractor } from './oauth2-services.types';
 import { AccessTokenResponse, CodeChallengeMethod } from './standard.types';
 import { RequiredExcept } from './utils.type';
 
@@ -34,13 +35,13 @@ export type AccessTokenConfig = NameableConfig &
     readonly accessTokenTtl?: number;
   };
 
-export type AccessTokenResponseListenerInfo<
+export type AccessTokenResponseExtractorInfo<
   T extends AccessTokenResponse = AccessTokenResponse,
   C = unknown,
-> = readonly [Type<AccessTokenResponseListener<T, C>>, C];
+> = readonly [Type<AccessTokenResponseExtractor<T, C>>, C];
 
 export type AccessTokenFullConfig = Required<AccessTokenConfig> & {
-  listeners: AccessTokenResponseListenerInfo[];
+  extractors: AccessTokenResponseExtractorInfo[];
 };
 
 export type AuthorizationCodeConfig = NameableConfig &
