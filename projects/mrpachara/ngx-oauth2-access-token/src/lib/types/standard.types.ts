@@ -61,7 +61,7 @@ export type JwkHmac<SHA extends '256' | '384' | '512'> = JwkHashBase & {
 export type JwkAsymmetricKeyBase = JwkBase & {
   /**
    * JWK for _public key_ should **not** present _private key_ part. If it does,
-   * the encroyted content is considered to be **untrusted**.
+   * the encrypted content is considered to be **untrusted**.
    */
   d: never;
 };
