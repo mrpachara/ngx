@@ -1,5 +1,3 @@
-import { Type } from '@angular/core';
-
 import { AccessTokenResponseExtractor } from './oauth2-services.types';
 import { AccessTokenResponse, CodeChallengeMethod } from './standard.types';
 import { RequiredExcept } from './utils.type';
@@ -38,11 +36,9 @@ export type AccessTokenConfig = NameableConfig &
 export type AccessTokenResponseExtractorInfo<
   T extends AccessTokenResponse = AccessTokenResponse,
   C = unknown,
-> = readonly [Type<AccessTokenResponseExtractor<T, C>>, C];
+> = readonly [AccessTokenResponseExtractor<T, C>, C];
 
-export type AccessTokenFullConfig = Required<AccessTokenConfig> & {
-  extractors: AccessTokenResponseExtractorInfo[];
-};
+export type AccessTokenFullConfig = Required<AccessTokenConfig>;
 
 export type AuthorizationCodeConfig = NameableConfig &
   Partial<DebugableConfig> &
@@ -67,3 +63,11 @@ export type IdTokenConfig = {
 };
 
 export type IdTokenFullConfig = Required<IdTokenConfig>;
+
+export type JwkConfig = NameableConfig &
+  Partial<DebugableConfig> & {
+    readonly issuer: string;
+    readonly jwkSetUrl: string;
+  };
+
+export type JwkFullConfig = Required<JwkConfig>;

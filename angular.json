@@ -109,7 +109,13 @@
                   "maximumError": "4kb"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "projects/demo/src/secrets/oauth-client.ts",
+                  "with": "projects/demo/src/secrets/oauth-client.private.ts"
+                }
+              ]
             },
             "development": {
               "buildOptimizer": false,
@@ -117,7 +123,13 @@
               "vendorChunk": true,
               "extractLicenses": false,
               "sourceMap": true,
-              "namedChunks": true
+              "namedChunks": true,
+              "fileReplacements": [
+                {
+                  "replace": "projects/demo/src/secrets/oauth-client.ts",
+                  "with": "projects/demo/src/secrets/oauth-client.private.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
