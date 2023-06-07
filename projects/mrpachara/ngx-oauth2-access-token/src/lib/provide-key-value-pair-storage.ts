@@ -11,13 +11,13 @@ export function provideKeyValuePairStorage(
   version: bigint,
   ...features: KeyValuepairStorageFeatures[]
 ): EnvironmentProviders {
-  const selfProviders = features.filter(
+  const providerFeatures = features.filter(
     (feature): feature is KeyValuepairStorageProviderFeature =>
       feature.kind ===
       KeyValuepairStorageFeatureKind.KeyValuepairStorageProviderFeature,
   );
 
-  if (selfProviders.length > 1) {
+  if (providerFeatures.length > 1) {
     throw new Error(
       'Only one accessTokenProvider feature allowed for AuthorizationCode!',
     );

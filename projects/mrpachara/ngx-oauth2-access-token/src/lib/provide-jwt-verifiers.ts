@@ -5,8 +5,9 @@ import {
   Type,
   makeEnvironmentProviders,
 } from '@angular/core';
-import { JwtVerifier } from '@mrpachara/ngx-oauth2-access-token';
+
 import { JWT_VERIFIERS } from './tokens';
+import { JwtVerifier } from './types';
 
 export function provideJwtVerifiers(
   ...verifiers: (Type<JwtVerifier> | InjectionToken<JwtVerifier>)[]
