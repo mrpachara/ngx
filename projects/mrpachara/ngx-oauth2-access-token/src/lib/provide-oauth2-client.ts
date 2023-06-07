@@ -8,13 +8,14 @@ import {
 } from '@angular/core';
 
 import { configOauth2Client } from './functions';
-import { Oauth2Client } from './services';
-import { OATUTH2_CLIENTS, OAUTH2_CLIENT_ERROR_TRANSFORMER } from './tokens';
 import {
   Oauth2ClientConfig,
   Oauth2ClientErrorTransformer,
   Oauth2ClientFullConfig,
 } from './types';
+import { OATUTH2_CLIENTS, OAUTH2_CLIENT_ERROR_TRANSFORMER } from './tokens';
+
+import { Oauth2Client } from './oauth2.client';
 
 export function provideOauth2Client(
   config: Oauth2ClientConfig,

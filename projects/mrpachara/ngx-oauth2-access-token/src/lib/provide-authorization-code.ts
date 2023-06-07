@@ -7,10 +7,12 @@ import {
   makeEnvironmentProviders,
 } from '@angular/core';
 
-import { configAuthorizationCode } from './functions';
-import { AuthorizationCodeService, Oauth2Client } from './services';
-import { AUTHORIZATION_CODE_SERVICES } from './tokens';
 import { AuthorizationCodeConfig, AuthorizationCodeFullConfig } from './types';
+import { configAuthorizationCode } from './functions';
+
+import { AuthorizationCodeService } from './authorization-code.service';
+import { Oauth2Client } from './oauth2.client';
+import { AUTHORIZATION_CODE_SERVICES } from './tokens';
 
 export function provideAuthorizationCode(
   config: AuthorizationCodeConfig,

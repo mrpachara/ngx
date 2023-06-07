@@ -8,10 +8,10 @@ import {
   makeEnvironmentProviders,
 } from '@angular/core';
 
-import { configJwk } from './functions';
-import { JwkService } from './services';
-import { JWK_SERVICES, JWT_INITIALIZED_STATE, JWT_VERIFIERS } from './tokens';
 import { JwkConfig, JwkFullConfig } from './types';
+import { configJwk } from './functions';
+import { JwkService } from './jwk.service';
+import { JWK_SERVICES, JWT_INITIALIZED_STATE, JWT_VERIFIERS } from './tokens';
 
 import { JwtEcdsaVerifier } from './jwt-verifiers/jwt-ecdsa.verifier';
 import { JwtHmacVerifier } from './jwt-verifiers/jwt-hmac.verifier';
