@@ -24,9 +24,9 @@ import {
   NonRegisteredExtractorError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
-} from './errors';
+} from '../errors';
 import { Oauth2Client } from './oauth2.client';
-import { AccessTokenStorage, AccessTokenStorageFactory } from './storage';
+import { AccessTokenStorage, AccessTokenStorageFactory } from '../storage';
 import {
   AccessTokenFullConfig,
   AccessTokenInfo,
@@ -38,7 +38,7 @@ import {
   Provided,
   StandardGrantsParams,
   StoredAccessTokenResponse,
-} from './types';
+} from '../types';
 import { RefreshTokenService } from './refresh-token.service';
 
 const latencyTime = 2 * 5 * 1000;
