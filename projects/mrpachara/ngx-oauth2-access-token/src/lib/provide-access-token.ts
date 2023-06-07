@@ -8,12 +8,6 @@ import {
 } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { configAccessToken, configRefreshToken } from './functions';
-import {
-  AccessTokenService,
-  Oauth2Client,
-  RefreshTokenService,
-} from './services';
 import { ACCESS_TOKEN_SERVICES, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
 import {
   AccessTokenConfig,
@@ -22,6 +16,10 @@ import {
   AccessTokenResponseExtractor,
   AccessTokenResponseExtractorInfo,
 } from './types';
+import { RefreshTokenService } from './refresh-token.service';
+import { configAccessToken, configRefreshToken } from './functions';
+import { AccessTokenService } from './access-token.service';
+import { Oauth2Client } from './oauth2.client';
 
 export function provideAccessToken(
   config: AccessTokenConfig,
