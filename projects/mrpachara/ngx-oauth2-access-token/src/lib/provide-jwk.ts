@@ -12,11 +12,10 @@ import { JwkConfig, JwkFullConfig } from './types';
 import { configJwk } from './functions';
 import { JwkService } from './jwk.service';
 import { JWK_SERVICES, JWT_INITIALIZED_STATE, JWT_VERIFIERS } from './tokens';
-import {
-  JwtEcdsaVerifier,
-  JwtHmacVerifier,
-  JwtRsassaVerifier,
-} from '../public-api';
+
+import { JwtEcdsaVerifier } from './jwt-verifiers/jwt-ecdsa.verifier';
+import { JwtHmacVerifier } from './jwt-verifiers/jwt-hmac.verifier';
+import { JwtRsassaVerifier } from './jwt-verifiers/jwt-rsassa.verifier';
 
 export function provideJwk(
   config: JwkConfig,
