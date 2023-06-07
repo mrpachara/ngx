@@ -62,7 +62,7 @@ export type JwtBaseInfo<T extends JwtClaims | EncryptedPayload> = {
   content: string;
   header: JwtHeader;
   payload: T;
-  signature?: string;
+  signature?: Uint8Array;
 };
 
 export type JwtInfo<T extends JwtClaims = JwtClaims> = JwtBaseInfo<T>;
