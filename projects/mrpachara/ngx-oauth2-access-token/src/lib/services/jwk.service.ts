@@ -15,6 +15,14 @@ export class JwkService {
   private http = inject(HttpClient);
   private verifiers = inject(JWT_VERIFIERS);
 
+  get name() {
+    return this.config.name;
+  }
+
+  get issuer() {
+    return this.config.issuer;
+  }
+
   constructor(private readonly config: JwkFullConfig) {}
 
   private fetchJwkSet(): Observable<JwkSet> {

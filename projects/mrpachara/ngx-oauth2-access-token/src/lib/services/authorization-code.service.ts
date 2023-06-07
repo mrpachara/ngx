@@ -33,6 +33,10 @@ export class AuthorizationCodeService {
   private readonly storageFactory = inject(AuthorizationCodeStorageFactory);
   private readonly storage: AuthorizationCodeStorage;
 
+  get name() {
+    return this.config.name;
+  }
+
   constructor(
     private readonly config: AuthorizationCodeFullConfig,
     private readonly client: Oauth2Client,

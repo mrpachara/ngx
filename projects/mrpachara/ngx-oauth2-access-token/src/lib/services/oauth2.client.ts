@@ -18,6 +18,10 @@ import {
 export class Oauth2Client {
   private readonly http = inject(HttpClient);
 
+  get name() {
+    return this.config.name;
+  }
+
   constructor(
     private readonly config: Oauth2ClientFullConfig,
     private readonly errorTransformer: Oauth2ClientErrorTransformer,

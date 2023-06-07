@@ -12,7 +12,7 @@ import {
   AccessTokenService,
   IdTokenInfo,
   IdTokenService,
-  JwkService,
+  JwkServiceResolver,
 } from '@mrpachara/ngx-oauth2-access-token';
 
 @Component({
@@ -26,7 +26,7 @@ import {
 export class HomeComponent {
   private readonly accessTokenService = inject(AccessTokenService);
   private readonly idTokenService = inject(IdTokenService);
-  private readonly jwkService = inject(JwkService);
+  private readonly jwkServiceResolver = inject(JwkServiceResolver);
 
   protected readonly errorAccessTokenMessage = signal<string | null>(null);
   protected readonly errorIdTokenMessage = signal<string | null>(null);
@@ -70,7 +70,11 @@ export class HomeComponent {
       filter(
         (idToken): idToken is IdTokenInfo => typeof idToken !== 'undefined',
       ),
-      switchMap((idToken) => this.jwkService.verify(idToken)),
+      switchMap(async (idToken) =>
+        this.jwkServiceResolver
+          .findByIssuer(idToken.header.iss ?? idToken.payload.iss ?? '')
+          ?.verify(idToken),
+      ),
     ),
   );
 }

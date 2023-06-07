@@ -8,6 +8,7 @@ export * from './lib/errors';
 export * from './lib/functions';
 
 export * from './lib/services';
+export * from './lib/service-resolvers';
 
 export * from './lib/provide-key-value-pair-storage';
 export * from './lib/provide-oauth2-client';

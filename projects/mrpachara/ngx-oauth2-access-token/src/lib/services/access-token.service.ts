@@ -53,6 +53,10 @@ export class AccessTokenService {
 
   private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse>;
 
+  get name() {
+    return this.config.name;
+  }
+
   constructor(
     private readonly config: AccessTokenFullConfig,
     private readonly client: Oauth2Client,
