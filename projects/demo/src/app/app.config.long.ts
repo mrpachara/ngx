@@ -5,9 +5,6 @@ import {
   withComponentInputBinding,
 } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
-import { defer } from 'rxjs';
-
-import { clientId, clientSecret } from '../secrets/oauth-client';
 
 import {
   AccessTokenConfig,
@@ -33,12 +30,13 @@ import {
 } from '@mrpachara/ngx-oauth2-access-token';
 
 import { routes } from './app.routes';
+import { defer } from 'rxjs';
 
 const clientConfig: Oauth2ClientConfig = {
   name: 'google',
   debug: true,
-  clientId: clientId,
-  clientSecret: clientSecret,
+  clientId: 'CLIENT_ID',
+  clientSecret: 'CLIENT_SECRET',
   accessTokenUrl: 'https://oauth2.googleapis.com/token',
 };
 

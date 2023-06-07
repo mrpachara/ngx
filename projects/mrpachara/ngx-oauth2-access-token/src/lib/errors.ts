@@ -8,5 +8,3 @@ export * from './errors/authorization-code.errors';
 
 export * from './errors/refresh-token.errors';
 export * from './errors/id-token.errors';
-
-export * from './errors/jwk.errors';

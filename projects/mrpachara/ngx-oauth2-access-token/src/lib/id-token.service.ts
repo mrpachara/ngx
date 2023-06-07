@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { catchError, pipe, switchMap } from 'rxjs';
 
 import { IdTokenEncryptedError, IdTokenExpiredError } from './errors';
@@ -27,6 +28,8 @@ export class IdTokenService
       IdTokenInfo
     >
 {
+  private readonly http = inject(HttpClient);
+
   private readonly storageFactory = inject(IdTokenStorageFactory);
   private readonly storage: IdTokenStorage;
 
