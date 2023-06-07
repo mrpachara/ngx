@@ -49,19 +49,6 @@ export function withStateActionHandler<I extends StateActionInfo>(
   };
 }
 
-type MyActionInfo = StateActionInfo<
-  'my_action',
-  { a: string; b: number; c?: boolean }
->;
-
-withStateActionHandler<MyActionInfo>(
-  'my_action',
-  () => async (accessTokenResponse, stateData) => {
-    console.log(accessTokenResponse);
-    stateData.action.data;
-  },
-);
-
 export type StateActionErrorHandlerFeature =
   StateActionFeature<StateActionFeatureKind.StateActionErrorHandlerFeature>;
 

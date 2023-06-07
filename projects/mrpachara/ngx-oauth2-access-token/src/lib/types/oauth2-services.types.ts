@@ -1,4 +1,5 @@
 import { OperatorFunction } from 'rxjs';
+
 import {
   AccessTokenResponse,
   IdTokenClaims,
@@ -8,7 +9,8 @@ import {
 } from './standard.types';
 import { StateData, StoredAccessTokenResponse } from './storages.types';
 import { AccessTokenFullConfig } from './config.types';
-import { Oauth2Client } from '../oauth2.client';
+
+import { Oauth2Client } from '../services';
 
 export type Scopes = [string, ...string[]];
 
@@ -62,7 +64,7 @@ export type JwtBaseInfo<T extends JwtClaims | EncryptedPayload> = {
   content: string;
   header: JwtHeader;
   payload: T;
-  signature?: string;
+  signature?: Uint8Array;
 };
 
 export type JwtInfo<T extends JwtClaims = JwtClaims> = JwtBaseInfo<T>;

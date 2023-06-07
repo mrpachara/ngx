@@ -8,12 +8,12 @@ import {
   throwError,
 } from 'rxjs';
 
-import { InvalidScopeError, RefreshTokenExpiredError } from './errors';
-import { validateAndTransformScopes } from './functions';
+import { InvalidScopeError, RefreshTokenExpiredError } from '../errors';
+import { validateAndTransformScopes } from '../functions';
 import {
   RefreshTokenStorage,
   RefreshTokenStorageFactory,
-} from './storage/refresh-token.storage.factory';
+} from '../storage/refresh-token.storage.factory';
 import {
   AccessTokenResponse,
   AccessTokenResponseExtractor,
@@ -23,7 +23,7 @@ import {
   RefreshTokenFullConfig,
   Scopes,
   StandardGrantsParams,
-} from './types';
+} from '../types';
 
 const latencyTime = 2 * 5 * 1000;
 

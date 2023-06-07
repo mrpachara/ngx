@@ -1,18 +1,19 @@
 import { inject } from '@angular/core';
 import { defer, from, map, Observable, switchMap } from 'rxjs';
 
-import { InvalidScopeError } from './errors';
+import { Oauth2Client } from './oauth2.client';
+
+import { InvalidScopeError } from '../errors';
 import {
   base64UrlEncode,
   randomString,
   sha256,
   validateAndTransformScopes,
-} from './functions';
-import { Oauth2Client } from './oauth2.client';
+} from '../functions';
 import {
   AuthorizationCodeStorage,
   AuthorizationCodeStorageFactory,
-} from './storage';
+} from '../storage';
 import {
   AccessTokenResponse,
   AuthorizationCodeFullConfig,
@@ -22,7 +23,7 @@ import {
   Scopes,
   StateAuthorizationCode,
   StateData,
-} from './types';
+} from '../types';
 
 const stateIdLength = 32;
 

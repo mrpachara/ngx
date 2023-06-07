@@ -5,6 +5,9 @@ import {
   withComponentInputBinding,
 } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
+import { defer } from 'rxjs';
+
+import { clientId, clientSecret } from '../secrets/oauth-client';
 
 import {
   AccessTokenConfig,
@@ -13,12 +16,14 @@ import {
   AuthorizationCodeConfig,
   AuthorizationCodeService,
   IdTokenService,
+  JwkConfig,
   Oauth2ClientConfig,
   Scopes,
   StateActionInfo,
   configIdToken,
   provideAccessToken,
   provideAuthorizationCode,
+  provideJwk,
   provideKeyValuePairStorage,
   provideOauth2Client,
   provideStateAction,
@@ -30,13 +35,12 @@ import {
 } from '@mrpachara/ngx-oauth2-access-token';
 
 import { routes } from './app.routes';
-import { defer } from 'rxjs';
 
 const clientConfig: Oauth2ClientConfig = {
   name: 'google',
   debug: true,
-  clientId: 'CLIENT_ID',
-  clientSecret: 'CLIENT_SECRET',
+  clientId: clientId,
+  clientSecret: clientSecret,
   accessTokenUrl: 'https://oauth2.googleapis.com/token',
 };
 
@@ -63,6 +67,13 @@ const accessTokenConfig: AccessTokenConfig = {
 const idTokenFullConfig = configIdToken({
   providedInAccessToken: false,
 });
+
+const jwkConfig: JwkConfig = {
+  name: 'google',
+  debug: true,
+  issuer: 'https://accounts.google.com',
+  jwkSetUrl: 'https://www.googleapis.com/oauth2/v3/certs',
+};
 
 type BroadcastData =
   | {
@@ -308,5 +319,6 @@ export const appConfig: ApplicationConfig = {
         };
       }),
     ),
+    provideJwk(jwkConfig),
   ],
 };

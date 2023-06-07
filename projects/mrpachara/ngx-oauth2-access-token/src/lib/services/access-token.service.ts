@@ -19,26 +19,28 @@ import {
   throwError,
 } from 'rxjs';
 
+import { Oauth2Client } from './oauth2.client';
+import { RefreshTokenService } from './refresh-token.service';
+
 import {
   AccessTokenExpiredError,
   NonRegisteredExtractorError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
-} from './errors';
-import { Oauth2Client } from './oauth2.client';
-import { AccessTokenStorage, AccessTokenStorageFactory } from './storage';
+} from '../errors';
+import { AccessTokenStorage, AccessTokenStorageFactory } from '../storage';
 import {
   AccessTokenFullConfig,
   AccessTokenInfo,
   AccessTokenResponse,
   AccessTokenResponseExtractor,
+  AccessTokenResponseExtractorInfo,
   AccessTokenResponseInfo,
   AccessTokenServiceInfo,
   Provided,
   StandardGrantsParams,
   StoredAccessTokenResponse,
-} from './types';
-import { RefreshTokenService } from './refresh-token.service';
+} from '../types';
 
 const latencyTime = 2 * 5 * 1000;
 
@@ -54,15 +56,12 @@ export class AccessTokenService {
   constructor(
     private readonly config: AccessTokenFullConfig,
     private readonly client: Oauth2Client,
+    private readonly extractors: AccessTokenResponseExtractorInfo[],
     private readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
   ) {
-    const uniqueMap = new Map(
-      this.config.extractors.map(([type, config]) => [type, config] as const),
-    );
-
     this.extractorMap = new Map(
-      [...uniqueMap.entries()].map(
-        ([type, config]) => [inject(type), config] as const,
+      this.extractors.map(
+        ([extractor, config]) => [extractor, config] as const,
       ),
     );
 

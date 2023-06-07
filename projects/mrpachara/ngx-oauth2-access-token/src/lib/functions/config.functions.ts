@@ -1,11 +1,12 @@
 import {
   AccessTokenConfig,
   AccessTokenFullConfig,
-  AccessTokenResponseExtractorInfo,
   AuthorizationCodeConfig,
   AuthorizationCodeFullConfig,
   IdTokenConfig,
   IdTokenFullConfig,
+  JwkConfig,
+  JwkFullConfig,
   Oauth2ClientConfig,
   Oauth2ClientFullConfig,
   PickOptional,
@@ -39,12 +40,10 @@ export const defaultAccessTokenConfig: PickOptional<AccessTokenConfig> = {
 
 export function configAccessToken(
   config: AccessTokenConfig,
-  extractors: AccessTokenResponseExtractorInfo[],
 ): AccessTokenFullConfig {
   return {
     ...defaultAccessTokenConfig,
     ...config,
-    extractors,
   };
 }
 
@@ -91,6 +90,17 @@ export const defaultIdTokenConfig: PickOptional<IdTokenConfig> = {
 export function configIdToken(config: IdTokenConfig): IdTokenFullConfig {
   return {
     ...defaultIdTokenConfig,
+    ...config,
+  };
+}
+
+export const defaultJwkConfig: PickOptional<JwkConfig> = {
+  debug: false,
+};
+
+export function configJwk(config: JwkConfig): JwkFullConfig {
+  return {
+    ...defaultJwkConfig,
     ...config,
   };
 }
