@@ -8,12 +8,8 @@ import {
 } from '@angular/core';
 
 import { configOauth2Client } from './functions';
-import {
-  Oauth2ClientConfig,
-  Oauth2ClientErrorTransformer,
-  Oauth2ClientFullConfig,
-} from './types';
-import { OATUTH2_CLIENTS, OAUTH2_CLIENT_ERROR_TRANSFORMER } from './tokens';
+import { Oauth2ClientConfig, Oauth2ClientErrorTransformer } from './types';
+import { OAUTH2_CLIENT_ERROR_TRANSFORMER } from './tokens';
 
 import { Oauth2Client } from './oauth2.client';
 
@@ -23,10 +19,6 @@ export function provideOauth2Client(
 ): EnvironmentProviders {
   const fullConfig = configOauth2Client(config);
 
-  const fullConfigToken = new InjectionToken<Oauth2ClientFullConfig>(
-    `oauth2-client-full-config-${fullConfig.name}`,
-  );
-
   const selfProviders = features.filter(
     (feature): feature is Oauth2ClientProviderFeature =>
       feature.kind === Oauth2ClientFeatureKind.Oauth2ClientProviderFeature,
@@ -34,42 +26,28 @@ export function provideOauth2Client(
 
   if (selfProviders.length > 1) {
     throw new Error(
-      'Only one accessTokenProvider feature is allowed for each Oauth2Client!',
+      'Only one accessTokenProvider feature allowed for Oauth2Client!',
     );
   }
 
   if (selfProviders.length === 0) {
     features.push({
       kind: Oauth2ClientFeatureKind.Oauth2ClientProviderFeature,
-      providers: [],
-      injectionToken: Oauth2Client,
-      factory: (fullConfig) =>
-        new Oauth2Client(fullConfig, inject(OAUTH2_CLIENT_ERROR_TRANSFORMER)),
+      providers: [
+        {
+          provide: Oauth2Client,
+          useFactory: () => {
+            return new Oauth2Client(
+              fullConfig,
+              inject(OAUTH2_CLIENT_ERROR_TRANSFORMER),
+            );
+          },
+        },
+      ],
     });
   }
 
-  features
-    .filter(
-      (feature): feature is Oauth2ClientProviderFeature =>
-        feature.kind === Oauth2ClientFeatureKind.Oauth2ClientProviderFeature,
-    )
-    .forEach((feature) =>
-      feature.providers.push(
-        {
-          provide: feature.injectionToken,
-          useFactory: () => feature.factory(inject(fullConfigToken)),
-        },
-        {
-          provide: OATUTH2_CLIENTS,
-          multi: true,
-          useExisting: feature.injectionToken,
-        },
-      ),
-    );
-
   return makeEnvironmentProviders([
-    { provide: fullConfigToken, useValue: fullConfig },
-
     features.map((feature) => feature.providers),
   ]);
 }
@@ -84,21 +62,16 @@ export interface Oauth2ClientFeature<K extends Oauth2ClientFeatureKind> {
   readonly providers: Provider[];
 }
 
-export type Oauth2ClientProviderFeature<T extends Oauth2Client = Oauth2Client> =
-  Oauth2ClientFeature<Oauth2ClientFeatureKind.Oauth2ClientProviderFeature> & {
-    injectionToken: Type<T> | InjectionToken<T>;
-    factory: (fullConfig: Oauth2ClientFullConfig) => T;
-  };
+export type Oauth2ClientProviderFeature =
+  Oauth2ClientFeature<Oauth2ClientFeatureKind.Oauth2ClientProviderFeature>;
 
 export function withOauth2ClientProvider<T extends Oauth2Client>(
   injectionToken: Type<T> | InjectionToken<T>,
-  factory: (fullConfig: Oauth2ClientFullConfig) => T,
+  factory: () => T,
 ): Oauth2ClientProviderFeature {
   return {
     kind: Oauth2ClientFeatureKind.Oauth2ClientProviderFeature,
-    providers: [],
-    injectionToken,
-    factory,
+    providers: [{ provide: injectionToken, useFactory: factory }],
   };
 }
 

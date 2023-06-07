@@ -6,13 +6,11 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, filter, from, of, share, switchMap } from 'rxjs';
+import { catchError, from, of } from 'rxjs';
 
 import {
   AccessTokenService,
-  IdTokenInfo,
   IdTokenService,
-  JwkService,
 } from '@mrpachara/ngx-oauth2-access-token';
 
 @Component({
@@ -26,7 +24,6 @@ import {
 export class HomeComponent {
   private readonly accessTokenService = inject(AccessTokenService);
   private readonly idTokenService = inject(IdTokenService);
-  private readonly jwkService = inject(JwkService);
 
   protected readonly errorAccessTokenMessage = signal<string | null>(null);
   protected readonly errorIdTokenMessage = signal<string | null>(null);
@@ -46,31 +43,19 @@ export class HomeComponent {
     ),
   );
 
-  private readonly idToken$ = from(
-    this.accessTokenService.extract(this.idTokenService),
-  ).pipe(
-    catchError((err) => {
-      if (typeof err.stack === 'string') {
-        const [message] = err.stack.split('\n', 1);
-        this.errorIdTokenMessage.set(message);
-      } else {
-        this.errorIdTokenMessage.set(`${err}`);
-      }
-      return of(undefined);
-    }),
-    share(),
-  );
-
   // NOTE: Unlike async pipe ( | async), toSignal() subscribes observable here.
   //       So the result could be evaluated before it is ready.
-  protected readonly idToken = toSignal(this.idToken$);
-
-  protected readonly idTokenVerified = toSignal(
-    this.idToken$.pipe(
-      filter(
-        (idToken): idToken is IdTokenInfo => typeof idToken !== 'undefined',
-      ),
-      switchMap((idToken) => this.jwkService.verify(idToken)),
+  protected readonly idToken = toSignal(
+    from(this.accessTokenService.extract(this.idTokenService)).pipe(
+      catchError((err) => {
+        if (typeof err.stack === 'string') {
+          const [message] = err.stack.split('\n', 1);
+          this.errorIdTokenMessage.set(message);
+        } else {
+          this.errorIdTokenMessage.set(`${err}`);
+        }
+        return of(undefined);
+      }),
     ),
   );
 }

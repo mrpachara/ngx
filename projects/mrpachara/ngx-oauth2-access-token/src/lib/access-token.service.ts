@@ -32,7 +32,6 @@ import {
   AccessTokenInfo,
   AccessTokenResponse,
   AccessTokenResponseExtractor,
-  AccessTokenResponseExtractorInfo,
   AccessTokenResponseInfo,
   AccessTokenServiceInfo,
   Provided,
@@ -55,12 +54,15 @@ export class AccessTokenService {
   constructor(
     private readonly config: AccessTokenFullConfig,
     private readonly client: Oauth2Client,
-    private readonly extractors: AccessTokenResponseExtractorInfo[],
     private readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
   ) {
+    const uniqueMap = new Map(
+      this.config.extractors.map(([type, config]) => [type, config] as const),
+    );
+
     this.extractorMap = new Map(
-      this.extractors.map(
-        ([extractor, config]) => [extractor, config] as const,
+      [...uniqueMap.entries()].map(
+        ([type, config]) => [inject(type), config] as const,
       ),
     );
 

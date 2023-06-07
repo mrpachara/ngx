@@ -8,7 +8,12 @@ import { isOauthError } from './functions';
 
 import { Oauth2Client } from './oauth2.client';
 import { OAUTH2_CLIENT_CONFIG } from './tokens';
-import { Oauth2ClientConfig, PasswordGrantParams } from './types';
+import {
+  AccessToken,
+  Oauth2ClientConfig,
+  PasswordGrantParams,
+  StandardGrantTypes,
+} from './types';
 
 export const http401 = {
   status: 401,
@@ -44,7 +49,7 @@ export const oauth2ErrorResponse = {
 
 export const expectAccessToken = (
   req: TestRequest,
-  type: StandardGrantType,
+  type: StandardGrantTypes,
   config: Oauth2ClientConfig,
 ): void => {
   expect(req.request.method).withContext('request method').toEqual('POST');
