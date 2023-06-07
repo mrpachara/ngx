@@ -1,7 +1,7 @@
 import { InjectionToken } from '@angular/core';
 
+import { JwkService } from '../services';
 import { JwtVerifier } from '../types';
-import { JwkService } from '../jwk.service';
 
 export type JwtInitializedState = {
   initialized: boolean;

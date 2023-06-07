@@ -1,15 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { defer, Observable, throwError } from 'rxjs';
 
-import { StateActionNotFoundError } from './errors';
-import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from './tokens';
+import { StateActionNotFoundError } from '../errors';
+import { isStateActionProvided } from '../functions';
+import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from '../tokens';
 import {
   AccessTokenResponse,
   StateAction,
   StateActionHandler,
   StateActionHandlers,
-} from './types';
-import { isStateActionProvided } from './functions';
+} from '../types';
 
 @Injectable({ providedIn: 'root' })
 export class StateActionService {

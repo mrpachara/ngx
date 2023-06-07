@@ -1,15 +1,15 @@
 import { inject } from '@angular/core';
-import { JWT_VERIFIERS } from './tokens';
 import { HttpClient } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
 
-import { JwkFullConfig, JwkSet, JwtInfo } from './types';
-import { findJwk, isProvidedSignature } from './functions';
 import {
   MatchedJwkNotFoundError,
   SignatureNotFoundError,
   SupportedJwkAlgNotFoundError,
-} from './errors';
+} from '../errors';
+import { findJwk, isProvidedSignature } from '../functions';
+import { JWT_VERIFIERS } from '../tokens';
+import { JwkFullConfig, JwkSet, JwtInfo } from '../types';
 
 export class JwkService {
   private http = inject(HttpClient);

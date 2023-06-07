@@ -8,13 +8,12 @@ import {
   throwError,
 } from 'rxjs';
 
-import { AuthorizationCodeService } from '../authorization-code.service';
 import {
   BadResponseCallbackError,
   CallbackError,
   ErrorResponseCallbackError,
 } from '../errors';
-import { StateActionService } from '../state-action.service';
+import { AuthorizationCodeService, StateActionService } from '../services';
 
 export function oauth2Callback(
   stateId: string | null,

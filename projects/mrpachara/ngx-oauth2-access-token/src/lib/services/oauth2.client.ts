@@ -1,19 +1,19 @@
+import { inject } from '@angular/core';
 import {
   HttpClient,
   HttpContext,
   HttpErrorResponse,
 } from '@angular/common/http';
-import { inject } from '@angular/core';
 import { catchError, Observable, throwError } from 'rxjs';
 
-import { SKIP_ASSIGNING_ACCESS_TOKEN } from './tokens';
+import { Oauth2ClientResponseError } from '../errors';
+import { SKIP_ASSIGNING_ACCESS_TOKEN } from '../tokens';
 import {
   AccessTokenResponse,
   Oauth2ClientErrorTransformer,
   Oauth2ClientFullConfig,
   StandardGrantsParams,
-} from './types';
-import { Oauth2ClientResponseError } from './errors';
+} from '../types';
 
 export class Oauth2Client {
   private readonly http = inject(HttpClient);
