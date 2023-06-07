@@ -11,8 +11,7 @@ import { CommonModule } from '@angular/common';
 import { take } from 'rxjs';
 
 import { oauth2Callback } from '../../functions';
-import { AuthorizationCodeService } from '../../authorization-code.service';
-import { StateActionService } from '../../state-action.service';
+import { AuthorizationCodeService, StateActionService } from '../../services';
 
 type MessageInfo = {
   type: 'info' | 'error' | null;

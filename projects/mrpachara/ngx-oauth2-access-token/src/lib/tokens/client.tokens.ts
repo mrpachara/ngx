@@ -1,7 +1,8 @@
-import { HttpContextToken, HttpErrorResponse } from '@angular/common/http';
 import { InjectionToken } from '@angular/core';
+import { HttpContextToken, HttpErrorResponse } from '@angular/common/http';
+
+import { Oauth2Client } from '../services';
 import { Oauth2ClientErrorTransformer } from '../types';
-import { Oauth2Client } from '../oauth2.client';
 
 export const SKIP_ASSIGNING_ACCESS_TOKEN = new HttpContextToken(() => false);
 

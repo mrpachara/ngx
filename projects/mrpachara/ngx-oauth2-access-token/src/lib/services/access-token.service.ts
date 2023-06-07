@@ -19,14 +19,16 @@ import {
   throwError,
 } from 'rxjs';
 
+import { Oauth2Client } from './oauth2.client';
+import { RefreshTokenService } from './refresh-token.service';
+
 import {
   AccessTokenExpiredError,
   NonRegisteredExtractorError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
-} from './errors';
-import { Oauth2Client } from './oauth2.client';
-import { AccessTokenStorage, AccessTokenStorageFactory } from './storage';
+} from '../errors';
+import { AccessTokenStorage, AccessTokenStorageFactory } from '../storage';
 import {
   AccessTokenFullConfig,
   AccessTokenInfo,
@@ -38,8 +40,7 @@ import {
   Provided,
   StandardGrantsParams,
   StoredAccessTokenResponse,
-} from './types';
-import { RefreshTokenService } from './refresh-token.service';
+} from '../types';
 
 const latencyTime = 2 * 5 * 1000;
 

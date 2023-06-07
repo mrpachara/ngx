@@ -1,9 +1,8 @@
 import { InjectionToken } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { AccessTokenService, AuthorizationCodeService } from '../services';
 import { AccessTokenResponse } from '../types';
-import { AccessTokenService } from '../access-token.service';
-import { AuthorizationCodeService } from '../authorization-code.service';
 
 export const ACCESS_TOKEN_SERVICES = new InjectionToken<AccessTokenService[]>(
   'access-token-services',

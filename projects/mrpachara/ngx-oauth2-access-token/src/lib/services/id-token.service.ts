@@ -1,9 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { catchError, pipe, switchMap } from 'rxjs';
 
-import { IdTokenEncryptedError, IdTokenExpiredError } from './errors';
-import { extractJwt, isJwtEncryptedPayload } from './functions';
-import { IdTokenStorage, IdTokenStorageFactory } from './storage';
+import { IdTokenEncryptedError, IdTokenExpiredError } from '../errors';
+import { extractJwt, isJwtEncryptedPayload } from '../functions';
+import { IdTokenStorage, IdTokenStorageFactory } from '../storage';
 import {
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
@@ -14,7 +14,7 @@ import {
   IdTokenInfo,
   IdTokenResponse,
   JwtTokenType,
-} from './types';
+} from '../types';
 
 @Injectable({
   providedIn: 'root',

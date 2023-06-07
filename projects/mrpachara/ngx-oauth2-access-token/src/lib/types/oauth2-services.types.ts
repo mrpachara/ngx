@@ -1,4 +1,5 @@
 import { OperatorFunction } from 'rxjs';
+
 import {
   AccessTokenResponse,
   IdTokenClaims,
@@ -8,7 +9,8 @@ import {
 } from './standard.types';
 import { StateData, StoredAccessTokenResponse } from './storages.types';
 import { AccessTokenFullConfig } from './config.types';
-import { Oauth2Client } from '../oauth2.client';
+
+import { Oauth2Client } from '../services';
 
 export type Scopes = [string, ...string[]];
 
