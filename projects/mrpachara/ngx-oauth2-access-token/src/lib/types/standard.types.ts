@@ -53,15 +53,19 @@ export type JwkHashBase = JwkSymmetricKeyBase & {
 };
 
 /** HMAC - Hash-based Message Authentication Codes Algorithm */
-export type JwkHmac<SHA extends '256' | '384' | '512'> = JwkHashBase & {
-  alg?: `HS${SHA}`;
-};
+export type JwkHmac<SHA extends '256' | '384' | '512' = '256' | '384' | '512'> =
+  JwkHashBase & {
+    alg?: `HS${SHA}`;
+  };
 
 /** Asymmetric Key */
 export type JwkAsymmetricKeyBase = JwkBase & {
   /**
-   * JWK for _public key_ should **not** present _private key_ part. If it does,
-   * the encrypted content is considered to be **untrusted**.
+   * Asymatic JWK for _public key_ presentation should **not** present the
+   * _private key_ parts. If it does, the encrypted content is considered to be
+   * **untrusted**.
+   *
+   * The implementation **must** check this value to be `undefined`.
    */
   d: never;
 };
@@ -74,7 +78,9 @@ export type JwkRsaBase = JwkAsymmetricKeyBase & {
 };
 
 /** RSASSA - RSASSA-PKCS1-v1_5 Algorithm */
-export type JwkRsassa<SHA extends '256' | '384' | '512'> = JwkRsaBase & {
+export type JwkRsassa<
+  SHA extends '256' | '384' | '512' = '256' | '384' | '512',
+> = JwkRsaBase & {
   alg?: `RS${SHA}`;
 };
 
@@ -86,13 +92,14 @@ export type JwkEcBase = JwkAsymmetricKeyBase & {
 };
 
 /** ECDSA - Elliptic Curve Digital Signature Algorithm */
-export type JwkEcdsa<P extends '256' | '384' | '512'> = JwkEcBase & {
-  alg?: `ES${P}`;
-  crv: `P-${P}`;
-  y: string;
-};
+export type JwkEcdsa<P extends '256' | '384' | '512' = '256' | '384' | '512'> =
+  JwkEcBase & {
+    alg?: `ES${P}`;
+    crv: `P-${P}`;
+    y: string;
+  };
 
-/** JWK Set (JWKs) */
+/** JWK Set */
 export type JwkSet = {
   keys: JwkBase[];
 };

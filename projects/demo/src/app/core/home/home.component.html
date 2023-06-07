@@ -13,10 +13,14 @@
   <pre>{{ idToken.header | json }}</pre>
   <h3>Payload</h3>
   <pre>{{ idToken.payload | json }}</pre>
+  <h3>Token</h3>
+  <pre>{{ idToken.token }}</pre>
   <h3>Signed Content</h3>
   <pre>{{ idToken.content }}</pre>
   <h3>Signature</h3>
   <pre>{{ idToken.signature }}</pre>
+  <h3>Verified</h3>
+  <pre>{{ idTokenVerified() }}</pre>
 </ng-container>
 <div *ngIf="errorIdTokenMessage() as errorMessage">
   <b class="cl-warn">IdToken:</b>

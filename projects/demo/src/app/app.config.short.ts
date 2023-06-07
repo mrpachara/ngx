@@ -11,12 +11,14 @@ import {
   AuthorizationCodeConfig,
   AuthorizationCodeService,
   IdTokenService,
+  JwkConfig,
   Oauth2ClientConfig,
   Scopes,
   StateActionInfo,
   configIdToken,
   provideAccessToken,
   provideAuthorizationCode,
+  provideJwk,
   provideKeyValuePairStorage,
   provideOauth2Client,
   provideStateAction,
@@ -60,6 +62,13 @@ const accessTokenConfig: AccessTokenConfig = {
 const idTokenFullConfig = configIdToken({
   providedInAccessToken: false,
 });
+
+const jwkConfig: JwkConfig = {
+  name: 'google',
+  debug: true,
+  issuer: 'https://accounts.google.com',
+  jwkSetUrl: 'https://www.googleapis.com/oauth2/v3/certs',
+};
 
 type BroadcastData =
   | {
@@ -204,5 +213,6 @@ export const appConfig: ApplicationConfig = {
         };
       }),
     ),
+    provideJwk(jwkConfig),
   ],
 };
