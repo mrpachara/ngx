@@ -5,8 +5,6 @@ This library is for simply getting access tokens from [OAuth 2.0](https://oauth.
 ![GitHub package.json version (subfolder of monorepo)](https://img.shields.io/github/package-json/v/mrpachara/ngx?filename=projects%2Fmrpachara%2Fngx-oauth2-access-token%2Fpackage.json)
 ![GitHub](https://img.shields.io/github/license/mrpachara/ngx)
 
-test
-
 ## Installation
 
 npm
@@ -247,4 +245,27 @@ export const routes: Routes = [
     component: AutorizationCodeCallbackComponent,
   },
 ];
+```
+
+## JWK Configuration Example
+
+File: `src/app/app.config.ts`
+
+```typescript
+const jwkConfig: JwkConfig = {
+  name: 'google',
+  debug: true,
+  issuer: 'https://accounts.google.com',
+  jwkSetUrl: 'https://www.googleapis.com/oauth2/v3/certs',
+};
+
+// In prviders configuration
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    // ... other providers
+    provideJwk(jwkConfig),
+    // ... other providers
+  ],
+};
 ```
