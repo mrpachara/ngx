@@ -70,11 +70,7 @@ export class HomeComponent {
       filter(
         (idToken): idToken is IdTokenInfo => typeof idToken !== 'undefined',
       ),
-      switchMap(async (idToken) =>
-        this.jwkServiceResolver
-          .findByIssuer(idToken.header.iss ?? idToken.payload.iss ?? '')
-          ?.verify(idToken),
-      ),
+      switchMap(async (idToken) => this.jwkServiceResolver.verify(idToken)),
     ),
   );
 }
