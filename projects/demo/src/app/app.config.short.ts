@@ -17,6 +17,7 @@ import {
   StateActionInfo,
   configIdToken,
   provideAccessToken,
+  provideAccessTokenResponseExtractors,
   provideAuthorizationCode,
   provideJwk,
   provideKeyValuePairStorage,
@@ -159,6 +160,12 @@ export const appConfig: ApplicationConfig = {
         );
       }),
 
+      // NOTE: The individual extractors can be set here if needed.
+      // withAccessTokenResponseExtractor(IdTokenService, idTokenFullConfig),
+    ),
+
+    // NOTE: Add additional extractors.
+    provideAccessTokenResponseExtractors(
       // NOTE: Add ID token extractor for getting information
       //       from access token response.
       withAccessTokenResponseExtractor(IdTokenService, idTokenFullConfig),

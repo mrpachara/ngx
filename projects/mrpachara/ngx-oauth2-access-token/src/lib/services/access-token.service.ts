@@ -41,6 +41,10 @@ import {
   StandardGrantsParams,
   StoredAccessTokenResponse,
 } from '../types';
+import {
+  ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
+  DEFAULT_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
+} from '../tokens';
 
 const latencyTime = 2 * 5 * 1000;
 
@@ -48,6 +52,25 @@ export class AccessTokenService {
   private readonly storageFactory = inject(AccessTokenStorageFactory);
   private readonly storage: AccessTokenStorage;
   private readonly refreshTokenService = inject(RefreshTokenService);
+
+  private readonly defaultExtractors = inject(
+    DEFAULT_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
+  );
+  private readonly scopedExtractors = inject(
+    ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
+    {
+      self: true,
+      optional: true,
+    },
+  );
+  private readonly parentExtractors = inject(
+    ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
+    {
+      skipSelf: true,
+      optional: true,
+    },
+  );
+
   private readonly extractorMap: Map<AccessTokenResponseExtractor, unknown>;
   private readonly listeners: AccessTokenResponseExtractor[];
 
@@ -60,14 +83,15 @@ export class AccessTokenService {
   constructor(
     private readonly config: AccessTokenFullConfig,
     private readonly client: Oauth2Client,
-    private readonly extractors: AccessTokenResponseExtractorInfo[],
+    private readonly individualExtractors: AccessTokenResponseExtractorInfo[],
     private readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
   ) {
-    this.extractorMap = new Map(
-      this.extractors.map(
-        ([extractor, config]) => [extractor, config] as const,
-      ),
-    );
+    this.extractorMap = new Map([
+      ...this.defaultExtractors,
+      ...(this.parentExtractors ?? []),
+      ...(this.scopedExtractors ?? []),
+      ...this.individualExtractors,
+    ]);
 
     this.listeners = [...this.extractorMap.keys()];
 

@@ -8,18 +8,17 @@ import {
 } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { configAccessToken, configRefreshToken } from './functions';
+import { configAccessToken } from './functions';
 import {
-  AccessTokenService,
-  Oauth2Client,
-  RefreshTokenService,
-} from './services';
+  AccessTokenResponseExtractorFeature,
+  SharedProviderFeatureKind,
+} from './provide-shared.features';
+import { AccessTokenService, Oauth2Client } from './services';
 import { ACCESS_TOKEN_SERVICES, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
 import {
   AccessTokenConfig,
   AccessTokenFullConfig,
   AccessTokenResponse,
-  AccessTokenResponseExtractor,
   AccessTokenResponseExtractorInfo,
 } from './types';
 
@@ -31,17 +30,17 @@ export function provideAccessToken(
 
   const fullConfigToken = new InjectionToken<AccessTokenFullConfig>(
     `access-token-full-config-${fullConfig.name}`,
+    {
+      providedIn: 'root',
+      factory: () => fullConfig,
+    },
   );
 
   const extractorInfosToken = new InjectionToken<
     AccessTokenResponseExtractorInfo[]
-  >(`access-token-extractor-infos-${fullConfig.name}`);
-
-  features.unshift({
-    kind: AccessTokenFeatureKind.AccessTokenResponseExtractorFeature,
-    providers: [],
-    type: RefreshTokenService,
-    config: configRefreshToken({}),
+  >(`access-token-extractor-infos-${fullConfig.name}`, {
+    providedIn: 'root',
+    factory: () => [],
   });
 
   const providerFeatures = features.filter(
@@ -56,18 +55,18 @@ export function provideAccessToken(
   }
 
   if (providerFeatures.length === 0) {
-    features.push({
-      kind: AccessTokenFeatureKind.AccessTokenProviderFeature,
-      providers: [],
-      injectionToken: AccessTokenService,
-      factory: (fullConfig, extractorInfos) =>
-        new AccessTokenService(
-          fullConfig,
-          inject(Oauth2Client),
-          extractorInfos,
-          inject(RENEW_ACCESS_TOKEN_SOURCE, { optional: true }),
-        ),
-    });
+    features.push(
+      withAccessTokenProvider(
+        AccessTokenService,
+        (fullConfig, extractorInfos) =>
+          new AccessTokenService(
+            fullConfig,
+            inject(Oauth2Client),
+            extractorInfos,
+            inject(RENEW_ACCESS_TOKEN_SOURCE, { optional: true }),
+          ),
+      ),
+    );
   }
 
   features
@@ -97,19 +96,11 @@ export function provideAccessToken(
     .filter(
       (feature): feature is AccessTokenResponseExtractorFeature =>
         feature.kind ===
-        AccessTokenFeatureKind.AccessTokenResponseExtractorFeature,
+        SharedProviderFeatureKind.AccessTokenResponseExtractorFeature,
     )
-    .forEach((feature) =>
-      feature.providers.push({
-        provide: extractorInfosToken,
-        multi: true,
-        useFactory: () => [inject(feature.type), feature.config] as const,
-      }),
-    );
+    .forEach((feature) => feature.assign(extractorInfosToken));
 
   return makeEnvironmentProviders([
-    { provide: fullConfigToken, useValue: fullConfig },
-
     features.map((feature) => feature.providers),
   ]);
 }
@@ -117,7 +108,6 @@ export function provideAccessToken(
 export enum AccessTokenFeatureKind {
   AccessTokenProviderFeature,
   RenewAccessTokenSourceFeature,
-  AccessTokenResponseExtractorFeature,
 }
 
 export interface AccessTokenFeature<K extends AccessTokenFeatureKind> {
@@ -164,29 +154,6 @@ export function withRenewAccessTokenSource(
         useFactory: sourceFactory,
       },
     ],
-  };
-}
-
-export type AccessTokenResponseExtractorFeature<
-  T extends AccessTokenResponse = AccessTokenResponse,
-  C = unknown,
-> = AccessTokenFeature<AccessTokenFeatureKind.AccessTokenResponseExtractorFeature> & {
-  type: Type<AccessTokenResponseExtractor<T, C>>;
-  config: C;
-};
-
-export function withAccessTokenResponseExtractor<
-  T extends AccessTokenResponse,
-  C,
->(
-  type: Type<AccessTokenResponseExtractor<T, C>>,
-  config: C,
-): AccessTokenResponseExtractorFeature<T, C> {
-  return {
-    kind: AccessTokenFeatureKind.AccessTokenResponseExtractorFeature,
-    type: type,
-    config: config,
-    providers: [],
   };
 }
 

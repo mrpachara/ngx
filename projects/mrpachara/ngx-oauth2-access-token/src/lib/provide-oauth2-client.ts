@@ -24,6 +24,10 @@ export function provideOauth2Client(
 
   const fullConfigToken = new InjectionToken<Oauth2ClientFullConfig>(
     `oauth2-client-full-config-${fullConfig.name}`,
+    {
+      providedIn: 'root',
+      factory: () => fullConfig,
+    },
   );
 
   const selfProviders = features.filter(
@@ -38,13 +42,13 @@ export function provideOauth2Client(
   }
 
   if (selfProviders.length === 0) {
-    features.push({
-      kind: Oauth2ClientFeatureKind.Oauth2ClientProviderFeature,
-      providers: [],
-      injectionToken: Oauth2Client,
-      factory: (fullConfig) =>
-        new Oauth2Client(fullConfig, inject(OAUTH2_CLIENT_ERROR_TRANSFORMER)),
-    });
+    features.push(
+      withOauth2ClientProvider(
+        Oauth2Client,
+        (fullConfig) =>
+          new Oauth2Client(fullConfig, inject(OAUTH2_CLIENT_ERROR_TRANSFORMER)),
+      ),
+    );
   }
 
   features
@@ -67,8 +71,6 @@ export function provideOauth2Client(
     );
 
   return makeEnvironmentProviders([
-    { provide: fullConfigToken, useValue: fullConfig },
-
     features.map((feature) => feature.providers),
   ]);
 }

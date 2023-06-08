@@ -20,6 +20,10 @@ export function provideAuthorizationCode(
 
   const fullConfigToken = new InjectionToken<AuthorizationCodeFullConfig>(
     `authorization-code-full-config-${fullConfig.name}`,
+    {
+      providedIn: 'root',
+      factory: () => fullConfig,
+    },
   );
 
   const prodiverFeatures = features.filter(
@@ -35,13 +39,13 @@ export function provideAuthorizationCode(
   }
 
   if (prodiverFeatures.length === 0) {
-    features.push({
-      kind: AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature,
-      providers: [],
-      injectionToken: AuthorizationCodeService,
-      factory: (fullConfig) =>
-        new AuthorizationCodeService(fullConfig, inject(Oauth2Client)),
-    });
+    features.push(
+      withAuthorizationCodeProvider(
+        AuthorizationCodeService,
+        (fullConfig) =>
+          new AuthorizationCodeService(fullConfig, inject(Oauth2Client)),
+      ),
+    );
   }
 
   features
@@ -64,8 +68,6 @@ export function provideAuthorizationCode(
     );
 
   return makeEnvironmentProviders([
-    { provide: fullConfigToken, useValue: fullConfig },
-
     features.map((feature) => feature.providers),
   ]);
 }
