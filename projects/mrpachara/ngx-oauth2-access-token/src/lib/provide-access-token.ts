@@ -9,11 +9,10 @@ import {
 import { Observable } from 'rxjs';
 
 import { configAccessToken } from './functions';
-import { generateAccessTokenResponseExtractorProvider } from './provide-helper.functions';
 import {
   AccessTokenResponseExtractorFeature,
-  AccessTokenResponseExtractorsFeatureKind,
-} from './provide-access-token-response-extractors';
+  SharedProviderFeatureKind,
+} from './provide-shared.features';
 import { AccessTokenService, Oauth2Client } from './services';
 import { ACCESS_TOKEN_SERVICES, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
 import {
@@ -97,9 +96,9 @@ export function provideAccessToken(
     .filter(
       (feature): feature is AccessTokenResponseExtractorFeature =>
         feature.kind ===
-        AccessTokenResponseExtractorsFeatureKind.AccessTokenResponseExtractorFeature,
+        SharedProviderFeatureKind.AccessTokenResponseExtractorFeature,
     )
-    .forEach(generateAccessTokenResponseExtractorProvider(extractorInfosToken));
+    .forEach((feature) => feature.assign(extractorInfosToken));
 
   return makeEnvironmentProviders([
     features.map((feature) => feature.providers),

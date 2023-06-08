@@ -12,6 +12,7 @@ export * from './lib/service-resolvers';
 
 export * from './lib/jwt-verifiers';
 
+export * from './lib/provide-shared.features';
 export * from './lib/provide-key-value-pair-storage';
 export * from './lib/provide-oauth2-client';
 export * from './lib/provide-state-action';
