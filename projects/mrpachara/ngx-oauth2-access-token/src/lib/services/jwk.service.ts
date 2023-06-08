@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
 
 import {
@@ -8,12 +8,17 @@ import {
   SupportedJwkAlgNotFoundError,
 } from '../errors';
 import { findJwk, isProvidedSignature } from '../functions';
-import { JWT_VERIFIERS } from '../tokens';
-import { JwkFullConfig, JwkSet, JwtInfo } from '../types';
+import {
+  DEFAULT_JWT_VERIFIERS,
+  JWT_VERIFIERS,
+  SKIP_ASSIGNING_ACCESS_TOKEN,
+} from '../tokens';
+import { JwkFullConfig, JwkSet, JwtInfo, JwtVerifier } from '../types';
 
 export class JwkService {
   private http = inject(HttpClient);
-  private verifiers = inject(JWT_VERIFIERS);
+  private defaultVerifiers = inject(DEFAULT_JWT_VERIFIERS);
+  private scopedVerifiers = inject(JWT_VERIFIERS);
 
   get name() {
     return this.config.name;
@@ -23,10 +28,16 @@ export class JwkService {
     return this.config.issuer;
   }
 
-  constructor(private readonly config: JwkFullConfig) {}
+  private readonly verifiers: JwtVerifier[];
+
+  constructor(private readonly config: JwkFullConfig) {
+    this.verifiers = [...this.scopedVerifiers, ...this.defaultVerifiers];
+  }
 
   private fetchJwkSet(): Observable<JwkSet> {
-    return this.http.get<JwkSet>(this.config.jwkSetUrl);
+    return this.http.get<JwkSet>(this.config.jwkSetUrl, {
+      context: new HttpContext().set(SKIP_ASSIGNING_ACCESS_TOKEN, true),
+    });
   }
 
   async verify(jwtInfo: JwtInfo): Promise<boolean> {

@@ -1,5 +1,4 @@
 import {
-  ENVIRONMENT_INITIALIZER,
   EnvironmentProviders,
   InjectionToken,
   Provider,
@@ -10,12 +9,8 @@ import {
 
 import { configJwk } from './functions';
 import { JwkService } from './services';
-import { JWK_SERVICES, JWT_INITIALIZED_STATE, JWT_VERIFIERS } from './tokens';
+import { JWK_SERVICES } from './tokens';
 import { JwkConfig, JwkFullConfig } from './types';
-
-import { JwtEcdsaVerifier } from './jwt-verifiers/jwt-ecdsa.verifier';
-import { JwtHmacVerifier } from './jwt-verifiers/jwt-hmac.verifier';
-import { JwtRsassaVerifier } from './jwt-verifiers/jwt-rsassa.verifier';
 
 export function provideJwk(
   config: JwkConfig,
@@ -25,6 +20,10 @@ export function provideJwk(
 
   const fullConfigToken = new InjectionToken<JwkFullConfig>(
     `jwk-full-config-${fullConfig.name}`,
+    {
+      providedIn: 'root',
+      factory: () => fullConfig,
+    },
   );
 
   const providerFeatures = features.filter(
@@ -68,26 +67,6 @@ export function provideJwk(
     { provide: fullConfigToken, useValue: fullConfig },
 
     features.map((feature) => feature.providers),
-
-    {
-      provide: ENVIRONMENT_INITIALIZER,
-      multi: true,
-      useValue: () => {
-        const initializedState = inject(JWT_INITIALIZED_STATE);
-
-        if (!initializedState.initialized) {
-          initializedState.initialized = true;
-
-          const verifiers = inject(JWT_VERIFIERS);
-
-          verifiers.push(
-            inject(JwtHmacVerifier),
-            inject(JwtRsassaVerifier),
-            inject(JwtEcdsaVerifier),
-          );
-        }
-      },
-    },
   ]);
 }
 

@@ -24,6 +24,10 @@ export function provideOauth2Client(
 
   const fullConfigToken = new InjectionToken<Oauth2ClientFullConfig>(
     `oauth2-client-full-config-${fullConfig.name}`,
+    {
+      providedIn: 'root',
+      factory: () => fullConfig,
+    },
   );
 
   const selfProviders = features.filter(
@@ -67,8 +71,6 @@ export function provideOauth2Client(
     );
 
   return makeEnvironmentProviders([
-    { provide: fullConfigToken, useValue: fullConfig },
-
     features.map((feature) => feature.providers),
   ]);
 }

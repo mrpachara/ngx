@@ -8,18 +8,18 @@ import {
 } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { configAccessToken, configRefreshToken } from './functions';
+import { configAccessToken } from './functions';
+import { generateAccessTokenResponseExtractorProvider } from './provide-helper.functions';
 import {
-  AccessTokenService,
-  Oauth2Client,
-  RefreshTokenService,
-} from './services';
+  AccessTokenResponseExtractorFeature,
+  AccessTokenResponseExtractorsFeatureKind,
+} from './provide-access-token-response-extractors';
+import { AccessTokenService, Oauth2Client } from './services';
 import { ACCESS_TOKEN_SERVICES, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
 import {
   AccessTokenConfig,
   AccessTokenFullConfig,
   AccessTokenResponse,
-  AccessTokenResponseExtractor,
   AccessTokenResponseExtractorInfo,
 } from './types';
 
@@ -31,17 +31,17 @@ export function provideAccessToken(
 
   const fullConfigToken = new InjectionToken<AccessTokenFullConfig>(
     `access-token-full-config-${fullConfig.name}`,
+    {
+      providedIn: 'root',
+      factory: () => fullConfig,
+    },
   );
 
   const extractorInfosToken = new InjectionToken<
     AccessTokenResponseExtractorInfo[]
-  >(`access-token-extractor-infos-${fullConfig.name}`);
-
-  features.unshift({
-    kind: AccessTokenFeatureKind.AccessTokenResponseExtractorFeature,
-    providers: [],
-    type: RefreshTokenService,
-    config: configRefreshToken({}),
+  >(`access-token-extractor-infos-${fullConfig.name}`, {
+    providedIn: 'root',
+    factory: () => [],
   });
 
   const providerFeatures = features.filter(
@@ -97,19 +97,11 @@ export function provideAccessToken(
     .filter(
       (feature): feature is AccessTokenResponseExtractorFeature =>
         feature.kind ===
-        AccessTokenFeatureKind.AccessTokenResponseExtractorFeature,
+        AccessTokenResponseExtractorsFeatureKind.AccessTokenResponseExtractorFeature,
     )
-    .forEach((feature) =>
-      feature.providers.push({
-        provide: extractorInfosToken,
-        multi: true,
-        useFactory: () => [inject(feature.type), feature.config] as const,
-      }),
-    );
+    .forEach(generateAccessTokenResponseExtractorProvider(extractorInfosToken));
 
   return makeEnvironmentProviders([
-    { provide: fullConfigToken, useValue: fullConfig },
-
     features.map((feature) => feature.providers),
   ]);
 }
@@ -117,7 +109,6 @@ export function provideAccessToken(
 export enum AccessTokenFeatureKind {
   AccessTokenProviderFeature,
   RenewAccessTokenSourceFeature,
-  AccessTokenResponseExtractorFeature,
 }
 
 export interface AccessTokenFeature<K extends AccessTokenFeatureKind> {
@@ -164,29 +155,6 @@ export function withRenewAccessTokenSource(
         useFactory: sourceFactory,
       },
     ],
-  };
-}
-
-export type AccessTokenResponseExtractorFeature<
-  T extends AccessTokenResponse = AccessTokenResponse,
-  C = unknown,
-> = AccessTokenFeature<AccessTokenFeatureKind.AccessTokenResponseExtractorFeature> & {
-  type: Type<AccessTokenResponseExtractor<T, C>>;
-  config: C;
-};
-
-export function withAccessTokenResponseExtractor<
-  T extends AccessTokenResponse,
-  C,
->(
-  type: Type<AccessTokenResponseExtractor<T, C>>,
-  config: C,
-): AccessTokenResponseExtractorFeature<T, C> {
-  return {
-    kind: AccessTokenFeatureKind.AccessTokenResponseExtractorFeature,
-    type: type,
-    config: config,
-    providers: [],
   };
 }
 
