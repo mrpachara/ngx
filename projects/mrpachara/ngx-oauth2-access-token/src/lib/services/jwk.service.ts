@@ -18,7 +18,14 @@ import { JwkFullConfig, JwkSet, JwtInfo, JwtVerifier } from '../types';
 export class JwkService {
   private http = inject(HttpClient);
   private defaultVerifiers = inject(DEFAULT_JWT_VERIFIERS);
-  private scopedVerifiers = inject(JWT_VERIFIERS);
+  private parentVerifiers = inject(JWT_VERIFIERS, {
+    skipSelf: true,
+    optional: true,
+  });
+  private scopedVerifiers = inject(JWT_VERIFIERS, {
+    self: true,
+    optional: true,
+  });
 
   get name() {
     return this.config.name;
@@ -31,7 +38,13 @@ export class JwkService {
   private readonly verifiers: JwtVerifier[];
 
   constructor(private readonly config: JwkFullConfig) {
-    this.verifiers = [...this.scopedVerifiers, ...this.defaultVerifiers];
+    this.verifiers = [
+      ...new Set([
+        ...(this.scopedVerifiers ?? []),
+        ...(this.parentVerifiers ?? []),
+        ...this.defaultVerifiers,
+      ]),
+    ];
   }
 
   private fetchJwkSet(): Observable<JwkSet> {
