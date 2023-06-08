@@ -42,13 +42,13 @@ export function provideOauth2Client(
   }
 
   if (selfProviders.length === 0) {
-    features.push({
-      kind: Oauth2ClientFeatureKind.Oauth2ClientProviderFeature,
-      providers: [],
-      injectionToken: Oauth2Client,
-      factory: (fullConfig) =>
-        new Oauth2Client(fullConfig, inject(OAUTH2_CLIENT_ERROR_TRANSFORMER)),
-    });
+    features.push(
+      withOauth2ClientProvider(
+        Oauth2Client,
+        (fullConfig) =>
+          new Oauth2Client(fullConfig, inject(OAUTH2_CLIENT_ERROR_TRANSFORMER)),
+      ),
+    );
   }
 
   features

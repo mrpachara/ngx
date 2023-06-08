@@ -39,13 +39,13 @@ export function provideAuthorizationCode(
   }
 
   if (prodiverFeatures.length === 0) {
-    features.push({
-      kind: AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature,
-      providers: [],
-      injectionToken: AuthorizationCodeService,
-      factory: (fullConfig) =>
-        new AuthorizationCodeService(fullConfig, inject(Oauth2Client)),
-    });
+    features.push(
+      withAuthorizationCodeProvider(
+        AuthorizationCodeService,
+        (fullConfig) =>
+          new AuthorizationCodeService(fullConfig, inject(Oauth2Client)),
+      ),
+    );
   }
 
   features

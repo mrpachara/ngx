@@ -36,12 +36,9 @@ export function provideJwk(
   }
 
   if (providerFeatures.length === 0) {
-    features.push({
-      kind: JwkFeatureKind.JwkProviderFeature,
-      providers: [],
-      injectionToken: JwkService,
-      factory: (fullConfig) => new JwkService(fullConfig),
-    });
+    features.push(
+      withJwkProvider(JwkService, (fullConfig) => new JwkService(fullConfig)),
+    );
   }
 
   features

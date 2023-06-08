@@ -55,18 +55,18 @@ export function provideAccessToken(
   }
 
   if (providerFeatures.length === 0) {
-    features.push({
-      kind: AccessTokenFeatureKind.AccessTokenProviderFeature,
-      providers: [],
-      injectionToken: AccessTokenService,
-      factory: (fullConfig, extractorInfos) =>
-        new AccessTokenService(
-          fullConfig,
-          inject(Oauth2Client),
-          extractorInfos,
-          inject(RENEW_ACCESS_TOKEN_SOURCE, { optional: true }),
-        ),
-    });
+    features.push(
+      withAccessTokenProvider(
+        AccessTokenService,
+        (fullConfig, extractorInfos) =>
+          new AccessTokenService(
+            fullConfig,
+            inject(Oauth2Client),
+            extractorInfos,
+            inject(RENEW_ACCESS_TOKEN_SOURCE, { optional: true }),
+          ),
+      ),
+    );
   }
 
   features
