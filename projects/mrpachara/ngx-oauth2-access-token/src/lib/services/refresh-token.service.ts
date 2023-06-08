@@ -19,6 +19,7 @@ import {
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
   AccessTokenServiceInfo,
+  AccessTokenServiceInfoProvidable,
   ExtractorPipeReturn,
   RefreshTokenFullConfig,
   Scopes,
@@ -112,9 +113,11 @@ export class RefreshTokenService
   }
 
   exchangeRefreshToken(
-    serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
+    serviceInfoProvidable: AccessTokenServiceInfoProvidable,
     scopes?: Scopes,
   ): Observable<AccessTokenResponse> {
+    const serviceInfo = serviceInfoProvidable.serviceInfo(this);
+
     return defer(() => this.loadRefreshToken(serviceInfo)).pipe(
       switchMap((token) => {
         const scope = scopes ? validateAndTransformScopes(scopes) : null;
