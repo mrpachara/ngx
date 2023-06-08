@@ -37,6 +37,7 @@ import {
   AccessTokenResponseExtractorInfo,
   AccessTokenResponseInfo,
   AccessTokenServiceInfo,
+  AccessTokenServiceInfoProvidable,
   Provided,
   StandardGrantsParams,
   StoredAccessTokenResponse,
@@ -48,7 +49,7 @@ import {
 
 const latencyTime = 2 * 5 * 1000;
 
-export class AccessTokenService {
+export class AccessTokenService implements AccessTokenServiceInfoProvidable {
   private readonly storageFactory = inject(AccessTokenStorageFactory);
   private readonly storage: AccessTokenStorage;
   private readonly refreshTokenService = inject(RefreshTokenService);
@@ -118,23 +119,19 @@ export class AccessTokenService {
         race(
           defer(() => this.loadStoredAccessTokenResponse()).pipe(
             catchError((accessTokenErr: unknown) => {
-              return this.refreshTokenService
-                .exchangeRefreshToken(
-                  this.serviceInfo(this.refreshTokenService),
-                )
-                .pipe(
-                  this.storeTokenPipe,
-                  catchError((refreshTokenErr: unknown) => {
-                    if (
-                      refreshTokenErr instanceof RefreshTokenNotFoundError ||
-                      refreshTokenErr instanceof RefreshTokenExpiredError
-                    ) {
-                      return throwError(() => accessTokenErr);
-                    }
+              return this.refreshTokenService.exchangeRefreshToken(this).pipe(
+                this.storeTokenPipe,
+                catchError((refreshTokenErr: unknown) => {
+                  if (
+                    refreshTokenErr instanceof RefreshTokenNotFoundError ||
+                    refreshTokenErr instanceof RefreshTokenExpiredError
+                  ) {
+                    return throwError(() => accessTokenErr);
+                  }
 
-                    return throwError(() => refreshTokenErr);
-                  }),
-                );
+                  return throwError(() => refreshTokenErr);
+                }),
+              );
             }),
             catchError((err) => {
               if (this.renewAccessToken$) {
@@ -170,25 +167,6 @@ export class AccessTokenService {
       ),
       share(),
     );
-  }
-
-  private serviceInfo<T extends AccessTokenResponse, C>(
-    extractor: AccessTokenResponseExtractor<T, C>,
-  ): AccessTokenServiceInfo<C> {
-    if (!this.extractorMap.has(extractor as AccessTokenResponseExtractor)) {
-      throw new NonRegisteredExtractorError(
-        extractor.constructor.name,
-        this.constructor.name,
-      );
-    }
-
-    return {
-      serviceConfig: this.config,
-      config: this.extractorMap.get(
-        extractor as AccessTokenResponseExtractor,
-      ) as C,
-      client: this.client,
-    };
   }
 
   private readonly loadStoredAccessTokenResponse = async () => {
@@ -325,6 +303,25 @@ export class AccessTokenService {
       ...params,
     });
   };
+
+  serviceInfo<T extends AccessTokenResponse, C>(
+    extractor: AccessTokenResponseExtractor<T, C>,
+  ): AccessTokenServiceInfo<C> {
+    if (!this.extractorMap.has(extractor as AccessTokenResponseExtractor)) {
+      throw new NonRegisteredExtractorError(
+        extractor.constructor.name,
+        this.constructor.name,
+      );
+    }
+
+    return {
+      serviceConfig: this.config,
+      config: this.extractorMap.get(
+        extractor as AccessTokenResponseExtractor,
+      ) as C,
+      client: this.client,
+    };
+  }
 
   fetchToken(): Observable<AccessTokenInfo> {
     return this.accessTokenResponse$.pipe(

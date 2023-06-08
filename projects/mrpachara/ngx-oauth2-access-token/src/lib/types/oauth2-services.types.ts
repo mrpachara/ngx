@@ -48,6 +48,12 @@ export interface AccessTokenResponseExtractor<
   ): ExtractorPipeReturn<T, R>;
 }
 
+export interface AccessTokenServiceInfoProvidable {
+  serviceInfo<T extends AccessTokenResponse, C>(
+    extractor: AccessTokenResponseExtractor<T, C>,
+  ): AccessTokenServiceInfo<C>;
+}
+
 export type AccessTokenInfo = {
   type: string;
   token: string;
