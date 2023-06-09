@@ -17,7 +17,6 @@ import {
 export const defaultOauth2ClientConfig: PickOptional<
   Omit<Oauth2ClientConfig, 'clientSecret'>
 > = {
-  debug: false,
   clientCredentialsInParams: false,
 };
 
@@ -33,7 +32,6 @@ export function configOauth2Client(
 const defaultAccessTokenTtl = 10 * 60 * 1000;
 
 export const defaultAccessTokenConfig: PickOptional<AccessTokenConfig> = {
-  debug: false,
   additionalParams: {},
   accessTokenTtl: defaultAccessTokenTtl,
 };
@@ -52,7 +50,6 @@ const defaultCodeVerifierLength = 56;
 
 export const defaultAuthorizationCodeConfig: PickOptional<AuthorizationCodeConfig> =
   {
-    debug: false,
     pkce: 'none',
     stateTtl: defaultStateTtl,
     codeVerifierLength: defaultCodeVerifierLength,
@@ -94,9 +91,7 @@ export function configIdToken(config: IdTokenConfig): IdTokenFullConfig {
   };
 }
 
-export const defaultJwkConfig: PickOptional<JwkConfig> = {
-  debug: false,
-};
+export const defaultJwkConfig: PickOptional<JwkConfig> = {};
 
 export function configJwk(config: JwkConfig): JwkFullConfig {
   return {

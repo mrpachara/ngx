@@ -24,7 +24,6 @@ const oauth2ClientConfig: Oauth2ClientConfig = {
 
 const accessTokenServiceConfig: AccessTokenConfig = {
   name: 'oauth2',
-  debug: false,
 };
 
 describe('AccessTokenService', () => {
