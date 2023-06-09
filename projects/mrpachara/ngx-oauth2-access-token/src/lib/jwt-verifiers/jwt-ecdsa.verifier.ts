@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, isDevMode } from '@angular/core';
 
 import { JwkBase, JwtInfo, JwtVerifier, Provided } from '../types';
 import { isJwkEcdsa } from '../functions/jwk.functions';
@@ -12,30 +12,38 @@ export class JwtEcdsaVerifier implements JwtVerifier {
     jwk: JwkBase,
   ): Promise<boolean | undefined> {
     if (isJwkEcdsa(jwk)) {
-      const key = await crypto.subtle.importKey(
-        'jwk',
-        jwk,
-        {
-          name: 'ECDSA',
-          namedCurve: jwk.crv,
-        },
-        true,
-        ['verify'],
-      );
-      const encoder = new TextEncoder();
-      const hash = `SHA-${jwk.crv.slice(2)}`;
-
-      return await crypto.subtle.verify(
-        {
-          name: key.algorithm.name,
-          hash: {
-            name: hash,
+      try {
+        const key = await crypto.subtle.importKey(
+          'jwk',
+          jwk,
+          {
+            name: 'ECDSA',
+            namedCurve: jwk.crv,
           },
-        },
-        key,
-        jwtInfo.signature,
-        encoder.encode(jwtInfo.content),
-      );
+          true,
+          ['verify'],
+        );
+        const encoder = new TextEncoder();
+        const hash = `SHA-${jwk.crv.slice(2)}`;
+
+        return await crypto.subtle.verify(
+          {
+            name: key.algorithm.name,
+            hash: {
+              name: hash,
+            },
+          },
+          key,
+          jwtInfo.signature,
+          encoder.encode(jwtInfo.content),
+        );
+      } catch (err) {
+        if (isDevMode()) {
+          console.warn(err);
+        }
+
+        return undefined;
+      }
     }
 
     return undefined;
