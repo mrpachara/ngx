@@ -39,7 +39,6 @@ import { routes } from './app.routes';
 
 const clientConfig: Oauth2ClientConfig = {
   name: 'google',
-  debug: true,
   clientId: clientId,
   clientSecret: clientSecret,
   accessTokenUrl: 'https://oauth2.googleapis.com/token',
@@ -47,7 +46,6 @@ const clientConfig: Oauth2ClientConfig = {
 
 const authorizationCodeConfig: AuthorizationCodeConfig = {
   name: 'google',
-  debug: true,
   authorizationCodeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
   redirectUri: 'http://localhost:4200/google/authorization',
   pkce: 'S256',
@@ -60,7 +58,6 @@ const authorizationCodeConfig: AuthorizationCodeConfig = {
 
 const accessTokenConfig: AccessTokenConfig = {
   name: 'google',
-  debug: true,
 };
 
 // NOTE: configIdToken() returns the full configuration
@@ -71,7 +68,6 @@ const idTokenFullConfig = configIdToken({
 
 const jwkConfig: JwkConfig = {
   name: 'google',
-  debug: true,
   issuer: 'https://accounts.google.com',
   jwkSetUrl: 'https://www.googleapis.com/oauth2/v3/certs',
 };

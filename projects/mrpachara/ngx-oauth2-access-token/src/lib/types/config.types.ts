@@ -6,16 +6,12 @@ type NameableConfig = {
   readonly name: string;
 };
 
-type DebugableConfig = {
-  readonly debug: boolean;
-};
-
 type AdditionalParams = {
   readonly additionalParams: { readonly [param: string]: string };
 };
 
 export type Oauth2ClientConfig = NameableConfig &
-  Partial<DebugableConfig> & {
+   {
     readonly clientId: string;
     readonly clientSecret?: string;
     readonly accessTokenUrl: string;
@@ -28,7 +24,6 @@ export type Oauth2ClientFullConfig = RequiredExcept<
 >;
 
 export type AccessTokenConfig = NameableConfig &
-  Partial<DebugableConfig> &
   Partial<AdditionalParams> & {
     readonly accessTokenTtl?: number;
   };
@@ -41,7 +36,6 @@ export type AccessTokenResponseExtractorInfo<
 export type AccessTokenFullConfig = Required<AccessTokenConfig>;
 
 export type AuthorizationCodeConfig = NameableConfig &
-  Partial<DebugableConfig> &
   Partial<AdditionalParams> & {
     readonly authorizationCodeUrl: string;
     readonly redirectUri: string;
@@ -64,8 +58,7 @@ export type IdTokenConfig = {
 
 export type IdTokenFullConfig = Required<IdTokenConfig>;
 
-export type JwkConfig = NameableConfig &
-  Partial<DebugableConfig> & {
+export type JwkConfig = NameableConfig & {
     readonly issuer: string;
     readonly jwkSetUrl: string;
   };

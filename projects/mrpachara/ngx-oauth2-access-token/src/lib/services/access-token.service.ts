@@ -1,4 +1,4 @@
-import { inject } from '@angular/core';
+import { inject, isDevMode } from '@angular/core';
 import {
   catchError,
   defer,
@@ -46,6 +46,7 @@ import {
   ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
   DEFAULT_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
 } from '../tokens';
+import { HttpErrorResponse } from '@angular/common/http';
 
 const latencyTime = 2 * 5 * 1000;
 
@@ -135,14 +136,21 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
             }),
             catchError((err) => {
               if (this.renewAccessToken$) {
-                if (this.config.debug) console.log(err);
+                if (isDevMode() && !(err instanceof HttpErrorResponse)) {
+                  console.log(err);
+                }
+
+                if (err instanceof HttpErrorResponse) {
+                  console.warn(err);
+                }
+
                 return this.renewAccessToken$.pipe(this.storeTokenPipe);
               } else {
                 return throwError(() => err);
               }
             }),
             tap(() => {
-              if (this.config.debug) {
+              if (isDevMode()) {
                 console.log('access-token-race:', 'I am a winner!!!');
               }
             }),
@@ -158,7 +166,7 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
             ),
             take(1),
             tap(() => {
-              if (this.config.debug) {
+              if (isDevMode()) {
                 console.log('access-token-race:', 'I am a loser!!!');
               }
             }),
@@ -230,7 +238,7 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
         ),
     );
 
-    if (this.config.debug) {
+    if (isDevMode()) {
       const errors = results
         .filter(
           (result): result is PromiseRejectedResult =>
@@ -262,7 +270,7 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
         ),
     );
 
-    if (this.config.debug) {
+    if (isDevMode()) {
       const errors = results
         .filter(
           (result): result is PromiseRejectedResult =>
