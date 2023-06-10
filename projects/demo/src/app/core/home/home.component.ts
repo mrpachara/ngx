@@ -13,7 +13,6 @@ import {
   IdTokenInfo,
   IdTokenService,
   JwkServiceResolver,
-  RefreshTokenService,
 } from '@mrpachara/ngx-oauth2-access-token';
 
 @Component({
@@ -27,7 +26,6 @@ import {
 export class HomeComponent {
   private readonly accessTokenService = inject(AccessTokenService);
   private readonly idTokenService = inject(IdTokenService);
-  private readonly refreshTokenService = inject(RefreshTokenService);
   private readonly jwkServiceResolver = inject(JwkServiceResolver);
 
   protected readonly errorAccessTokenMessage = signal<string | null>(null);
@@ -78,16 +76,7 @@ export class HomeComponent {
     ),
   );
 
-  exchangeAccessToken(): void {
-    this.refreshTokenService
-      .exchangeRefreshToken(this.accessTokenService)
-      .pipe(take(1))
-      .subscribe({
-        next: async (accessTokenResponse) => {
-          await this.accessTokenService.setAccessTokenResponse(
-            accessTokenResponse,
-          );
-        },
-      });
+  renewAccessToken(): void {
+    this.accessTokenService.exchangeRefreshToken().pipe(take(1)).subscribe();
   }
 }

@@ -26,6 +26,7 @@ import { RefreshTokenService } from './refresh-token.service';
 
 import {
   AccessTokenExpiredError,
+  InvalidScopeError,
   NonRegisteredExtractorError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
@@ -41,6 +42,7 @@ import {
   AccessTokenServiceInfo,
   AccessTokenServiceInfoProvidable,
   Provided,
+  Scopes,
   StandardGrantsParams,
   StoredAccessTokenResponse,
 } from '../types';
@@ -49,6 +51,7 @@ import {
   DEFAULT_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
 } from '../tokens';
 import { HttpErrorResponse } from '@angular/common/http';
+import { validateAndTransformScopes } from '../functions';
 
 const latencyTime = 2 * 5 * 1000;
 
@@ -127,8 +130,7 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
         race(
           defer(() => this.loadStoredAccessTokenResponse()).pipe(
             catchError((accessTokenErr: unknown) => {
-              return this.refreshTokenService.exchangeRefreshToken(this).pipe(
-                this.storeTokenPipe,
+              return this.storeByRefreshToken().pipe(
                 catchError((refreshTokenErr: unknown) => {
                   if (
                     refreshTokenErr instanceof RefreshTokenNotFoundError ||
@@ -334,6 +336,29 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
     });
   };
 
+  private storeByRefreshToken(
+    scopes?: Scopes,
+  ): Observable<StoredAccessTokenResponse> {
+    return this.refreshTokenService
+      .fetchToken(this.serviceInfo(this.refreshTokenService))
+      .pipe(
+        switchMap((token) => {
+          const scope = scopes ? validateAndTransformScopes(scopes) : null;
+
+          if (scope instanceof InvalidScopeError) {
+            return throwError(() => scope);
+          }
+
+          return this.requestAccessToken({
+            grant_type: 'refresh_token',
+            refresh_token: token,
+            ...(scope ? { scope } : {}),
+          });
+        }),
+        this.storeTokenPipe,
+      );
+  }
+
   serviceInfo<T extends AccessTokenResponse, C>(
     extractor: AccessTokenResponseExtractor<T, C>,
   ): AccessTokenServiceInfo<C> {
@@ -378,6 +403,12 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
     watchMode = false,
   ): Observable<AccessTokenResponseInfo<R>> {
     return this.applyWatch(watchMode) as Observable<AccessTokenResponseInfo<R>>;
+  }
+
+  exchangeRefreshToken(scopes?: Scopes): Observable<AccessTokenResponse> {
+    return this.storeByRefreshToken(scopes).pipe(
+      map((storedAccessTokenResponse) => storedAccessTokenResponse.response),
+    );
   }
 
   extract<T extends AccessTokenResponse, C, R>(
