@@ -2,11 +2,12 @@ import { inject, isDevMode } from '@angular/core';
 import {
   catchError,
   defer,
+  distinctUntilChanged,
   filter,
   firstValueFrom,
-  forkJoin,
   from,
   map,
+  merge,
   Observable,
   of,
   pipe,
@@ -78,7 +79,7 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
 
   private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse>;
 
-  private readonly watchAccessTokenResponse$ =
+  private readonly watchCurrentStoredAccessTokenResponse$ =
     new Subject<StoredAccessTokenResponse>();
 
   get name() {
@@ -217,7 +218,7 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
       response: accessTokenResponse,
     };
 
-    return { storingAccessTokenResponse };
+    return storingAccessTokenResponse;
   };
 
   private readonly updateToListeners = async (
@@ -289,21 +290,26 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
     return results;
   };
 
-  private readonly storeStoringToken = ({
-    storingAccessTokenResponse,
-  }: {
-    storingAccessTokenResponse: StoredAccessTokenResponse;
-  }) => {
-    return forkJoin([
-      this.storeStoringAccessTokenResponse(storingAccessTokenResponse),
-      this.updateToListeners(storingAccessTokenResponse),
-    ]);
+  private readonly storeStoringToken = async (
+    storingAccessTokenResponse: StoredAccessTokenResponse,
+  ) => {
+    await this.updateToListeners(storingAccessTokenResponse);
+
+    // NOTE: Storing AccessTokenResponse must be called after updateToListeners()
+    //       unless localStorage Event will be tiggered too early.
+    return await this.storeStoringAccessTokenResponse(
+      storingAccessTokenResponse,
+    );
   };
 
   private readonly storeTokenPipe = pipe(
     map(this.transformAccessTokenResponse),
     switchMap(this.storeStoringToken),
-    map(([storedAccessTokenResponse]) => storedAccessTokenResponse),
+    tap((storedAccessTokenResponse) =>
+      this.watchCurrentStoredAccessTokenResponse$.next(
+        storedAccessTokenResponse,
+      ),
+    ),
   );
 
   private readonly requestAccessToken = (
@@ -334,8 +340,29 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
     };
   }
 
-  fetchToken(): Observable<AccessTokenInfo> {
-    return this.accessTokenResponse$.pipe(
+  private applyWatch(
+    watchMode: boolean,
+  ): Observable<StoredAccessTokenResponse> {
+    if (watchMode) {
+      return merge(
+        this.accessTokenResponse$,
+        this.watchCurrentStoredAccessTokenResponse$,
+        this.watchStoredAccessTokenResponse().pipe(
+          filter(
+            (
+              storedAccessTokenResponse,
+            ): storedAccessTokenResponse is StoredAccessTokenResponse =>
+              storedAccessTokenResponse !== null,
+          ),
+        ),
+      ).pipe(distinctUntilChanged());
+    }
+
+    return this.accessTokenResponse$;
+  }
+
+  fetchToken(watchMode = false): Observable<AccessTokenInfo> {
+    return this.applyWatch(watchMode).pipe(
       map(
         (storedAccessTokenResponse): AccessTokenInfo => ({
           type: storedAccessTokenResponse.response.token_type,
@@ -345,16 +372,17 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
     );
   }
 
-  fetchResponse<
-    R extends AccessTokenResponse = AccessTokenResponse,
-  >(): Observable<AccessTokenResponseInfo<R>> {
-    return this.accessTokenResponse$ as Observable<AccessTokenResponseInfo<R>>;
+  fetchResponse<R extends AccessTokenResponse = AccessTokenResponse>(
+    watchMode = false,
+  ): Observable<AccessTokenResponseInfo<R>> {
+    return this.applyWatch(watchMode) as Observable<AccessTokenResponseInfo<R>>;
   }
 
   extract<T extends AccessTokenResponse, C, R>(
     extractor: AccessTokenResponseExtractor<T, C, R>,
+    watchMode = false,
   ): Observable<R> {
-    return this.fetchResponse<T>().pipe(
+    return this.fetchResponse<T>(watchMode).pipe(
       extractor.extractPipe(this.serviceInfo(extractor)),
     );
   }
