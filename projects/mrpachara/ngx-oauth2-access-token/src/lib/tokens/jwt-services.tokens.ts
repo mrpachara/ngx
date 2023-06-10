@@ -2,6 +2,7 @@ import { InjectionToken, inject } from '@angular/core';
 
 import {
   JwtEcdsaVerifier,
+  JwtEddsaVerifier,
   JwtHmacVerifier,
   JwtRsassaVerifier,
 } from '../jwt-verifiers';
@@ -25,6 +26,7 @@ export const DEFAULT_JWT_VERIFIERS = new InjectionToken<JwtVerifier[]>(
       inject(JwtHmacVerifier),
       inject(JwtRsassaVerifier),
       inject(JwtEcdsaVerifier),
+      inject(JwtEddsaVerifier),
     ],
   },
 );

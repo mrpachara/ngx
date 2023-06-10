@@ -55,7 +55,7 @@ export type JwkHashBase = JwkSymmetricKeyBase & {
 /** HMAC - Hash-based Message Authentication Codes Algorithm */
 export type JwkHmac<SHA extends '256' | '384' | '512' = '256' | '384' | '512'> =
   JwkHashBase & {
-    alg?: `HS${SHA}`;
+    alg: `HS${SHA}`;
   };
 
 /** Asymmetric Key */
@@ -81,10 +81,10 @@ export type JwkRsaBase = JwkAsymmetricKeyBase & {
 export type JwkRsassa<
   SHA extends '256' | '384' | '512' = '256' | '384' | '512',
 > = JwkRsaBase & {
-  alg?: `RS${SHA}`;
+  alg: `RS${SHA}`;
 };
 
-/** EC - Elliptic Curve Key */
+/** EC Key - Elliptic Curve Key */
 export type JwkEcBase = JwkAsymmetricKeyBase & {
   kty: 'EC';
   crv: string;
@@ -97,6 +97,20 @@ export type JwkEcdsa<P extends '256' | '384' | '512' = '256' | '384' | '512'> =
     alg?: `ES${P}`;
     crv: `P-${P}`;
     y: string;
+  };
+
+/** OKP Key - Octet Key Pair */
+export type JwkOkpBase = JwkAsymmetricKeyBase & {
+  kty: 'OKP';
+  crv: string;
+  x: string;
+};
+
+/** EdDSA - Edwards-Curve Digital Signature Algorithm */
+export type JwkEddsa<ED extends '25519' | '448' = '25519' | '448'> =
+  JwkOkpBase & {
+    alg?: 'EdDSA';
+    crv: `Ed${ED}`;
   };
 
 /** JWK Set */
