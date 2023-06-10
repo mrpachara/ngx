@@ -8,11 +8,11 @@ import {
   from,
   map,
   Observable,
-  ObservableInput,
   of,
   pipe,
   race,
   share,
+  Subject,
   switchMap,
   take,
   tap,
@@ -77,6 +77,9 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
   private readonly listeners: AccessTokenResponseExtractor[];
 
   private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse>;
+
+  private readonly watchAccessTokenResponse$ =
+    new Subject<StoredAccessTokenResponse>();
 
   get name() {
     return this.config.name;
@@ -353,19 +356,6 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
   ): Observable<R> {
     return this.fetchResponse<T>().pipe(
       extractor.extractPipe(this.serviceInfo(extractor)),
-    );
-  }
-
-  ready<R>(
-    process: (
-      accessTokenInfo: AccessTokenInfo,
-      serviceName: string,
-    ) => ObservableInput<R>,
-  ): Observable<R> {
-    return this.fetchToken().pipe(
-      switchMap((accessTokenInfo) =>
-        process(accessTokenInfo, this.config.name),
-      ),
     );
   }
 
