@@ -6,13 +6,14 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, filter, of, share, switchMap, tap } from 'rxjs';
+import { catchError, filter, of, share, switchMap, take, tap } from 'rxjs';
 
 import {
   AccessTokenService,
   IdTokenInfo,
   IdTokenService,
   JwkServiceResolver,
+  RefreshTokenService,
 } from '@mrpachara/ngx-oauth2-access-token';
 
 @Component({
@@ -26,6 +27,7 @@ import {
 export class HomeComponent {
   private readonly accessTokenService = inject(AccessTokenService);
   private readonly idTokenService = inject(IdTokenService);
+  private readonly refreshTokenService = inject(RefreshTokenService);
   private readonly jwkServiceResolver = inject(JwkServiceResolver);
 
   protected readonly errorAccessTokenMessage = signal<string | null>(null);
@@ -75,4 +77,17 @@ export class HomeComponent {
       switchMap(async (idToken) => this.jwkServiceResolver.verify(idToken)),
     ),
   );
+
+  exchangeAccessToken(): void {
+    this.refreshTokenService
+      .exchangeRefreshToken(this.accessTokenService)
+      .pipe(take(1))
+      .subscribe({
+        next: async (accessTokenResponse) => {
+          await this.accessTokenService.setAccessTokenResponse(
+            accessTokenResponse,
+          );
+        },
+      });
+  }
 }

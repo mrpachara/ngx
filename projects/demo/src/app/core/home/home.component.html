@@ -1,3 +1,9 @@
+<div>
+  <button type="button" (click)="exchangeAccessToken()">
+    Exchange Access Token
+  </button>
+</div>
+
 <h2>Access Token</h2>
 <ng-container *ngIf="accessToken() as accessToken; else loading">
   <pre>{{ accessToken | json }}</pre>

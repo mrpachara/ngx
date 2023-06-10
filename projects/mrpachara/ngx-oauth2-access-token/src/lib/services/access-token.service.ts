@@ -1,6 +1,7 @@
 import { inject, isDevMode } from '@angular/core';
 import {
   catchError,
+  concat,
   defer,
   distinctUntilChanged,
   filter,
@@ -79,8 +80,10 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
 
   private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse>;
 
-  private readonly watchCurrentStoredAccessTokenResponse$ =
+  private readonly subjectStoredAccessTokenResponse$ =
     new Subject<StoredAccessTokenResponse>();
+
+  private readonly storedAccessTokenResponse$: Observable<StoredAccessTokenResponse>;
 
   get name() {
     return this.config.name;
@@ -179,6 +182,18 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
       ),
       share(),
     );
+
+    this.storedAccessTokenResponse$ = merge(
+      this.subjectStoredAccessTokenResponse$,
+      this.watchStoredAccessTokenResponse().pipe(
+        filter(
+          (
+            storedAccessTokenResponse,
+          ): storedAccessTokenResponse is StoredAccessTokenResponse =>
+            storedAccessTokenResponse !== null,
+        ),
+      ),
+    ).pipe(distinctUntilChanged());
   }
 
   private readonly loadStoredAccessTokenResponse = async () => {
@@ -306,9 +321,7 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
     map(this.transformAccessTokenResponse),
     switchMap(this.storeStoringToken),
     tap((storedAccessTokenResponse) =>
-      this.watchCurrentStoredAccessTokenResponse$.next(
-        storedAccessTokenResponse,
-      ),
+      this.subjectStoredAccessTokenResponse$.next(storedAccessTokenResponse),
     ),
   );
 
@@ -344,18 +357,7 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
     watchMode: boolean,
   ): Observable<StoredAccessTokenResponse> {
     if (watchMode) {
-      return merge(
-        this.accessTokenResponse$,
-        this.watchCurrentStoredAccessTokenResponse$,
-        this.watchStoredAccessTokenResponse().pipe(
-          filter(
-            (
-              storedAccessTokenResponse,
-            ): storedAccessTokenResponse is StoredAccessTokenResponse =>
-              storedAccessTokenResponse !== null,
-          ),
-        ),
-      ).pipe(distinctUntilChanged());
+      return concat(this.accessTokenResponse$, this.storedAccessTokenResponse$);
     }
 
     return this.accessTokenResponse$;

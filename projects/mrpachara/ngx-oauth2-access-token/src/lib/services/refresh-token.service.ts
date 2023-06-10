@@ -112,6 +112,12 @@ export class RefreshTokenService
     );
   }
 
+  /**
+   * Exchange refresh token for access token.
+   *
+   * **Warning**, this method doesn't store the new access token. The new acess
+   * token must be sotred manually by using `AccessTokenService`.
+   */
   exchangeRefreshToken(
     serviceInfoProvidable: AccessTokenServiceInfoProvidable,
     scopes?: Scopes,
