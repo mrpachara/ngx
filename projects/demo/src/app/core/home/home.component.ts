@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { catchError, filter, from, of, share, switchMap } from 'rxjs';
+import { catchError, filter, of, share, switchMap, tap } from 'rxjs';
 
 import {
   AccessTokenService,
@@ -32,7 +32,8 @@ export class HomeComponent {
   protected readonly errorIdTokenMessage = signal<string | null>(null);
 
   protected readonly accessToken = toSignal(
-    this.accessTokenService.fetchToken().pipe(
+    this.accessTokenService.fetchToken(true).pipe(
+      tap(() => console.debug('get new access token')),
       catchError((err) => {
         if (typeof err.stack === 'string') {
           const [message] = err.stack.split('\n', 1);
@@ -46,20 +47,21 @@ export class HomeComponent {
     ),
   );
 
-  private readonly idToken$ = from(
-    this.accessTokenService.extract(this.idTokenService),
-  ).pipe(
-    catchError((err) => {
-      if (typeof err.stack === 'string') {
-        const [message] = err.stack.split('\n', 1);
-        this.errorIdTokenMessage.set(message);
-      } else {
-        this.errorIdTokenMessage.set(`${err}`);
-      }
-      return of(undefined);
-    }),
-    share(),
-  );
+  private readonly idToken$ = this.accessTokenService
+    .extract(this.idTokenService, true)
+    .pipe(
+      tap(() => console.debug('get new ID token')),
+      catchError((err) => {
+        if (typeof err.stack === 'string') {
+          const [message] = err.stack.split('\n', 1);
+          this.errorIdTokenMessage.set(message);
+        } else {
+          this.errorIdTokenMessage.set(`${err}`);
+        }
+        return of(undefined);
+      }),
+      share(),
+    );
 
   // NOTE: Unlike async pipe ( | async), toSignal() subscribes observable here.
   //       So the result could be evaluated before it is ready.

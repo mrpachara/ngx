@@ -87,7 +87,7 @@ export class LocalStorage implements KeyValuePairStorage {
 
     localStorage.setItem(this.stoageKey(key), this.transformToStorage(value));
 
-    return value;
+    return await (this.loadItem<T>(key) as Promise<T>);
   }
 
   async removeItem<T = unknown>(key: string): Promise<T | null> {

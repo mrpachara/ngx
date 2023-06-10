@@ -10,15 +10,14 @@ const tokenDataKeyName = `access-token-data` as const;
 export class AccessTokenStorage {
   private stoageKey = () => `${this.name}-${tokenDataKeyName}` as const;
 
-  private readonly accessToken$: Observable<StoredAccessTokenResponse | null>;
+  private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse | null>;
 
   constructor(
     private readonly name: string,
     private readonly storage: KeyValuePairStorage,
   ) {
-    this.accessToken$ = this.storage.watchItem<StoredAccessTokenResponse>(
-      this.stoageKey(),
-    );
+    this.accessTokenResponse$ =
+      this.storage.watchItem<StoredAccessTokenResponse>(this.stoageKey());
   }
 
   async loadAccessTokenResponse(): Promise<StoredAccessTokenResponse> {
@@ -46,7 +45,7 @@ export class AccessTokenStorage {
   }
 
   watchAccessTokenResponse(): Observable<StoredAccessTokenResponse | null> {
-    return this.accessToken$;
+    return this.accessTokenResponse$;
   }
 }
 
