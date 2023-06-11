@@ -1,6 +1,8 @@
 import { Observable } from 'rxjs';
 
 export interface KeyValuePairStorage {
+  readonly name: string;
+
   loadItem<T = unknown>(key: string): Promise<T | null>;
   storeItem<T = unknown>(key: string, value: T): Promise<T>;
   removeItem<T = unknown>(key: string): Promise<T | null>;
@@ -13,4 +15,8 @@ export interface KeyValuePairStorage {
 
   /** Return all keys from the storage. */
   keys(): Promise<string[]>;
+}
+
+export interface KeyValuePairStorageFactory {
+  create(storageName: string): KeyValuePairStorage;
 }

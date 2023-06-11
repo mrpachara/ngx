@@ -5,7 +5,7 @@ import { StoredAccessTokenResponse } from './types';
 
 import { AccessTokenNotFoundError } from '../errors';
 import { KeyValuePairStorage } from '../types';
-import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
+import { KEY_VALUE_PAIR_STORAGE_FACTORY } from '../tokens';
 
 const tokenDataKeyName = `access-token-data` as const;
 
@@ -13,6 +13,10 @@ export class AccessTokenStorage {
   private stoageKey = () => `${this.name}-${tokenDataKeyName}` as const;
 
   private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse | null>;
+
+  get keyValuePairStorage() {
+    return this.storage;
+  }
 
   constructor(
     private readonly name: string,
@@ -53,7 +57,7 @@ export class AccessTokenStorage {
 
 @Injectable({ providedIn: 'root' })
 export class AccessTokenStorageFactory {
-  private readonly storage = inject(KEY_VALUE_PAIR_STORAGE);
+  private readonly storageFactory = inject(KEY_VALUE_PAIR_STORAGE_FACTORY);
   private readonly existingNameSet = new Set<string>();
 
   create(name: string): AccessTokenStorage {
@@ -63,6 +67,6 @@ export class AccessTokenStorageFactory {
 
     this.existingNameSet.add(name);
 
-    return new AccessTokenStorage(name, this.storage);
+    return new AccessTokenStorage(name, this.storageFactory.create(name));
   }
 }

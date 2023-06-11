@@ -2,10 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, defer, pipe, switchMap } from 'rxjs';
 
 import { RefreshTokenExpiredError } from '../errors';
-import {
-  RefreshTokenStorage,
-  RefreshTokenStorageFactory,
-} from '../storage/refresh-token.storage.factory';
+import { RefreshTokenStorage } from '../storage';
 import {
   AccessTokenResponse,
   AccessTokenResponseExtractor,
@@ -28,18 +25,13 @@ export class RefreshTokenService
       string
     >
 {
-  private readonly storageFactory = inject(RefreshTokenStorageFactory);
-  private readonly storage: RefreshTokenStorage;
-
-  constructor() {
-    this.storage = this.storageFactory.create();
-  }
+  private readonly storage = inject(RefreshTokenStorage);
 
   private readonly loadRefreshToken = async (
     serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
   ) => {
     const storedRefreshToken = await this.storage.loadRefreshToken(
-      serviceInfo.serviceConfig.name,
+      serviceInfo.storage,
     );
 
     if (storedRefreshToken.expiresAt < Date.now()) {
@@ -54,14 +46,14 @@ export class RefreshTokenService
     token: string,
     currentTime: number,
   ) =>
-    this.storage.storeRefreshToken(serviceInfo.serviceConfig.name, {
+    this.storage.storeRefreshToken(serviceInfo.storage, {
       expiresAt: currentTime + serviceInfo.config.refreshTokenTtl - latencyTime,
       token,
     });
 
   private readonly removeRefreshToken = (
     serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
-  ) => this.storage.removeRefreshToken(serviceInfo.serviceConfig.name);
+  ) => this.storage.removeRefreshToken(serviceInfo.storage);
 
   async onAccessTokenResponseUpdate(
     serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,

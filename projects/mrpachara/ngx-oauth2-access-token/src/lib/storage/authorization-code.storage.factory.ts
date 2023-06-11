@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 
 import { StateExpiredError, StateNotFoundError } from '../errors';
 import { KeyValuePairStorage, StateData } from '../types';
-import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
+import { KEY_VALUE_PAIR_STORAGE_FACTORY } from '../tokens';
 
 const stateDataKeyName = `oauth-code-state` as const;
 
@@ -116,7 +116,7 @@ export class AuthorizationCodeStorage {
 
 @Injectable({ providedIn: 'root' })
 export class AuthorizationCodeStorageFactory {
-  private readonly storage = inject(KEY_VALUE_PAIR_STORAGE);
+  private readonly storageFactory = inject(KEY_VALUE_PAIR_STORAGE_FACTORY);
   private readonly existingNameSet = new Set<string>();
 
   create(name: string, stateTtl: number): AuthorizationCodeStorage {
@@ -128,6 +128,10 @@ export class AuthorizationCodeStorageFactory {
 
     this.existingNameSet.add(name);
 
-    return new AuthorizationCodeStorage(name, stateTtl, this.storage);
+    return new AuthorizationCodeStorage(
+      name,
+      stateTtl,
+      this.storageFactory.create(name),
+    );
   }
 }

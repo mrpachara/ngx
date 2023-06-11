@@ -11,6 +11,7 @@ import { AccessTokenFullConfig } from './config.types';
 
 import { Oauth2Client } from '../services';
 import { StoredAccessTokenResponse } from '../storage';
+import { KeyValuePairStorage } from './storages.types';
 
 export type Scopes = [string, ...string[]];
 
@@ -20,6 +21,7 @@ export type AccessTokenServiceInfo<C = unknown> = {
   serviceConfig: AccessTokenFullConfig;
   config: C;
   client: Oauth2Client;
+  storage: KeyValuePairStorage;
 };
 
 export type AccessTokenResponseInfo<
@@ -48,12 +50,6 @@ export interface AccessTokenResponseExtractor<
   extractPipe(
     serviceInfo: AccessTokenServiceInfo<C | undefined>,
   ): ExtractorPipeReturn<T, R>;
-}
-
-export interface AccessTokenServiceInfoProvidable {
-  serviceInfo<T extends AccessTokenResponse, C>(
-    extractor: AccessTokenResponseExtractor<T, C>,
-  ): AccessTokenServiceInfo<C>;
 }
 
 export type AccessTokenInfo = {

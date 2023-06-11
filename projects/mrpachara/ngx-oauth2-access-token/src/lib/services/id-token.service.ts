@@ -3,7 +3,7 @@ import { catchError, pipe, switchMap } from 'rxjs';
 
 import { IdTokenEncryptedError, IdTokenExpiredError } from '../errors';
 import { extractJwt, isJwtEncryptedPayload } from '../functions';
-import { IdTokenStorage, IdTokenStorageFactory } from '../storage';
+import { IdTokenStorage } from '../storage';
 import {
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
@@ -27,24 +27,17 @@ export class IdTokenService
       IdTokenInfo
     >
 {
-  private readonly storageFactory = inject(IdTokenStorageFactory);
-  private readonly storage: IdTokenStorage;
-
-  constructor() {
-    this.storage = this.storageFactory.create();
-  }
+  private readonly storage = inject(IdTokenStorage);
 
   private readonly storeIdToken = (
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
     token: JwtTokenType,
-  ) => this.storage.storeIdToken(serviceInfo.serviceConfig.name, token);
+  ) => this.storage.storeIdToken(serviceInfo.storage, token);
 
   private readonly loadIdTokenInfo = async (
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
   ) => {
-    const token = await this.storage.loadIdToken(
-      serviceInfo.serviceConfig.name,
-    );
+    const token = await this.storage.loadIdToken(serviceInfo.storage);
 
     return this.extractAndValidateIdToken(
       serviceInfo.serviceConfig.name,
@@ -54,7 +47,7 @@ export class IdTokenService
 
   private readonly removeIdToken = async (
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
-  ) => await this.storage.removeIdToken(serviceInfo.serviceConfig.name);
+  ) => await this.storage.removeIdToken(serviceInfo.storage);
 
   private extractAndValidateIdToken(
     serviceName: string,

@@ -44,7 +44,6 @@ import {
   AccessTokenResponseExtractorInfo,
   AccessTokenResponseInfo,
   AccessTokenServiceInfo,
-  AccessTokenServiceInfoProvidable,
   Provided,
   Scopes,
   StandardGrantsParams,
@@ -58,7 +57,7 @@ import { validateAndTransformScopes } from '../functions';
 
 const latencyTime = 2 * 5 * 1000;
 
-export class AccessTokenService implements AccessTokenServiceInfoProvidable {
+export class AccessTokenService {
   private readonly storageFactory = inject(AccessTokenStorageFactory);
   private readonly storage: AccessTokenStorage;
   private readonly refreshTokenService = inject(RefreshTokenService);
@@ -339,6 +338,26 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
     });
   };
 
+  private serviceInfo<T extends AccessTokenResponse, C>(
+    extractor: AccessTokenResponseExtractor<T, C>,
+  ): AccessTokenServiceInfo<C> {
+    if (!this.extractorMap.has(extractor as AccessTokenResponseExtractor)) {
+      throw new NonRegisteredExtractorError(
+        extractor.constructor.name,
+        this.constructor.name,
+      );
+    }
+
+    return {
+      serviceConfig: this.config,
+      config: this.extractorMap.get(
+        extractor as AccessTokenResponseExtractor,
+      ) as C,
+      client: this.client,
+      storage: this.storage.keyValuePairStorage,
+    };
+  }
+
   private storeByRefreshToken(
     scopes?: Scopes,
   ): Observable<StoredAccessTokenResponse> {
@@ -360,25 +379,6 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
         }),
         this.storeTokenPipe,
       );
-  }
-
-  serviceInfo<T extends AccessTokenResponse, C>(
-    extractor: AccessTokenResponseExtractor<T, C>,
-  ): AccessTokenServiceInfo<C> {
-    if (!this.extractorMap.has(extractor as AccessTokenResponseExtractor)) {
-      throw new NonRegisteredExtractorError(
-        extractor.constructor.name,
-        this.constructor.name,
-      );
-    }
-
-    return {
-      serviceConfig: this.config,
-      config: this.extractorMap.get(
-        extractor as AccessTokenResponseExtractor,
-      ) as C,
-      client: this.client,
-    };
   }
 
   private applyWatch(
