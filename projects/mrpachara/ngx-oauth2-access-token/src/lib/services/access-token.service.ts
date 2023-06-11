@@ -31,7 +31,11 @@ import {
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
 } from '../errors';
-import { AccessTokenStorage, AccessTokenStorageFactory } from '../storage';
+import {
+  AccessTokenStorage,
+  AccessTokenStorageFactory,
+  StoredAccessTokenResponse,
+} from '../storage';
 import {
   AccessTokenFullConfig,
   AccessTokenInfo,
@@ -44,7 +48,6 @@ import {
   Provided,
   Scopes,
   StandardGrantsParams,
-  StoredAccessTokenResponse,
 } from '../types';
 import {
   ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,

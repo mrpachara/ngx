@@ -7,12 +7,14 @@ import {
   JwtHeader,
   JwtTokenType,
 } from './standard.types';
-import { StateData, StoredAccessTokenResponse } from './storages.types';
 import { AccessTokenFullConfig } from './config.types';
 
 import { Oauth2Client } from '../services';
+import { StoredAccessTokenResponse } from '../storage';
 
 export type Scopes = [string, ...string[]];
+
+export type StateData = object;
 
 export type AccessTokenServiceInfo<C = unknown> = {
   serviceConfig: AccessTokenFullConfig;

@@ -1,8 +1,10 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { StoredAccessTokenResponse } from './types';
+
 import { AccessTokenNotFoundError } from '../errors';
-import { KeyValuePairStorage, StoredAccessTokenResponse } from '../types';
+import { KeyValuePairStorage } from '../types';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
 
 const tokenDataKeyName = `access-token-data` as const;

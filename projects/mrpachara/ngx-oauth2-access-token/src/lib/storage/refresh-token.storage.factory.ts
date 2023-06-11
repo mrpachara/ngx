@@ -1,8 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 
+import { StoredRefreshToken } from './types';
+
 import { RefreshTokenNotFoundError } from '../errors';
 import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
-import { KeyValuePairStorage, StoredRefreshToken } from '../types';
+import { KeyValuePairStorage } from '../types';
 
 const tokenDataKeyName = `refresh-token-data` as const;
 
