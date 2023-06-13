@@ -5,9 +5,12 @@ import {
   AccessTokenStorageFactory,
   AuthorizationCodeStorageFactory,
 } from '../storage';
-import { LocalStorageFactory } from '../storage/local-storage/local.storage';
+import { LocalStorageFactory } from '../storage/local-storage/local.storage.factory';
 
-export const STORAGE_VERSION = new InjectionToken<bigint>('storage-version');
+export const STORAGE_INFO = new InjectionToken<{
+  name: string;
+  version: number;
+}>('storage-info');
 
 export const KEY_VALUE_PAIR_STORAGE_FACTORY =
   new InjectionToken<KeyValuePairStorageFactory>(

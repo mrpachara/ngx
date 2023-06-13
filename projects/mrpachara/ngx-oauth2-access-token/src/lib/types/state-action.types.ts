@@ -39,7 +39,7 @@ export type StateActionHandler<
 export type StateActionErrorHandler = (
   err: unknown,
   stateAction: StateAction | null,
-) => void;
+) => ObservableInput<void>;
 
 export type StateActionHandlers = {
   [action: string]: StateActionHandler<StateAction, unknown>;

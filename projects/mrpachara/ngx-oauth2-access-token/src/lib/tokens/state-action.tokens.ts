@@ -10,7 +10,7 @@ export const STATE_ACTION_ERROR_HANDLER =
   new InjectionToken<StateActionErrorHandler>('state-action-error-handler', {
     providedIn: 'root',
     factory: () => {
-      return () => {
+      return async () => {
         // empty function
       };
     },

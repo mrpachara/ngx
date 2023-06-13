@@ -15,58 +15,30 @@ type StateDataContainer<T extends StateData> = {
 
 export class AuthorizationCodeStorage {
   private readonly stateKey = (stateId: string) =>
-    `${this.name}-${stateDataKeyName}-${stateId}` as const;
-
-  private readonly ready: Promise<void>;
+    `${stateDataKeyName}-${stateId}` as const;
 
   constructor(
-    private readonly name: string,
     private readonly stateTtl: number,
-    private readonly storage: KeyValuePairStorage,
-  ) {
-    this.ready = this.clearStateDataContainers();
-  }
+    private readonly storage: Promise<KeyValuePairStorage>,
+  ) {}
 
   private readonly loadStateDataContainer = async <
     T extends StateData = StateData,
   >(
     stateKey: string,
   ) => {
-    const stateDataContainer = await this.storage.loadItem<
-      StateDataContainer<T>
-    >(stateKey);
+    const storage = await this.storage;
+
+    const stateDataContainer = await storage.loadItem<StateDataContainer<T>>(
+      stateKey,
+    );
 
     return stateDataContainer;
   };
 
-  private async clearStateDataContainers(): Promise<void> {
-    const currentTime = Date.now();
-
-    const prefix = this.stateKey('');
-
-    const stateKeys = (await this.storage.keys()).filter((key) =>
-      key.startsWith(prefix),
-    );
-
-    for (const stateKey of stateKeys) {
-      const storedStateDataContainer = await this.loadStateDataContainer(
-        stateKey,
-      );
-
-      if (
-        storedStateDataContainer &&
-        storedStateDataContainer?.expiresAt + stateClearTtl < currentTime
-      ) {
-        await this.storage.removeItem(stateKey);
-      }
-    }
-  }
-
   async loadStateData<T extends StateData = StateData>(
     stateId: string,
   ): Promise<T> {
-    await this.ready;
-
     const currentTime = Date.now();
 
     const storedStateDataContainer = await this.loadStateDataContainer<T>(
@@ -88,9 +60,9 @@ export class AuthorizationCodeStorage {
     stateId: string,
     stateData: T,
   ): Promise<T> {
-    await this.ready;
+    const storage = await this.storage;
 
-    await this.storage.storeItem(this.stateKey(stateId), {
+    await storage.storeItem(this.stateKey(stateId), {
       expires_at: Date.now() + this.stateTtl,
       data: stateData,
     });
@@ -101,14 +73,14 @@ export class AuthorizationCodeStorage {
   async removeStateData<T extends StateData = StateData>(
     stateId: string,
   ): Promise<T | null> {
-    await this.ready;
+    const storage = await this.storage;
 
     try {
       const stateData = await this.loadStateData<T>(stateId);
-      await this.storage.removeItem(this.stateKey(stateId));
+      await storage.removeItem(this.stateKey(stateId));
       return stateData;
     } catch (err) {
-      await this.storage.removeItem(this.stateKey(stateId));
+      await storage.removeItem(this.stateKey(stateId));
       return null;
     }
   }
@@ -119,6 +91,35 @@ export class AuthorizationCodeStorageFactory {
   private readonly storageFactory = inject(KEY_VALUE_PAIR_STORAGE_FACTORY);
   private readonly existingNameSet = new Set<string>();
 
+  private async createStorage(
+    storageName: string,
+  ): Promise<KeyValuePairStorage> {
+    const storage = this.storageFactory.create(storageName);
+
+    const currentTime = Date.now();
+
+    const prefix = `${stateDataKeyName}-` as const;
+
+    const stateKeys = (await storage.keys()).filter((key) =>
+      key.startsWith(prefix),
+    );
+
+    for (const stateKey of stateKeys) {
+      const storedStateDataContainer = await storage.loadItem<
+        StateDataContainer<StateData>
+      >(stateKey);
+
+      if (
+        storedStateDataContainer &&
+        storedStateDataContainer?.expiresAt + stateClearTtl < currentTime
+      ) {
+        await storage.removeItem(stateKey);
+      }
+    }
+
+    return storage;
+  }
+
   create(name: string, stateTtl: number): AuthorizationCodeStorage {
     if (this.existingNameSet.has(name)) {
       throw new Error(
@@ -128,10 +129,6 @@ export class AuthorizationCodeStorageFactory {
 
     this.existingNameSet.add(name);
 
-    return new AuthorizationCodeStorage(
-      name,
-      stateTtl,
-      this.storageFactory.create(name),
-    );
+    return new AuthorizationCodeStorage(stateTtl, this.createStorage(name));
   }
 }

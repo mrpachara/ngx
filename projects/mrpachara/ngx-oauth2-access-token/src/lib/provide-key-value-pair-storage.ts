@@ -4,11 +4,12 @@ import {
   makeEnvironmentProviders,
 } from '@angular/core';
 
-import { KEY_VALUE_PAIR_STORAGE_FACTORY, STORAGE_VERSION } from './tokens';
-import { KeyValuePairStorage } from './types';
+import { KEY_VALUE_PAIR_STORAGE_FACTORY, STORAGE_INFO } from './tokens';
+import { KeyValuePairStorageFactory } from './types';
 
 export function provideKeyValuePairStorage(
-  version: bigint,
+  name: string,
+  version: number,
   ...features: KeyValuePairStorageFeatures[]
 ): EnvironmentProviders {
   const factoryProviderFeatures = features.filter(
@@ -25,8 +26,8 @@ export function provideKeyValuePairStorage(
 
   return makeEnvironmentProviders([
     {
-      provide: STORAGE_VERSION,
-      useValue: version,
+      provide: STORAGE_INFO,
+      useValue: { name, version },
     },
     features.map((feature) => feature.providers),
   ]);
@@ -46,8 +47,8 @@ export interface KeyValuepairStorageFeature<
 export type KeyValuepairStorageFactoryProviderFeature =
   KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.KeyValuepairStorageFactoryProviderFeature>;
 
-export function withKeyValuepairStorageProvider(
-  factory: () => KeyValuePairStorage,
+export function withKeyValuepairStorageFactoryProvider(
+  factory: () => KeyValuePairStorageFactory,
 ): KeyValuepairStorageFactoryProviderFeature {
   return {
     kind: KeyValuepairStorageFeatureKind.KeyValuepairStorageFactoryProviderFeature,

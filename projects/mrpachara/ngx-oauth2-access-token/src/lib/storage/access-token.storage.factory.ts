@@ -10,28 +10,23 @@ import { KEY_VALUE_PAIR_STORAGE_FACTORY } from '../tokens';
 const tokenDataKeyName = `access-token-data` as const;
 
 export class AccessTokenStorage {
-  private stoageKey = () => `${this.name}-${tokenDataKeyName}` as const;
-
   private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse | null>;
 
   get keyValuePairStorage() {
     return this.storage;
   }
 
-  constructor(
-    private readonly name: string,
-    private readonly storage: KeyValuePairStorage,
-  ) {
+  constructor(private readonly storage: KeyValuePairStorage) {
     this.accessTokenResponse$ =
-      this.storage.watchItem<StoredAccessTokenResponse>(this.stoageKey());
+      this.storage.watchItem<StoredAccessTokenResponse>(tokenDataKeyName);
   }
 
   async loadAccessTokenResponse(): Promise<StoredAccessTokenResponse> {
     const storedAccessTokenResponse =
-      await this.storage.loadItem<StoredAccessTokenResponse>(this.stoageKey());
+      await this.storage.loadItem<StoredAccessTokenResponse>(tokenDataKeyName);
 
     if (storedAccessTokenResponse === null) {
-      throw new AccessTokenNotFoundError(this.name);
+      throw new AccessTokenNotFoundError(this.storage.name);
     }
 
     return storedAccessTokenResponse;
@@ -41,13 +36,13 @@ export class AccessTokenStorage {
     storedAccessTokenResponse: StoredAccessTokenResponse,
   ): Promise<StoredAccessTokenResponse> {
     return await this.storage.storeItem(
-      this.stoageKey(),
+      tokenDataKeyName,
       storedAccessTokenResponse,
     );
   }
 
   async removeAccessTokenResponse(): Promise<void> {
-    await this.storage.removeItem(this.stoageKey());
+    await this.storage.removeItem(tokenDataKeyName);
   }
 
   watchAccessTokenResponse(): Observable<StoredAccessTokenResponse | null> {
@@ -67,6 +62,6 @@ export class AccessTokenStorageFactory {
 
     this.existingNameSet.add(name);
 
-    return new AccessTokenStorage(name, this.storageFactory.create(name));
+    return new AccessTokenStorage(this.storageFactory.create(name));
   }
 }
