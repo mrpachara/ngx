@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { filter, map, Observable, pipe, Subject } from 'rxjs';
+import { filter, Observable, Subject, switchMap } from 'rxjs';
 
 import { deepFreeze } from '../../functions';
 import { libPrefix } from '../../predefined';
@@ -7,9 +7,6 @@ import { STORAGE_INFO } from '../../tokens';
 import { KeyValuePairStorage, KeyValuePairStorageFactory } from '../../types';
 
 class LocalStorage implements KeyValuePairStorage {
-  private readonly storageKey = (key: string) =>
-    `${this.storagePrefix}-${this.storageName}-${key}` as const;
-
   private readonly keyObservableMap = new Map<string, Observable<unknown>>();
 
   get name() {
@@ -18,9 +15,9 @@ class LocalStorage implements KeyValuePairStorage {
 
   constructor(
     private readonly storageName: string,
+    private readonly storageKey: (key: string) => string,
     private readonly storagePromise: Promise<Storage>,
-    private readonly storagePrefix: string,
-    private readonly storageEvent$: Observable<StorageEvent>,
+    private readonly storageEvent$: Observable<string | null>,
   ) {}
 
   private readonly transformToStorage = <T>(value: T | null): string => {
@@ -31,18 +28,6 @@ class LocalStorage implements KeyValuePairStorage {
     value: string | null,
   ): T | null => {
     return deepFreeze(JSON.parse(value ?? 'null'));
-  };
-
-  // TODO: move fillter logic to factory
-  private readonly newTransformerPipe = <T = unknown>(key: string) => {
-    return pipe(
-      filter(
-        (storageEvent: StorageEvent) =>
-          storageEvent.key === null || storageEvent.key === key,
-      ),
-      map((storageEvent: StorageEvent) => storageEvent.newValue),
-      map(this.transformToValue as () => T | null),
-    );
   };
 
   async loadItem<T = unknown>(key: string): Promise<T | null> {
@@ -75,26 +60,27 @@ class LocalStorage implements KeyValuePairStorage {
       this.keyObservableMap.set(
         key,
         this.storageEvent$.pipe(
-          // NOTE: StorageEvent passes the full key name and value.
-          //       So change key to full key name.
-          this.newTransformerPipe<T>(this.storageKey(key)),
+          filter(
+            (eventKey) =>
+              eventKey === null || eventKey === this.storageKey(key),
+          ),
+          switchMap(async () => await this.loadItem<T>(key)),
         ),
       );
     }
 
-    return this.keyObservableMap.get(key) as Observable<T>;
+    return this.keyObservableMap.get(key) as Observable<T | null>;
   }
 
   async keys(): Promise<string[]> {
     const storage = await this.storagePromise;
 
-    const prefix = this.storageKey('');
-    const prefixLength = prefix.length;
+    const storagePrefix = this.storageKey('');
+    const storagePrefixLenght = storagePrefix.length;
 
-    // TODO: move fillter logic to factory
     return Object.keys(storage)
-      .filter((key) => key.startsWith(prefix))
-      .map((key) => key.slice(prefixLength));
+      .filter((key) => key.startsWith(storagePrefix))
+      .map((key) => key.slice(storagePrefixLenght));
   }
 }
 
@@ -106,7 +92,8 @@ const keyPrefix = `${libPrefix}-kvp` as const;
 export class LocalStorageFactory implements KeyValuePairStorageFactory {
   private readonly storageInfo = inject(STORAGE_INFO);
 
-  private readonly storageNamespace = `${keyPrefix}-${this.storageInfo.name}`;
+  private readonly storageNamespace =
+    `${keyPrefix}-${this.storageInfo.name}` as const;
   private readonly storagePrefix =
     `${this.storageNamespace}-${this.storageInfo.version}` as const;
 
@@ -119,23 +106,28 @@ export class LocalStorageFactory implements KeyValuePairStorageFactory {
     resolve(localStorage);
   });
 
-  private readonly storageEvent$: Observable<StorageEvent>;
+  private readonly storageEvent$: Observable<string | null>;
 
   constructor() {
     // NOTE: Subject is a multicast observable.
-    const storageEventSubject = new Subject<StorageEvent>();
+    const storageEventSubject = new Subject<string | null>();
     this.storageEvent$ = storageEventSubject.asObservable();
 
     addEventListener('storage', (storageEvent) => {
-      storageEventSubject.next(storageEvent);
+      storageEventSubject.next(storageEvent.key);
     });
+  }
+
+  private createStorageKey(storageName: string): (key: string) => string {
+    return (key: string) =>
+      `${this.storagePrefix}-${storageName}-${key}` as const;
   }
 
   create(storageName: string): KeyValuePairStorage {
     return new LocalStorage(
       storageName,
+      this.createStorageKey(storageName),
       this.storagePromise,
-      this.storagePrefix,
       this.storageEvent$,
     );
   }
