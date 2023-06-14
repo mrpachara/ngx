@@ -1,4 +1,6 @@
-export function deepFreeze<T = unknown>(obj: T): T {
+import { DeepReadonly } from '../types';
+
+export function deepFreeze<T = unknown>(obj: T): DeepReadonly<T> {
   const frozenObjSet = new Set<unknown>();
   const queue: unknown[] = [];
 
@@ -28,5 +30,5 @@ export function deepFreeze<T = unknown>(obj: T): T {
     });
   }
 
-  return obj;
+  return obj as DeepReadonly<T>;
 }

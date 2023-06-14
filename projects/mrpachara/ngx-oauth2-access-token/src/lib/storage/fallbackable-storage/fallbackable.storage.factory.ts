@@ -2,7 +2,11 @@ import { Injectable, Injector, inject } from '@angular/core';
 import { Observable, defer, switchMap } from 'rxjs';
 
 import { FALLBACKABLE_KEY_VALUE_PAIR_STORAGE_FACTORY_TOKENS } from '../../tokens';
-import { KeyValuePairStorage, KeyValuePairStorageFactory } from '../../types';
+import {
+  DeepReadonly,
+  KeyValuePairStorage,
+  KeyValuePairStorageFactory,
+} from '../../types';
 
 class FallbackableStorage implements KeyValuePairStorage {
   get name() {
@@ -14,19 +18,22 @@ class FallbackableStorage implements KeyValuePairStorage {
     private readonly storagePromise: Promise<KeyValuePairStorage>,
   ) {}
 
-  async loadItem<T = unknown>(key: string): Promise<T | null> {
+  async loadItem<T = unknown>(key: string): Promise<DeepReadonly<T | null>> {
     return (await this.storagePromise).loadItem<T>(key);
   }
 
-  async storeItem<T = unknown>(key: string, value: T): Promise<T> {
+  async storeItem<T = unknown>(
+    key: string,
+    value: T,
+  ): Promise<DeepReadonly<T>> {
     return (await this.storagePromise).storeItem<T>(key, value);
   }
 
-  async removeItem<T = unknown>(key: string): Promise<T | null> {
+  async removeItem<T = unknown>(key: string): Promise<DeepReadonly<T | null>> {
     return (await this.storagePromise).removeItem<T>(key);
   }
 
-  watchItem<T = unknown>(key: string): Observable<T | null> {
+  watchItem<T = unknown>(key: string): Observable<DeepReadonly<T | null>> {
     return defer(async () => await this.storagePromise).pipe(
       switchMap((storage) => storage.watchItem<T>(key)),
     );

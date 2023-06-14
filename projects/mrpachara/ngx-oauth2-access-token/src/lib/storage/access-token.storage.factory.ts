@@ -4,13 +4,15 @@ import { Observable } from 'rxjs';
 import { StoredAccessTokenResponse } from './types';
 
 import { AccessTokenNotFoundError } from '../errors';
-import { KeyValuePairStorage } from '../types';
+import { DeepReadonly, KeyValuePairStorage } from '../types';
 import { KEY_VALUE_PAIR_STORAGE_FACTORY } from '../tokens';
 
 const tokenDataKeyName = `access-token-data` as const;
 
 export class AccessTokenStorage {
-  private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse | null>;
+  private readonly accessTokenResponse$: Observable<
+    DeepReadonly<StoredAccessTokenResponse | null>
+  >;
 
   get keyValuePairStorage() {
     return this.storage;
@@ -21,7 +23,9 @@ export class AccessTokenStorage {
       this.storage.watchItem<StoredAccessTokenResponse>(tokenDataKeyName);
   }
 
-  async loadAccessTokenResponse(): Promise<StoredAccessTokenResponse> {
+  async loadAccessTokenResponse(): Promise<
+    DeepReadonly<StoredAccessTokenResponse>
+  > {
     const storedAccessTokenResponse =
       await this.storage.loadItem<StoredAccessTokenResponse>(tokenDataKeyName);
 
@@ -34,7 +38,7 @@ export class AccessTokenStorage {
 
   async storeAccessTokenResponse(
     storedAccessTokenResponse: StoredAccessTokenResponse,
-  ): Promise<StoredAccessTokenResponse> {
+  ): Promise<DeepReadonly<StoredAccessTokenResponse>> {
     return await this.storage.storeItem(
       tokenDataKeyName,
       storedAccessTokenResponse,
@@ -45,7 +49,9 @@ export class AccessTokenStorage {
     await this.storage.removeItem(tokenDataKeyName);
   }
 
-  watchAccessTokenResponse(): Observable<StoredAccessTokenResponse | null> {
+  watchAccessTokenResponse(): Observable<
+    DeepReadonly<StoredAccessTokenResponse | null>
+  > {
     return this.accessTokenResponse$;
   }
 }

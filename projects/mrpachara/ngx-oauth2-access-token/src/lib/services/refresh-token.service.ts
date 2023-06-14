@@ -8,6 +8,7 @@ import {
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
   AccessTokenServiceInfo,
+  DeepReadonly,
   ExtractorPipeReturn,
   RefreshTokenFullConfig,
 } from '../types';
@@ -57,7 +58,9 @@ export class RefreshTokenService
 
   async onAccessTokenResponseUpdate(
     serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
-    accessTokenResponseInfo: AccessTokenResponseInfo<AccessTokenResponse>,
+    accessTokenResponseInfo: DeepReadonly<
+      AccessTokenResponseInfo<AccessTokenResponse>
+    >,
   ): Promise<void> {
     if (accessTokenResponseInfo.response.refresh_token) {
       await this.storeRefreshToken(

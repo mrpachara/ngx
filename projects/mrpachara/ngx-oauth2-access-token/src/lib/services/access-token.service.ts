@@ -44,6 +44,7 @@ import {
   AccessTokenResponseExtractorInfo,
   AccessTokenResponseInfo,
   AccessTokenServiceInfo,
+  DeepReadonly,
   Provided,
   Scopes,
   StandardGrantsParams,
@@ -83,12 +84,17 @@ export class AccessTokenService {
   private readonly extractorMap: Map<AccessTokenResponseExtractor, unknown>;
   private readonly listeners: AccessTokenResponseExtractor[];
 
-  private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse>;
+  private readonly accessTokenResponse$: Observable<
+    DeepReadonly<StoredAccessTokenResponse>
+  >;
 
-  private readonly subjectStoredAccessTokenResponse$ =
-    new Subject<StoredAccessTokenResponse>();
+  private readonly subjectStoredAccessTokenResponse$ = new Subject<
+    DeepReadonly<StoredAccessTokenResponse>
+  >();
 
-  private readonly storedAccessTokenResponse$: Observable<StoredAccessTokenResponse>;
+  private readonly storedAccessTokenResponse$: Observable<
+    DeepReadonly<StoredAccessTokenResponse>
+  >;
 
   get name() {
     return this.config.name;
@@ -169,7 +175,9 @@ export class AccessTokenService {
           // NOTE: The access token is assigned by another tab.
           this.watchStoredAccessTokenResponse().pipe(
             filter(
-              (storedTokenData): storedTokenData is StoredAccessTokenResponse =>
+              (
+                storedTokenData,
+              ): storedTokenData is DeepReadonly<StoredAccessTokenResponse> =>
                 storedTokenData !== null,
             ),
             filter(
@@ -360,7 +368,7 @@ export class AccessTokenService {
 
   private storeByRefreshToken(
     scopes?: Scopes,
-  ): Observable<StoredAccessTokenResponse> {
+  ): Observable<DeepReadonly<StoredAccessTokenResponse>> {
     return this.refreshTokenService
       .fetchToken(this.serviceInfo(this.refreshTokenService))
       .pipe(
@@ -383,7 +391,7 @@ export class AccessTokenService {
 
   private applyWatch(
     watchMode: boolean,
-  ): Observable<StoredAccessTokenResponse> {
+  ): Observable<DeepReadonly<StoredAccessTokenResponse>> {
     if (watchMode) {
       return concat(this.accessTokenResponse$, this.storedAccessTokenResponse$);
     }
@@ -391,24 +399,26 @@ export class AccessTokenService {
     return this.accessTokenResponse$;
   }
 
-  fetchToken(watchMode = false): Observable<AccessTokenInfo> {
+  fetchToken(watchMode = false): Observable<DeepReadonly<AccessTokenInfo>> {
     return this.applyWatch(watchMode).pipe(
-      map(
-        (storedAccessTokenResponse): AccessTokenInfo => ({
-          type: storedAccessTokenResponse.response.token_type,
-          token: storedAccessTokenResponse.response.access_token,
-        }),
-      ),
+      map((storedAccessTokenResponse) => ({
+        type: storedAccessTokenResponse.response.token_type,
+        token: storedAccessTokenResponse.response.access_token,
+      })),
     );
   }
 
   fetchResponse<R extends AccessTokenResponse = AccessTokenResponse>(
     watchMode = false,
-  ): Observable<AccessTokenResponseInfo<R>> {
-    return this.applyWatch(watchMode) as Observable<AccessTokenResponseInfo<R>>;
+  ): Observable<DeepReadonly<AccessTokenResponseInfo<R>>> {
+    return this.applyWatch(watchMode) as Observable<
+      DeepReadonly<AccessTokenResponseInfo<R>>
+    >;
   }
 
-  exchangeRefreshToken(scopes?: Scopes): Observable<AccessTokenResponse> {
+  exchangeRefreshToken(
+    scopes?: Scopes,
+  ): Observable<DeepReadonly<AccessTokenResponse>> {
     return this.storeByRefreshToken(scopes).pipe(
       map((storedAccessTokenResponse) => storedAccessTokenResponse.response),
     );
@@ -425,7 +435,7 @@ export class AccessTokenService {
 
   async setAccessTokenResponse(
     accessTokenResponse: AccessTokenResponse,
-  ): Promise<AccessTokenResponse> {
+  ): Promise<DeepReadonly<AccessTokenResponse>> {
     return firstValueFrom(
       of(accessTokenResponse).pipe(
         this.storeTokenPipe,

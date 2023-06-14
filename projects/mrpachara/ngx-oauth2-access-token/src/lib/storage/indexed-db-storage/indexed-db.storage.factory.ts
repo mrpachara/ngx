@@ -4,7 +4,11 @@ import { Observable, Subject, filter, switchMap } from 'rxjs';
 import { deepFreeze } from '../../functions';
 import { libPrefix } from '../../predefined';
 import { STORAGE_INFO } from '../../tokens';
-import { KeyValuePairStorage, KeyValuePairStorageFactory } from '../../types';
+import {
+  DeepReadonly,
+  KeyValuePairStorage,
+  KeyValuePairStorageFactory,
+} from '../../types';
 
 function promiseWrapper<T = unknown>(request: IDBRequest<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -32,18 +36,21 @@ class IndexedDbStorage implements KeyValuePairStorage {
     private readonly emitKey: (key: string) => void,
   ) {}
 
-  async loadItem<T = unknown>(key: string): Promise<T | null> {
+  async loadItem<T = unknown>(key: string): Promise<DeepReadonly<T | null>> {
     const db = await this.db;
     const storageKey = this.storageKey(key);
 
     const storage = this.storeObject(db, 'readonly');
 
     return deepFreeze(
-      (await promiseWrapper<T>(storage.get(storageKey))) ?? null,
+      (await promiseWrapper<T | undefined>(storage.get(storageKey))) ?? null,
     );
   }
 
-  async storeItem<T = unknown>(key: string, value: T): Promise<T> {
+  async storeItem<T = unknown>(
+    key: string,
+    value: T,
+  ): Promise<DeepReadonly<T>> {
     const db = await this.db;
     const storageKey = this.storageKey(key);
 
@@ -52,10 +59,10 @@ class IndexedDbStorage implements KeyValuePairStorage {
 
     this.emitKey(storageKey);
 
-    return deepFreeze(await promiseWrapper<T>(storage.get(storageKey)));
+    return deepFreeze<T>(await promiseWrapper<T>(storage.get(storageKey)));
   }
 
-  async removeItem<T = unknown>(key: string): Promise<T | null> {
+  async removeItem<T = unknown>(key: string): Promise<DeepReadonly<T | null>> {
     const db = await this.db;
     const storageKey = this.storageKey(key);
 
@@ -70,7 +77,7 @@ class IndexedDbStorage implements KeyValuePairStorage {
     return value;
   }
 
-  watchItem<T = unknown>(key: string): Observable<T | null> {
+  watchItem<T = unknown>(key: string): Observable<DeepReadonly<T | null>> {
     if (!this.keyObservableMap.has(key)) {
       this.keyObservableMap.set(
         key,
@@ -84,7 +91,7 @@ class IndexedDbStorage implements KeyValuePairStorage {
       );
     }
 
-    return this.keyObservableMap.get(key) as Observable<T>;
+    return this.keyObservableMap.get(key) as Observable<DeepReadonly<T>>;
   }
 
   async keys(): Promise<string[]> {

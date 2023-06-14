@@ -4,7 +4,11 @@ import { filter, Observable, Subject, switchMap } from 'rxjs';
 import { deepFreeze } from '../../functions';
 import { libPrefix } from '../../predefined';
 import { STORAGE_INFO } from '../../tokens';
-import { KeyValuePairStorage, KeyValuePairStorageFactory } from '../../types';
+import {
+  DeepReadonly,
+  KeyValuePairStorage,
+  KeyValuePairStorageFactory,
+} from '../../types';
 
 class LocalStorage implements KeyValuePairStorage {
   private readonly keyObservableMap = new Map<string, Observable<unknown>>();
@@ -26,25 +30,28 @@ class LocalStorage implements KeyValuePairStorage {
 
   private readonly transformToValue = <T = unknown>(
     value: string | null,
-  ): T | null => {
-    return deepFreeze(JSON.parse(value ?? 'null'));
+  ): DeepReadonly<T | null> => {
+    return deepFreeze<T>(JSON.parse(value ?? 'null'));
   };
 
-  async loadItem<T = unknown>(key: string): Promise<T | null> {
+  async loadItem<T = unknown>(key: string): Promise<DeepReadonly<T | null>> {
     const storage = await this.storagePromise;
 
     return this.transformToValue(storage.getItem(this.storageKey(key)));
   }
 
-  async storeItem<T = unknown>(key: string, value: T): Promise<T> {
+  async storeItem<T = unknown>(
+    key: string,
+    value: T,
+  ): Promise<DeepReadonly<T>> {
     const storage = await this.storagePromise;
 
     storage.setItem(this.storageKey(key), this.transformToStorage(value));
 
-    return (await this.loadItem<T>(key)) as T;
+    return (await this.loadItem<T>(key)) as DeepReadonly<T>;
   }
 
-  async removeItem<T = unknown>(key: string): Promise<T | null> {
+  async removeItem<T = unknown>(key: string): Promise<DeepReadonly<T | null>> {
     const storage = await this.storagePromise;
 
     const storageKey = this.storageKey(key);
@@ -55,7 +62,7 @@ class LocalStorage implements KeyValuePairStorage {
     return value;
   }
 
-  watchItem<T = unknown>(key: string): Observable<T | null> {
+  watchItem<T = unknown>(key: string): Observable<DeepReadonly<T | null>> {
     if (!this.keyObservableMap.has(key)) {
       this.keyObservableMap.set(
         key,
@@ -69,7 +76,7 @@ class LocalStorage implements KeyValuePairStorage {
       );
     }
 
-    return this.keyObservableMap.get(key) as Observable<T | null>;
+    return this.keyObservableMap.get(key) as Observable<DeepReadonly<T | null>>;
   }
 
   async keys(): Promise<string[]> {

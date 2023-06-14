@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { StoredRefreshToken } from './types';
 
 import { RefreshTokenNotFoundError } from '../errors';
-import { KeyValuePairStorage } from '../types';
+import { DeepReadonly, KeyValuePairStorage } from '../types';
 
 const tokenDataKeyName = `refresh-token-data` as const;
 
@@ -13,7 +13,7 @@ const tokenDataKeyName = `refresh-token-data` as const;
 export class RefreshTokenStorage {
   async loadRefreshToken(
     storage: KeyValuePairStorage,
-  ): Promise<StoredRefreshToken> {
+  ): Promise<DeepReadonly<StoredRefreshToken>> {
     const storedRefreshToken = await storage.loadItem<StoredRefreshToken>(
       tokenDataKeyName,
     );
@@ -28,7 +28,7 @@ export class RefreshTokenStorage {
   async storeRefreshToken(
     storage: KeyValuePairStorage,
     storedIdToken: StoredRefreshToken,
-  ): Promise<StoredRefreshToken> {
+  ): Promise<DeepReadonly<StoredRefreshToken>> {
     return await storage.storeItem(tokenDataKeyName, storedIdToken);
   }
 

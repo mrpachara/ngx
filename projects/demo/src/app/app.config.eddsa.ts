@@ -183,7 +183,7 @@ export const appConfig: ApplicationConfig = {
 
       // NOTE: When the server return error
       withStateActionErrorHandler(() => {
-        return (err, stateData) => {
+        return async (err, stateData) => {
           const errData: BroadcastData = {
             type: 'error',
             error: err,
@@ -199,8 +199,6 @@ export const appConfig: ApplicationConfig = {
             channel.close();
             // close(); // close windows if needed
           }
-
-          return Promise.resolve();
         };
       }),
     ),
