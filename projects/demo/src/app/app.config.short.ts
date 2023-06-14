@@ -11,7 +11,6 @@ import {
   AuthorizationCodeConfig,
   AuthorizationCodeService,
   IdTokenService,
-  IndexedDbStorageFactory,
   JwkConfig,
   Oauth2ClientConfig,
   Scopes,
@@ -26,7 +25,6 @@ import {
   provideStateAction,
   randomString,
   withAccessTokenResponseExtractor,
-  withKeyValuepairStorageFactoryProvider,
   withRenewAccessTokenSource,
   withStateActionErrorHandler,
   withStateActionHandler,
@@ -94,13 +92,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
 
     // NOTE: The ngx-oauth2-access-token provide functions
-    provideKeyValuePairStorage(
-      'ngx-oat',
-      1,
-      withKeyValuepairStorageFactoryProvider(() =>
-        inject(IndexedDbStorageFactory),
-      ),
-    ), // This is needed now.
+    provideKeyValuePairStorage('ngx-oat', 1), // This is needed now.
     provideOauth2Client(clientConfig),
     provideAuthorizationCode(authorizationCodeConfig),
     provideAccessToken(

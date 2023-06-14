@@ -118,17 +118,30 @@ export class LocalStorageFactory implements KeyValuePairStorageFactory {
     });
   }
 
+  async supported(): Promise<void> {
+    await this.storagePromise;
+  }
+
   private createStorageKey(storageName: string): (key: string) => string {
     return (key: string) =>
       `${this.storagePrefix}-${storageName}-${key}` as const;
   }
 
-  create(storageName: string): KeyValuePairStorage {
-    return new LocalStorage(
-      storageName,
-      this.createStorageKey(storageName),
-      this.storagePromise,
-      this.storageEvent$,
-    );
+  private readonly storageMap = new Map<string, KeyValuePairStorage>();
+
+  get(storageName: string): KeyValuePairStorage {
+    if (!this.storageMap.has(storageName)) {
+      this.storageMap.set(
+        storageName,
+        new LocalStorage(
+          storageName,
+          this.createStorageKey(storageName),
+          this.storagePromise,
+          this.storageEvent$,
+        ),
+      );
+    }
+
+    return this.storageMap.get(storageName) as KeyValuePairStorage;
   }
 }

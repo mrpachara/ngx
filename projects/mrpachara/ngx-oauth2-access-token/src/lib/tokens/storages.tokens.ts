@@ -1,11 +1,9 @@
-import { InjectionToken } from '@angular/core';
+import { InjectionToken, Type } from '@angular/core';
 
 import { KeyValuePairStorageFactory } from '../types';
-import {
-  AccessTokenStorageFactory,
-  AuthorizationCodeStorageFactory,
-} from '../storage';
+import { IndexedDbStorageFactory } from '../storage/indexed-db-storage/indexed-db.storage.factory';
 import { LocalStorageFactory } from '../storage/local-storage/local.storage.factory';
+import { FallbackableStorageFactory } from '../storage/fallbackable-storage/fallbackable.storage.factory';
 
 export const STORAGE_INFO = new InjectionToken<{
   name: string;
@@ -18,15 +16,18 @@ export const KEY_VALUE_PAIR_STORAGE_FACTORY =
     {
       providedIn: 'root',
       factory() {
-        return new LocalStorageFactory();
+        return new FallbackableStorageFactory();
       },
     },
   );
 
-export const ACCESS_TOKEN_STORAGE_FACTORY =
-  new InjectionToken<AccessTokenStorageFactory>('access-token-storage-factory');
-
-export const AUTHORIZATION_CODE_STORAGE_FACTORY =
-  new InjectionToken<AuthorizationCodeStorageFactory>(
-    'authorization-code-storage-factory',
-  );
+export const FALLBACKABLE_KEY_VALUE_PAIR_STORAGE_FACTORY_TOKENS =
+  new InjectionToken<
+    (
+      | Type<KeyValuePairStorageFactory>
+      | InjectionToken<KeyValuePairStorageFactory>
+    )[]
+  >('fallbackable-key-value-pair-storage-factory-token', {
+    providedIn: 'root',
+    factory: () => [IndexedDbStorageFactory, LocalStorageFactory],
+  });

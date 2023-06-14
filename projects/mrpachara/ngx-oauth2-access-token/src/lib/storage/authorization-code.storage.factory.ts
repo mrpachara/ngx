@@ -94,7 +94,7 @@ export class AuthorizationCodeStorageFactory {
   private async createStorage(
     storageName: string,
   ): Promise<KeyValuePairStorage> {
-    const storage = this.storageFactory.create(storageName);
+    const storage = this.storageFactory.get(storageName);
 
     const currentTime = Date.now();
 

@@ -18,5 +18,6 @@ export interface KeyValuePairStorage {
 }
 
 export interface KeyValuePairStorageFactory {
-  create(storageName: string): KeyValuePairStorage;
+  supported(): Promise<void>;
+  get(storageName: string): KeyValuePairStorage;
 }

@@ -24,5 +24,6 @@ export * from './lib/provide-jwt-verifiers';
 
 export * from './lib/components';
 
+export * from './lib/storage/fallbackable-storage/fallbackable.storage.factory';
 export * from './lib/storage/local-storage/local.storage.factory';
 export * from './lib/storage/indexed-db-storage/indexed-db.storage.factory';

@@ -62,6 +62,6 @@ export class AccessTokenStorageFactory {
 
     this.existingNameSet.add(name);
 
-    return new AccessTokenStorage(this.storageFactory.create(name));
+    return new AccessTokenStorage(this.storageFactory.get(name));
   }
 }

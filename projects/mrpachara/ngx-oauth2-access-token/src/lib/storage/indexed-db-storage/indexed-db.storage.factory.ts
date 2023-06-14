@@ -118,7 +118,10 @@ export class IndexedDbStorageFactory implements KeyValuePairStorageFactory {
 
   private readonly broadcastName =
     `${broadcastPrefix}-${this.storageInfo.name}` as const;
-  private broadcastChannel = new BroadcastChannel(this.broadcastName);
+  private broadcastChannel =
+    typeof BroadcastChannel !== 'undefined'
+      ? new BroadcastChannel(this.broadcastName)
+      : null;
 
   private readonly dbPromise = new Promise<IDBDatabase>((resolve, reject) => {
     const dbName = `${dbPrefix}-${this.storageInfo.name}`;
@@ -145,7 +148,7 @@ export class IndexedDbStorageFactory implements KeyValuePairStorageFactory {
 
   private readonly storageEvent$: Observable<string | null>;
   private readonly emitStorageEvent = (changedData: ChangedKey): void => {
-    this.broadcastChannel.postMessage(changedData);
+    this.broadcastChannel?.postMessage(changedData);
   };
 
   constructor() {
@@ -153,12 +156,16 @@ export class IndexedDbStorageFactory implements KeyValuePairStorageFactory {
     const storageEventSubject = new Subject<string | null>();
     this.storageEvent$ = storageEventSubject.asObservable();
 
-    this.broadcastChannel.addEventListener(
+    this.broadcastChannel?.addEventListener(
       'message',
       (ev: MessageEvent<ChangedKey>) => {
         storageEventSubject.next(ev.data.key);
       },
     );
+  }
+
+  async supported(): Promise<void> {
+    await this.dbPromise;
   }
 
   private createStorageKey(storageName: string): (key: string) => string {
@@ -174,21 +181,34 @@ export class IndexedDbStorageFactory implements KeyValuePairStorageFactory {
   };
 
   private readonly emitKey = (key: string) => {
-    this.broadcastChannel.postMessage({
+    this.broadcastChannel?.postMessage({
       key,
     } as ChangedKey);
   };
 
-  create(storageName: string): KeyValuePairStorage {
-    const storageKey = this.createStorageKey(storageName);
+  private readonly storageMap = new Map<string, KeyValuePairStorage>();
 
-    return new IndexedDbStorage(
-      storageName,
-      storageKey,
-      this.dbPromise,
-      this.storageEvent$,
-      this.storeObject,
-      this.emitKey,
+  get(storageName: string): KeyValuePairStorage {
+    if (this.broadcastChannel !== null) {
+      if (!this.storageMap.has(storageName)) {
+        this.storageMap.set(
+          storageName,
+          new IndexedDbStorage(
+            storageName,
+            this.createStorageKey(storageName),
+            this.dbPromise,
+            this.storageEvent$,
+            this.storeObject,
+            this.emitKey,
+          ),
+        );
+      }
+
+      return this.storageMap.get(storageName) as KeyValuePairStorage;
+    }
+
+    throw new Error(
+      'Unsupported BroadcastChannel, cannot use IndexedDB storage',
     );
   }
 }
