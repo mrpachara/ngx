@@ -1,10 +1,17 @@
 import {
   EnvironmentProviders,
+  InjectionToken,
   Provider,
+  Type,
+  ValueProvider,
   makeEnvironmentProviders,
 } from '@angular/core';
 
-import { KEY_VALUE_PAIR_STORAGE_FACTORY, STORAGE_INFO } from './tokens';
+import {
+  FALLBACKABLE_KEY_VALUE_PAIR_STORAGE_FACTORY_TOKENS,
+  KEY_VALUE_PAIR_STORAGE_FACTORY,
+  STORAGE_INFO,
+} from './tokens';
 import { KeyValuePairStorageFactory } from './types';
 
 export function provideKeyValuePairStorage(
@@ -35,6 +42,7 @@ export function provideKeyValuePairStorage(
 
 export enum KeyValuepairStorageFeatureKind {
   KeyValuepairStorageFactoryProviderFeature,
+  FallbackableKeyValuePairStorageFactoryTokensFeature,
 }
 
 export interface KeyValuepairStorageFeature<
@@ -61,5 +69,30 @@ export function withKeyValuepairStorageFactoryProvider(
   };
 }
 
+export type FallbackableKeyValuePairStorageFactoryTokensFeature =
+  KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.FallbackableKeyValuePairStorageFactoryTokensFeature>;
+
+export function withFallbackableKeyValuePairStorageFactoryTokens(
+  tokens: (
+    | Type<KeyValuePairStorageFactory>
+    | InjectionToken<KeyValuePairStorageFactory>
+  )[],
+): FallbackableKeyValuePairStorageFactoryTokensFeature {
+  return {
+    kind: KeyValuepairStorageFeatureKind.FallbackableKeyValuePairStorageFactoryTokensFeature,
+    providers: [
+      ...tokens.map(
+        (token) =>
+          ({
+            provide: FALLBACKABLE_KEY_VALUE_PAIR_STORAGE_FACTORY_TOKENS,
+            multi: true,
+            useValue: token,
+          } as ValueProvider),
+      ),
+    ],
+  };
+}
+
 export type KeyValuePairStorageFeatures =
-  KeyValuepairStorageFactoryProviderFeature;
+  | KeyValuepairStorageFactoryProviderFeature
+  | FallbackableKeyValuePairStorageFactoryTokensFeature;
