@@ -1,18 +1,16 @@
 import { TestBed } from '@angular/core/testing';
 
-import { LocalStorage } from './local.storage';
+import { RefreshTokenStorage } from './refresh-token.storage';
 
-xdescribe('LocalStorage', () => {
-  let service: LocalStorage;
+describe('RefreshTokenStorage', () => {
+  let service: RefreshTokenStorage;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(LocalStorage);
+    service = TestBed.inject(RefreshTokenStorage);
   });
 
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
 });
-
-

@@ -3,11 +3,12 @@ import { catchError, pipe, switchMap } from 'rxjs';
 
 import { IdTokenEncryptedError, IdTokenExpiredError } from '../errors';
 import { extractJwt, isJwtEncryptedPayload } from '../functions';
-import { IdTokenStorage, IdTokenStorageFactory } from '../storage';
+import { IdTokenStorage } from '../storage';
 import {
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
   AccessTokenServiceInfo,
+  DeepReadonly,
   ExtractorPipeReturn,
   IdTokenClaims,
   IdTokenFullConfig,
@@ -24,27 +25,20 @@ export class IdTokenService
     AccessTokenResponseExtractor<
       IdTokenResponse,
       IdTokenFullConfig,
-      IdTokenInfo
+      DeepReadonly<IdTokenInfo>
     >
 {
-  private readonly storageFactory = inject(IdTokenStorageFactory);
-  private readonly storage: IdTokenStorage;
-
-  constructor() {
-    this.storage = this.storageFactory.create();
-  }
+  private readonly storage = inject(IdTokenStorage);
 
   private readonly storeIdToken = (
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
     token: JwtTokenType,
-  ) => this.storage.storeIdToken(serviceInfo.serviceConfig.name, token);
+  ) => this.storage.storeIdToken(serviceInfo.storage, token);
 
   private readonly loadIdTokenInfo = async (
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
   ) => {
-    const token = await this.storage.loadIdToken(
-      serviceInfo.serviceConfig.name,
-    );
+    const token = await this.storage.loadIdToken(serviceInfo.storage);
 
     return this.extractAndValidateIdToken(
       serviceInfo.serviceConfig.name,
@@ -54,12 +48,12 @@ export class IdTokenService
 
   private readonly removeIdToken = async (
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
-  ) => await this.storage.removeIdToken(serviceInfo.serviceConfig.name);
+  ) => await this.storage.removeIdToken(serviceInfo.storage);
 
   private extractAndValidateIdToken(
     serviceName: string,
     token: JwtTokenType,
-  ): IdTokenInfo {
+  ): DeepReadonly<IdTokenInfo> {
     const idTokenInfo = extractJwt<IdTokenClaims>(token);
 
     if (isJwtEncryptedPayload(idTokenInfo)) {
@@ -75,7 +69,9 @@ export class IdTokenService
 
   async onAccessTokenResponseUpdate(
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
-    accessTokenResponseInfo: AccessTokenResponseInfo<IdTokenResponse>,
+    accessTokenResponseInfo: DeepReadonly<
+      AccessTokenResponseInfo<IdTokenResponse>
+    >,
   ): Promise<void> {
     const token = serviceInfo.config.providedInAccessToken
       ? (accessTokenResponseInfo.response.access_token as JwtTokenType)
@@ -94,7 +90,7 @@ export class IdTokenService
 
   extractPipe(
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
-  ): ExtractorPipeReturn<IdTokenResponse, IdTokenInfo> {
+  ): ExtractorPipeReturn<IdTokenResponse, DeepReadonly<IdTokenInfo>> {
     return pipe(
       switchMap(() => this.loadIdTokenInfo(serviceInfo)),
       catchError(() => this.loadIdTokenInfo(serviceInfo)),

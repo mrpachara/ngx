@@ -20,6 +20,7 @@ import {
   AuthorizationCodeGrantParams,
   AuthorizationCodeParams,
   CodeChallengeMethod,
+  DeepReadonly,
   Scopes,
   StateAuthorizationCode,
   StateData,
@@ -144,13 +145,13 @@ export class AuthorizationCodeService {
 
   async clearState<T extends StateData = StateData>(
     stateId: string,
-  ): Promise<(T & StateAuthorizationCode) | null> {
+  ): Promise<DeepReadonly<(T & StateAuthorizationCode) | null>> {
     return await this.removeStateData<T>(stateId);
   }
 
   verifyState<T extends StateData = StateData>(
     stateId: string,
-  ): Observable<T & StateAuthorizationCode> {
+  ): Observable<DeepReadonly<T & StateAuthorizationCode>> {
     return defer(() => this.loadStateData<T & StateAuthorizationCode>(stateId));
   }
 
@@ -158,8 +159,8 @@ export class AuthorizationCodeService {
     stateId: string,
     authorizationCode: string,
   ): Observable<{
-    accessTokenResponse: AccessTokenResponse;
-    stateData: T & StateAuthorizationCode;
+    accessTokenResponse: DeepReadonly<AccessTokenResponse>;
+    stateData: DeepReadonly<T & StateAuthorizationCode>;
   }> {
     return this.verifyState<T>(stateId).pipe(
       switchMap((stateData) => {

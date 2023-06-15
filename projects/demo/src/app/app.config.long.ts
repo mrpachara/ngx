@@ -5,7 +5,7 @@ import {
   withComponentInputBinding,
 } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
-import { defer } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { clientId, clientSecret } from '../secrets/oauth-client';
 
@@ -107,7 +107,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
 
     // NOTE: The ngx-oauth2-access-token provide functions
-    provideKeyValuePairStorage(1n), // This is needed now.
+    provideKeyValuePairStorage('ngx-oat', 1), // This is needed now.
     provideOauth2Client(clientConfig),
     provideAuthorizationCode(authorizationCodeConfig),
     provideAccessToken(
@@ -117,93 +117,91 @@ export const appConfig: ApplicationConfig = {
         const authorizationCodeService = inject(AuthorizationCodeService);
         const router = inject(Router);
 
-        return defer(
-          () =>
-            new Promise<AccessTokenResponse>((resolve, reject) => {
-              const scopeText = prompt('Input scope');
+        return new Observable<AccessTokenResponse>((subscriber) => {
+          const teardownLogics: (() => void)[] = [];
+          const scopeText = prompt('Input scope');
 
-              if (scopeText === null) {
-                // NOTE: It's safe to throw here because it's out of asynchronous process.
-                //       In asychronous process, we have to use reject();
-                throw new Error('Authorization was canceled.');
-              }
+          if (scopeText === null) {
+            // NOTE: It's safe to throw here because it's out of asynchronous process.
+            //       In asychronous process, we have to use reject();
+            throw new Error('Authorization was canceled.');
+          }
 
-              const scopes = scopeText.split(/\s+/) as Scopes;
-              const isNewTab = confirm('Open in new tab');
-              const useBroadcast =
-                isNewTab &&
-                typeof BroadcastChannel !== 'undefined' &&
-                confirm('Use broadcast');
+          const scopes = scopeText.split(/\s+/) as Scopes;
+          const isNewTab = confirm('Open in new tab');
+          const useBroadcast =
+            isNewTab &&
+            typeof BroadcastChannel !== 'undefined' &&
+            confirm('Use broadcast');
 
-              const stateActionInfo: StateActionInfo = {
-                name: 'unknown',
-                data: {},
-              };
+          const stateActionInfo: StateActionInfo = {
+            name: 'unknown',
+            data: {},
+          };
 
-              if (useBroadcast) {
-                const broadcastActionInfo =
-                  stateActionInfo as BroadcastActionInfo;
+          if (useBroadcast) {
+            const broadcastActionInfo = stateActionInfo as BroadcastActionInfo;
 
-                // NOTE: The name of action will be performed in the callback URL.
-                //       And the data using in the callback URL.
-                broadcastActionInfo.name = 'broadcast';
+            // NOTE: The name of action will be performed in the callback URL.
+            //       And the data using in the callback URL.
+            broadcastActionInfo.name = 'broadcast';
 
-                const channelName = randomString(8);
-                const channel = new BroadcastChannel(channelName);
+            const channelName = randomString(8);
+            const channel = new BroadcastChannel(channelName);
 
-                const teardown = () => {
-                  channel.close();
-                };
+            teardownLogics.push(() => {
+              channel.close();
+            });
 
-                channel.addEventListener('message', (ev) => {
-                  const data = ev.data as BroadcastData;
+            channel.addEventListener('message', (ev) => {
+              const data = ev.data as BroadcastData;
 
-                  if (data.type === 'success') {
-                    resolve(data.data);
-                    channel.postMessage(true);
-                  } else {
-                    reject(data.error);
-                    channel.postMessage(false);
-                  }
-
-                  teardown();
-                });
-
-                broadcastActionInfo.data = {
-                  channel: channelName,
-                };
+              if (data.type === 'success') {
+                subscriber.next(data.data);
+                channel.postMessage(true);
               } else {
-                const setActionInfo = stateActionInfo as SetActionInfo;
-
-                setActionInfo.name = 'set';
+                subscriber.error(data.error);
+                channel.postMessage(false);
               }
 
-              const sharedActionInfo = stateActionInfo as
-                | BroadcastActionInfo
-                | SetActionInfo;
+              subscriber.complete();
+            });
 
-              if (isNewTab) {
-                sharedActionInfo.data.close = false;
-              } else {
-                sharedActionInfo.data.redirectUrl = router.url;
-              }
+            broadcastActionInfo.data = {
+              channel: channelName,
+            };
+          } else {
+            const setActionInfo = stateActionInfo as SetActionInfo;
 
-              (async () => {
-                const url =
-                  await authorizationCodeService.fetchAuthorizationCodeUrl(
-                    scopes,
-                    {
-                      action: sharedActionInfo,
-                    },
-                  );
-                if (isNewTab) {
-                  open(url, '_blank');
-                } else {
-                  location.href = url.toString();
-                }
-              })();
-            }),
-        );
+            setActionInfo.name = 'set';
+          }
+
+          const sharedActionInfo = stateActionInfo as
+            | BroadcastActionInfo
+            | SetActionInfo;
+
+          if (isNewTab) {
+            sharedActionInfo.data.close = false;
+          } else {
+            sharedActionInfo.data.redirectUrl = router.url;
+          }
+
+          (async () => {
+            const url =
+              await authorizationCodeService.fetchAuthorizationCodeUrl(scopes, {
+                action: sharedActionInfo,
+              });
+            if (isNewTab) {
+              open(url, '_blank');
+            } else {
+              location.href = url.toString();
+            }
+          })();
+
+          return () => {
+            teardownLogics.forEach((teadownLogic) => teadownLogic());
+          };
+        });
       }),
 
       // NOTE: The individual extractors can be set here if needed.
@@ -232,20 +230,19 @@ export const appConfig: ApplicationConfig = {
             data: accessTokenResponse,
           } as BroadcastData);
 
-          const teardown = () => {
-            channel.close();
-
-            if (data.close) {
-              close();
-            }
-          };
-
-          return new Promise((resolve) => {
+          return new Observable((subscriber) => {
             channel.addEventListener('message', () => {
-              resolve('Access token has been set by another process.');
-
-              teardown();
+              subscriber.next('Access token has been set by another process.');
+              subscriber.complete();
             });
+
+            return () => {
+              channel.close();
+
+              if (data.close) {
+                close();
+              }
+            };
           });
         };
       }),
@@ -285,25 +282,28 @@ export const appConfig: ApplicationConfig = {
               | SetActionInfo;
 
             if (sharedActionInfo.name === 'broadcast') {
-              // NOTE: From literal type, sharedActionInfo must automatically
-              //       be BroadcastActionInfo.
+              return new Observable<void>((subscriber) => {
+                // NOTE: From literal type, sharedActionInfo must automatically
+                //       be BroadcastActionInfo.
+                const data = sharedActionInfo.data;
 
-              const data = sharedActionInfo.data;
-              const channel = new BroadcastChannel(`${data['channel']}`);
+                const channel = new BroadcastChannel(`${data['channel']}`);
 
-              const teardown = () => {
-                channel.close();
+                channel.addEventListener('message', () => {
+                  subscriber.next();
+                  subscriber.complete();
+                });
 
-                if (sharedActionInfo.data.close) {
-                  close();
-                }
-              };
+                channel.postMessage(errData);
 
-              channel.addEventListener('message', () => {
-                teardown();
+                return () => {
+                  channel.close();
+
+                  if (sharedActionInfo.data.close) {
+                    close();
+                  }
+                };
               });
-
-              channel.postMessage(errData);
             } else {
               // NOTE: From literal type, sharedActionInfo must automatically
               //       be SetActionInfo.
@@ -317,8 +317,12 @@ export const appConfig: ApplicationConfig = {
                   },
                 });
               }
+
+              return Promise.resolve();
             }
           }
+
+          return Promise.resolve();
         };
       }),
     ),

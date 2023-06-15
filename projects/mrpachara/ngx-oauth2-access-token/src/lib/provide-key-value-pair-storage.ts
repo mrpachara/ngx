@@ -1,39 +1,48 @@
 import {
   EnvironmentProviders,
+  InjectionToken,
   Provider,
+  Type,
+  ValueProvider,
   makeEnvironmentProviders,
 } from '@angular/core';
 
-import { KEY_VALUE_PAIR_STORAGE, STORAGE_VERSION } from './tokens';
-import { KeyValuePairStorage } from './types';
+import {
+  FALLBACKABLE_KEY_VALUE_PAIR_STORAGE_FACTORY_TOKENS,
+  KEY_VALUE_PAIR_STORAGE_FACTORY,
+  STORAGE_INFO,
+} from './tokens';
+import { KeyValuePairStorageFactory } from './types';
 
 export function provideKeyValuePairStorage(
-  version: bigint,
-  ...features: KeyValuepairStorageFeatures[]
+  name: string,
+  version: number,
+  ...features: KeyValuePairStorageFeatures[]
 ): EnvironmentProviders {
-  const providerFeatures = features.filter(
-    (feature): feature is KeyValuepairStorageProviderFeature =>
+  const factoryProviderFeatures = features.filter(
+    (feature): feature is KeyValuepairStorageFactoryProviderFeature =>
       feature.kind ===
-      KeyValuepairStorageFeatureKind.KeyValuepairStorageProviderFeature,
+      KeyValuepairStorageFeatureKind.KeyValuepairStorageFactoryProviderFeature,
   );
 
-  if (providerFeatures.length > 1) {
+  if (factoryProviderFeatures.length > 1) {
     throw new Error(
-      'Only one accessTokenProvider feature allowed for AuthorizationCode!',
+      'Only one keyValuePairFactoryProvider feature allowed for KeyValuePairStorage!',
     );
   }
 
   return makeEnvironmentProviders([
     {
-      provide: STORAGE_VERSION,
-      useValue: version,
+      provide: STORAGE_INFO,
+      useValue: { name, version },
     },
     features.map((feature) => feature.providers),
   ]);
 }
 
 export enum KeyValuepairStorageFeatureKind {
-  KeyValuepairStorageProviderFeature,
+  KeyValuepairStorageFactoryProviderFeature,
+  FallbackableKeyValuePairStorageFactoryTokensFeature,
 }
 
 export interface KeyValuepairStorageFeature<
@@ -43,21 +52,47 @@ export interface KeyValuepairStorageFeature<
   readonly providers: Provider[];
 }
 
-export type KeyValuepairStorageProviderFeature =
-  KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.KeyValuepairStorageProviderFeature>;
+export type KeyValuepairStorageFactoryProviderFeature =
+  KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.KeyValuepairStorageFactoryProviderFeature>;
 
-export function withKeyValuepairStorageProvider(
-  factory: () => KeyValuePairStorage,
-): KeyValuepairStorageProviderFeature {
+export function withKeyValuepairStorageFactoryProvider(
+  factory: () => KeyValuePairStorageFactory,
+): KeyValuepairStorageFactoryProviderFeature {
   return {
-    kind: KeyValuepairStorageFeatureKind.KeyValuepairStorageProviderFeature,
+    kind: KeyValuepairStorageFeatureKind.KeyValuepairStorageFactoryProviderFeature,
     providers: [
       {
-        provide: KEY_VALUE_PAIR_STORAGE,
+        provide: KEY_VALUE_PAIR_STORAGE_FACTORY,
         useFactory: factory,
       },
     ],
   };
 }
 
-export type KeyValuepairStorageFeatures = KeyValuepairStorageProviderFeature;
+export type FallbackableKeyValuePairStorageFactoryTokensFeature =
+  KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.FallbackableKeyValuePairStorageFactoryTokensFeature>;
+
+export function withFallbackableKeyValuePairStorageFactoryTokens(
+  tokens: (
+    | Type<KeyValuePairStorageFactory>
+    | InjectionToken<KeyValuePairStorageFactory>
+  )[],
+): FallbackableKeyValuePairStorageFactoryTokensFeature {
+  return {
+    kind: KeyValuepairStorageFeatureKind.FallbackableKeyValuePairStorageFactoryTokensFeature,
+    providers: [
+      ...tokens.map(
+        (token) =>
+          ({
+            provide: FALLBACKABLE_KEY_VALUE_PAIR_STORAGE_FACTORY_TOKENS,
+            multi: true,
+            useValue: token,
+          } as ValueProvider),
+      ),
+    ],
+  };
+}
+
+export type KeyValuePairStorageFeatures =
+  | KeyValuepairStorageFactoryProviderFeature
+  | FallbackableKeyValuePairStorageFactoryTokensFeature;

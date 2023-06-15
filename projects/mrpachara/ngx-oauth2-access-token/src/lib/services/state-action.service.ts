@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { defer, Observable, throwError } from 'rxjs';
+import { defer, Observable, ObservableInput, throwError } from 'rxjs';
 
 import { StateActionNotFoundError } from '../errors';
 import { isStateActionProvided } from '../functions';
@@ -47,7 +47,10 @@ export class StateActionService {
     });
   }
 
-  handerError(err: unknown, stateData: StateAction | null): void {
-    this.errorHandler(err, stateData);
+  handerError(
+    err: unknown,
+    stateData: StateAction | null,
+  ): ObservableInput<void> {
+    return this.errorHandler(err, stateData);
   }
 }

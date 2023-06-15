@@ -1,7 +1,7 @@
 import { ObservableInput } from 'rxjs';
 
+import { StateData } from './oauth2-services.types';
 import { AccessTokenResponse } from './standard.types';
-import { StateData } from './storages.types';
 import { RequiredOnly } from './utils.type';
 
 export type StateActionInfo<N extends string = string, T = unknown> = {
@@ -39,7 +39,7 @@ export type StateActionHandler<
 export type StateActionErrorHandler = (
   err: unknown,
   stateAction: StateAction | null,
-) => void;
+) => ObservableInput<void>;
 
 export type StateActionHandlers = {
   [action: string]: StateActionHandler<StateAction, unknown>;

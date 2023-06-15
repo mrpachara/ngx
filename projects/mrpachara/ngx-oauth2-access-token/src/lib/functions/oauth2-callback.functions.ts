@@ -83,9 +83,9 @@ export function oauth2Callback(
           ? err.cause.stateData
           : null;
 
-      stateActionService.handerError(err, stateData);
-
-      return throwError(() => err);
+      return of(stateActionService.handerError(err, stateData)).pipe(
+        switchMap(() => throwError(() => err)),
+      );
     }),
   );
 }

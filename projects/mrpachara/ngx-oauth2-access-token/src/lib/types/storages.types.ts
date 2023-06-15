@@ -1,33 +1,24 @@
 import { Observable } from 'rxjs';
-
-import { AccessTokenResponse } from './standard.types';
-
-export type StoredAccessTokenResponse<
-  T extends AccessTokenResponse = AccessTokenResponse,
-> = {
-  createdAt: number;
-  expiresAt: number;
-  response: T;
-};
-
-export type StoredRefreshToken = {
-  expiresAt: number;
-  token: string;
-};
-
-export type StateData = object;
+import { DeepReadonly } from './utils.type';
 
 export interface KeyValuePairStorage {
-  loadItem<T = unknown>(key: string): Promise<T | null>;
-  storeItem<T = unknown>(key: string, value: T): Promise<T>;
-  removeItem<T = unknown>(key: string): Promise<T | null>;
+  readonly name: string;
+
+  loadItem<T = unknown>(key: string): Promise<DeepReadonly<T | null>>;
+  storeItem<T = unknown>(key: string, value: T): Promise<DeepReadonly<T>>;
+  removeItem<T = unknown>(key: string): Promise<DeepReadonly<T | null>>;
 
   /**
    * Return a _multicast observable_ for changing value of the given `key`. The
    * `null` value means the key was removed.
    */
-  watchItem<T = unknown>(key: string): Observable<T | null>;
+  watchItem<T = unknown>(key: string): Observable<DeepReadonly<T | null>>;
 
   /** Return all keys from the storage. */
   keys(): Promise<string[]>;
+}
+
+export interface KeyValuePairStorageFactory {
+  supported(): Promise<void>;
+  get(storageName: string): KeyValuePairStorage;
 }

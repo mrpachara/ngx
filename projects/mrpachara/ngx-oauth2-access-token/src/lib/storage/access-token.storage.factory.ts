@@ -1,31 +1,36 @@
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { StoredAccessTokenResponse } from './types';
+
 import { AccessTokenNotFoundError } from '../errors';
-import { KeyValuePairStorage, StoredAccessTokenResponse } from '../types';
-import { KEY_VALUE_PAIR_STORAGE } from '../tokens';
+import { DeepReadonly, KeyValuePairStorage } from '../types';
+import { KEY_VALUE_PAIR_STORAGE_FACTORY } from '../tokens';
 
 const tokenDataKeyName = `access-token-data` as const;
 
 export class AccessTokenStorage {
-  private stoageKey = () => `${this.name}-${tokenDataKeyName}` as const;
+  private readonly accessTokenResponse$: Observable<
+    DeepReadonly<StoredAccessTokenResponse | null>
+  >;
 
-  private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse | null>;
-
-  constructor(
-    private readonly name: string,
-    private readonly storage: KeyValuePairStorage,
-  ) {
-    this.accessTokenResponse$ =
-      this.storage.watchItem<StoredAccessTokenResponse>(this.stoageKey());
+  get keyValuePairStorage() {
+    return this.storage;
   }
 
-  async loadAccessTokenResponse(): Promise<StoredAccessTokenResponse> {
+  constructor(private readonly storage: KeyValuePairStorage) {
+    this.accessTokenResponse$ =
+      this.storage.watchItem<StoredAccessTokenResponse>(tokenDataKeyName);
+  }
+
+  async loadAccessTokenResponse(): Promise<
+    DeepReadonly<StoredAccessTokenResponse>
+  > {
     const storedAccessTokenResponse =
-      await this.storage.loadItem<StoredAccessTokenResponse>(this.stoageKey());
+      await this.storage.loadItem<StoredAccessTokenResponse>(tokenDataKeyName);
 
     if (storedAccessTokenResponse === null) {
-      throw new AccessTokenNotFoundError(this.name);
+      throw new AccessTokenNotFoundError(this.storage.name);
     }
 
     return storedAccessTokenResponse;
@@ -33,25 +38,27 @@ export class AccessTokenStorage {
 
   async storeAccessTokenResponse(
     storedAccessTokenResponse: StoredAccessTokenResponse,
-  ): Promise<StoredAccessTokenResponse> {
+  ): Promise<DeepReadonly<StoredAccessTokenResponse>> {
     return await this.storage.storeItem(
-      this.stoageKey(),
+      tokenDataKeyName,
       storedAccessTokenResponse,
     );
   }
 
   async removeAccessTokenResponse(): Promise<void> {
-    await this.storage.removeItem(this.stoageKey());
+    await this.storage.removeItem(tokenDataKeyName);
   }
 
-  watchAccessTokenResponse(): Observable<StoredAccessTokenResponse | null> {
+  watchAccessTokenResponse(): Observable<
+    DeepReadonly<StoredAccessTokenResponse | null>
+  > {
     return this.accessTokenResponse$;
   }
 }
 
 @Injectable({ providedIn: 'root' })
 export class AccessTokenStorageFactory {
-  private readonly storage = inject(KEY_VALUE_PAIR_STORAGE);
+  private readonly storageFactory = inject(KEY_VALUE_PAIR_STORAGE_FACTORY);
   private readonly existingNameSet = new Set<string>();
 
   create(name: string): AccessTokenStorage {
@@ -61,6 +68,6 @@ export class AccessTokenStorageFactory {
 
     this.existingNameSet.add(name);
 
-    return new AccessTokenStorage(name, this.storage);
+    return new AccessTokenStorage(this.storageFactory.get(name));
   }
 }

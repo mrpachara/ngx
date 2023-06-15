@@ -31,7 +31,11 @@ import {
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
 } from '../errors';
-import { AccessTokenStorage, AccessTokenStorageFactory } from '../storage';
+import {
+  AccessTokenStorage,
+  AccessTokenStorageFactory,
+  StoredAccessTokenResponse,
+} from '../storage';
 import {
   AccessTokenFullConfig,
   AccessTokenInfo,
@@ -40,11 +44,10 @@ import {
   AccessTokenResponseExtractorInfo,
   AccessTokenResponseInfo,
   AccessTokenServiceInfo,
-  AccessTokenServiceInfoProvidable,
+  DeepReadonly,
   Provided,
   Scopes,
   StandardGrantsParams,
-  StoredAccessTokenResponse,
 } from '../types';
 import {
   ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
@@ -55,7 +58,7 @@ import { validateAndTransformScopes } from '../functions';
 
 const latencyTime = 2 * 5 * 1000;
 
-export class AccessTokenService implements AccessTokenServiceInfoProvidable {
+export class AccessTokenService {
   private readonly storageFactory = inject(AccessTokenStorageFactory);
   private readonly storage: AccessTokenStorage;
   private readonly refreshTokenService = inject(RefreshTokenService);
@@ -81,12 +84,17 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
   private readonly extractorMap: Map<AccessTokenResponseExtractor, unknown>;
   private readonly listeners: AccessTokenResponseExtractor[];
 
-  private readonly accessTokenResponse$: Observable<StoredAccessTokenResponse>;
+  private readonly accessTokenResponse$: Observable<
+    DeepReadonly<StoredAccessTokenResponse>
+  >;
 
-  private readonly subjectStoredAccessTokenResponse$ =
-    new Subject<StoredAccessTokenResponse>();
+  private readonly subjectStoredAccessTokenResponse$ = new Subject<
+    DeepReadonly<StoredAccessTokenResponse>
+  >();
 
-  private readonly storedAccessTokenResponse$: Observable<StoredAccessTokenResponse>;
+  private readonly storedAccessTokenResponse$: Observable<
+    DeepReadonly<StoredAccessTokenResponse>
+  >;
 
   get name() {
     return this.config.name;
@@ -167,7 +175,9 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
           // NOTE: The access token is assigned by another tab.
           this.watchStoredAccessTokenResponse().pipe(
             filter(
-              (storedTokenData): storedTokenData is StoredAccessTokenResponse =>
+              (
+                storedTokenData,
+              ): storedTokenData is DeepReadonly<StoredAccessTokenResponse> =>
                 storedTokenData !== null,
             ),
             filter(
@@ -336,9 +346,29 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
     });
   };
 
+  private serviceInfo<T extends AccessTokenResponse, C>(
+    extractor: AccessTokenResponseExtractor<T, C>,
+  ): AccessTokenServiceInfo<C> {
+    if (!this.extractorMap.has(extractor as AccessTokenResponseExtractor)) {
+      throw new NonRegisteredExtractorError(
+        extractor.constructor.name,
+        this.constructor.name,
+      );
+    }
+
+    return {
+      serviceConfig: this.config,
+      config: this.extractorMap.get(
+        extractor as AccessTokenResponseExtractor,
+      ) as C,
+      client: this.client,
+      storage: this.storage.keyValuePairStorage,
+    };
+  }
+
   private storeByRefreshToken(
     scopes?: Scopes,
-  ): Observable<StoredAccessTokenResponse> {
+  ): Observable<DeepReadonly<StoredAccessTokenResponse>> {
     return this.refreshTokenService
       .fetchToken(this.serviceInfo(this.refreshTokenService))
       .pipe(
@@ -359,28 +389,9 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
       );
   }
 
-  serviceInfo<T extends AccessTokenResponse, C>(
-    extractor: AccessTokenResponseExtractor<T, C>,
-  ): AccessTokenServiceInfo<C> {
-    if (!this.extractorMap.has(extractor as AccessTokenResponseExtractor)) {
-      throw new NonRegisteredExtractorError(
-        extractor.constructor.name,
-        this.constructor.name,
-      );
-    }
-
-    return {
-      serviceConfig: this.config,
-      config: this.extractorMap.get(
-        extractor as AccessTokenResponseExtractor,
-      ) as C,
-      client: this.client,
-    };
-  }
-
   private applyWatch(
     watchMode: boolean,
-  ): Observable<StoredAccessTokenResponse> {
+  ): Observable<DeepReadonly<StoredAccessTokenResponse>> {
     if (watchMode) {
       return concat(this.accessTokenResponse$, this.storedAccessTokenResponse$);
     }
@@ -388,24 +399,26 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
     return this.accessTokenResponse$;
   }
 
-  fetchToken(watchMode = false): Observable<AccessTokenInfo> {
+  fetchToken(watchMode = false): Observable<DeepReadonly<AccessTokenInfo>> {
     return this.applyWatch(watchMode).pipe(
-      map(
-        (storedAccessTokenResponse): AccessTokenInfo => ({
-          type: storedAccessTokenResponse.response.token_type,
-          token: storedAccessTokenResponse.response.access_token,
-        }),
-      ),
+      map((storedAccessTokenResponse) => ({
+        type: storedAccessTokenResponse.response.token_type,
+        token: storedAccessTokenResponse.response.access_token,
+      })),
     );
   }
 
   fetchResponse<R extends AccessTokenResponse = AccessTokenResponse>(
     watchMode = false,
-  ): Observable<AccessTokenResponseInfo<R>> {
-    return this.applyWatch(watchMode) as Observable<AccessTokenResponseInfo<R>>;
+  ): Observable<DeepReadonly<AccessTokenResponseInfo<R>>> {
+    return this.applyWatch(watchMode) as Observable<
+      DeepReadonly<AccessTokenResponseInfo<R>>
+    >;
   }
 
-  exchangeRefreshToken(scopes?: Scopes): Observable<AccessTokenResponse> {
+  exchangeRefreshToken(
+    scopes?: Scopes,
+  ): Observable<DeepReadonly<AccessTokenResponse>> {
     return this.storeByRefreshToken(scopes).pipe(
       map((storedAccessTokenResponse) => storedAccessTokenResponse.response),
     );
@@ -422,7 +435,7 @@ export class AccessTokenService implements AccessTokenServiceInfoProvidable {
 
   async setAccessTokenResponse(
     accessTokenResponse: AccessTokenResponse,
-  ): Promise<AccessTokenResponse> {
+  ): Promise<DeepReadonly<AccessTokenResponse>> {
     return firstValueFrom(
       of(accessTokenResponse).pipe(
         this.storeTokenPipe,

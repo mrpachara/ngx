@@ -1,5 +1,6 @@
 import { OperatorFunction } from 'rxjs';
 
+import { AccessTokenFullConfig } from './config.types';
 import {
   AccessTokenResponse,
   IdTokenClaims,
@@ -7,17 +8,21 @@ import {
   JwtHeader,
   JwtTokenType,
 } from './standard.types';
-import { StateData, StoredAccessTokenResponse } from './storages.types';
-import { AccessTokenFullConfig } from './config.types';
+import { KeyValuePairStorage } from './storages.types';
+import { DeepReadonly } from './utils.type';
 
 import { Oauth2Client } from '../services';
+import { StoredAccessTokenResponse } from '../storage';
 
 export type Scopes = [string, ...string[]];
+
+export type StateData = object;
 
 export type AccessTokenServiceInfo<C = unknown> = {
   serviceConfig: AccessTokenFullConfig;
   config: C;
   client: Oauth2Client;
+  storage: KeyValuePairStorage;
 };
 
 export type AccessTokenResponseInfo<
@@ -27,7 +32,7 @@ export type AccessTokenResponseInfo<
 export type ExtractorPipeReturn<
   T extends AccessTokenResponse = AccessTokenResponse,
   R = unknown,
-> = OperatorFunction<AccessTokenResponseInfo<T>, R>;
+> = OperatorFunction<DeepReadonly<AccessTokenResponseInfo<T>>, R>;
 
 export interface AccessTokenResponseExtractor<
   T extends AccessTokenResponse = AccessTokenResponse,
@@ -36,7 +41,7 @@ export interface AccessTokenResponseExtractor<
 > {
   onAccessTokenResponseUpdate?(
     serviceInfo: AccessTokenServiceInfo<C>,
-    accessTokenResponseInfo: AccessTokenResponseInfo<T>,
+    accessTokenResponseInfo: DeepReadonly<AccessTokenResponseInfo<T>>,
   ): Promise<void>;
 
   onAccessTokenResponseClear?(
@@ -46,12 +51,6 @@ export interface AccessTokenResponseExtractor<
   extractPipe(
     serviceInfo: AccessTokenServiceInfo<C | undefined>,
   ): ExtractorPipeReturn<T, R>;
-}
-
-export interface AccessTokenServiceInfoProvidable {
-  serviceInfo<T extends AccessTokenResponse, C>(
-    extractor: AccessTokenResponseExtractor<T, C>,
-  ): AccessTokenServiceInfo<C>;
 }
 
 export type AccessTokenInfo = {
