@@ -43,12 +43,11 @@ import {
 } from '@mrpachara/ngx-oauth2-access-token';
 
 import { routes } from './app.routes';
-import { defer } from 'rxjs';
 
 const clientConfig: Oauth2ClientConfig = {
   name: 'google',
-  clientId: 'CLIENT_ID',
-  clientSecret: 'CLIENT_SECRET',
+  clientId: clientId,
+  clientSecret: clientSecret,
   accessTokenUrl: 'https://oauth2.googleapis.com/token',
 };
 
@@ -73,6 +72,12 @@ const accessTokenConfig: AccessTokenConfig = {
 const idTokenFullConfig = configIdToken({
   providedInAccessToken: false,
 });
+
+const jwkConfig: JwkConfig = {
+  name: 'google',
+  issuer: 'https://accounts.google.com',
+  jwkSetUrl: 'https://www.googleapis.com/oauth2/v3/certs',
+};
 
 type BroadcastData =
   | {
@@ -99,7 +104,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
 
     // NOTE: The ngx-oauth2-access-token provide functions
-    provideKeyValuePairStorage(1n), // This is needed now.
+    provideKeyValuePairStorage('ngx-oat', 1), // This is needed now.
     provideOauth2Client(clientConfig),
     provideAuthorizationCode(authorizationCodeConfig),
     provideAccessToken(
@@ -108,59 +113,53 @@ export const appConfig: ApplicationConfig = {
       withRenewAccessTokenSource(() => {
         const authorizationCodeService = inject(AuthorizationCodeService);
 
-        return defer(
-          () =>
-            new Promise<AccessTokenResponse>((resolve, reject) => {
-              const scopeText = prompt('Input scope');
+        return new Observable<AccessTokenResponse>((subscriber) => {
+          const scopeText = prompt('Input scope');
 
-              if (scopeText === null) {
-                // NOTE: It's safe to throw here because it's out of
-                //       asynchronous process. In asychronous process,
-                //       we have to use reject();
-                throw new Error('Authorization was canceled.');
-              }
+          if (scopeText === null) {
+            // NOTE: It's safe to throw here because it's out of
+            //       asynchronous process. In asychronous process,
+            //       we have to use reject();
+            throw new Error('Authorization was canceled.');
+          }
 
-              const scopes = scopeText.split(/\s+/) as Scopes;
+          const scopes = scopeText.split(/\s+/) as Scopes;
 
-              const channelName = randomString(8);
-              const channel = new BroadcastChannel(channelName);
+          const channelName = randomString(8);
+          const channel = new BroadcastChannel(channelName);
 
-              const teardown = () => {
-                channel.close();
-              };
+          channel.addEventListener('message', (ev) => {
+            const data = ev.data as BroadcastData;
 
-              channel.addEventListener('message', (ev) => {
-                const data = ev.data as BroadcastData;
+            if (data.type === 'success') {
+              subscriber.next(data.data);
+            } else {
+              subscriber.error(data.error);
+            }
 
-                if (data.type === 'success') {
-                  resolve(data.data);
-                } else {
-                  reject(data.error);
-                }
+            subscriber.complete();
+          });
 
-                teardown();
+          (async () => {
+            const url =
+              await authorizationCodeService.fetchAuthorizationCodeUrl(scopes, {
+                // NOTE: The name of action will be performed in the callback URL.
+                //       And the data using in the callback URL.
+                action: {
+                  name: 'broadcast',
+                  data: {
+                    channel: channelName,
+                  },
+                } as BroadcastActionInfo,
               });
 
-              (async () => {
-                const url =
-                  await authorizationCodeService.fetchAuthorizationCodeUrl(
-                    scopes,
-                    {
-                      // NOTE: The name of action will be performed in the callback URL.
-                      //       And the data using in the callback URL.
-                      action: {
-                        name: 'broadcast',
-                        data: {
-                          channel: channelName,
-                        },
-                      } as BroadcastActionInfo,
-                    },
-                  );
+            open(url, '_blank');
+          })();
 
-                open(url, '_blank');
-              })();
-            }),
-        );
+          return () => {
+            channel.close();
+          };
+        });
       }),
 
       // NOTE: The individual extractors can be set here if needed.
@@ -199,7 +198,7 @@ export const appConfig: ApplicationConfig = {
 
       // NOTE: When the server return error
       withStateActionErrorHandler(() => {
-        return (err, stateData) => {
+        return async (err, stateData) => {
           const errData: BroadcastData = {
             type: 'error',
             error: err,
@@ -211,14 +210,9 @@ export const appConfig: ApplicationConfig = {
             const data = broadcastActionInfo.data;
             const channel = new BroadcastChannel(`${data['channel']}`);
 
-            const teardown = () => {
-              channel.close();
-              // close(); // close windows if needed
-            };
-
             channel.postMessage(errData);
-
-            teardown();
+            channel.close();
+            // close(); // close windows if needed
           }
         };
       }),
@@ -261,7 +255,7 @@ const jwkConfig: JwkConfig = {
   jwkSetUrl: 'https://www.googleapis.com/oauth2/v3/certs',
 };
 
-// In prviders configuration
+// In providers configuration
 
 export const appConfig: ApplicationConfig = {
   providers: [
