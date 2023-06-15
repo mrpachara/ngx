@@ -1,7 +1,7 @@
 import { JwtClaims } from './jwt-claims.types';
 import { UserInfoClaims } from './user-info-claims.types';
 
-export type IdTokenClaims = JwtClaims & {
+export interface IdTokenClaims extends JwtClaims, UserInfoClaims {
   /**
    * REQUIRED. Issuer Identifier for the Issuer of the response. The `iss` value
    * is a case sensitive URL using the `https` scheme that contains scheme,
@@ -115,4 +115,4 @@ export type IdTokenClaims = JwtClaims & {
    * value is a case sensitive string containing a StringOrURI value.
    */
   azp?: string;
-} & UserInfoClaims;
+}

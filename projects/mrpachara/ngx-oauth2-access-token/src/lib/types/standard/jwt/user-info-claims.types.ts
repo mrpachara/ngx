@@ -1,4 +1,4 @@
-export type UserInfoClaims = {
+export interface UserInfoClaims {
   /** Subject - Identifier for the End-User at the Issuer. */
   sub?: string;
 
@@ -195,4 +195,4 @@ export type UserInfoClaims = {
    * measured in UTC until the date/time.
    */
   updated_at?: number;
-};
+}

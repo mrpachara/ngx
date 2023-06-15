@@ -1,4 +1,4 @@
-export type JwtHeader = {
+export interface JwtHeader {
   /**
    * The "typ" (type) Header Parameter defined by
    * [[JWS](https://www.rfc-editor.org/rfc/rfc7519#ref-JWS)] and
@@ -89,4 +89,4 @@ export type JwtHeader = {
    * Parameter is OPTIONAL.
    */
   kid?: string;
-};
+}
