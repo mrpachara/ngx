@@ -5,7 +5,7 @@ import {
   AuthorizationCodeGrantAccessTokenRequest,
   AuthorizationCodeRequest,
   ClientGrantAccessTokenRequest,
-  CustomGrantAccessTokenRequest,
+  ExtensionGrantAccessTokenRequest,
   Oauth2ErrorResponse,
   PasswordGrantAccessTokenRequest,
   RefreshTokenGrantAccessTokenRequest,
@@ -33,19 +33,19 @@ export type AuthorizationCodeGrantParams =
 export type RefreshTokenGrantParams =
   OmitClientDetails<RefreshTokenGrantAccessTokenRequest>;
 
-export type CustomGrantParams =
-  OmitClientDetails<CustomGrantAccessTokenRequest>;
+export type ExtensionGrantParams =
+  OmitClientDetails<ExtensionGrantAccessTokenRequest>;
 
 export type StandardGrantsParams =
   | PasswordGrantParams
   | ClientGrantParams
   | AuthorizationCodeGrantParams
   | RefreshTokenGrantParams
-  | CustomGrantParams;
+  | ExtensionGrantParams;
 
 export type AuthorizationCodeParams =
   OmitClientDetails<AuthorizationCodeRequest>;
 
 export type Oauth2ClientErrorTransformer = (
   err: HttpErrorResponse,
-) => Oauth2ErrorResponse;
+) => Required<Oauth2ErrorResponse>;
