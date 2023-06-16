@@ -5,6 +5,6 @@ import { JwkBase } from './standard.types';
 export interface JwtVerifier {
   verify(
     jwtInfo: Provided<JwtInfo, 'signature'>,
-    jwk: JwkBase,
+    jwks: JwkBase[],
   ): Promise<boolean | undefined>;
 }

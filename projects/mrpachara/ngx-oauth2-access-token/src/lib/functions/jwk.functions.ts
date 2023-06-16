@@ -11,11 +11,8 @@ import {
   JwtHeader,
 } from '../types';
 
-export function findJwk(
-  jwtHeader: JwtHeader,
-  jwks: JwkBase[],
-): JwkBase | undefined {
-  const results = jwks
+export function findJwk(jwtHeader: JwtHeader, jwks: JwkBase[]): JwkBase[] {
+  return jwks
     .filter(
       (jwk) =>
         typeof jwtHeader.kid === 'undefined' || jwtHeader.kid === jwk.kid,
@@ -24,8 +21,6 @@ export function findJwk(
       (jwk) =>
         typeof jwtHeader.alg === 'undefined' || jwtHeader.alg === jwk.alg,
     );
-
-  return results[0];
 }
 
 export function isJwkSymmetricKey(jwk: JwkBase): jwk is JwkSymmetricKeyBase {

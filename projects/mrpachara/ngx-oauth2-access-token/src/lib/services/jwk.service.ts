@@ -59,14 +59,14 @@ export class JwkService {
     }
 
     const jwkSet = await firstValueFrom(this.fetchJwkSet());
-    const jwk = findJwk(jwtInfo.header, jwkSet.keys);
+    const jwks = findJwk(jwtInfo.header, jwkSet.keys);
 
-    if (typeof jwk === 'undefined') {
+    if (jwks.length === 0) {
       throw new MatchedJwkNotFoundError(jwtInfo.header);
     }
 
     for (const verifier of this.verifiers) {
-      const result = await verifier.verify(jwtInfo, jwk);
+      const result = await verifier.verify(jwtInfo, jwks);
 
       if (typeof result === 'undefined') {
         continue;
@@ -75,6 +75,6 @@ export class JwkService {
       return result;
     }
 
-    throw new SupportedJwkAlgNotFoundError(jwk);
+    throw new SupportedJwkAlgNotFoundError(jwks);
   }
 }

@@ -1,10 +1,10 @@
 export interface JwtHeader {
   /**
    * The "typ" (type) Header Parameter defined by
-   * [[JWS](https://www.rfc-editor.org/rfc/rfc7519#ref-JWS)] and
-   * [[JWE](https://www.rfc-editor.org/rfc/rfc7519#ref-JWE)] is used by JWT
+   * [[JWS](https://www.rfc-editor.org/rfc/rfc7515.html)] and
+   * [[JWE](https://www.rfc-editor.org/rfc/rfc7516.html)] is used by JWT
    * applications to declare the media type
-   * [[IANA.MediaTypes](https://www.rfc-editor.org/rfc/rfc7519#ref-IANA.MediaTypes)]
+   * [[IANA.MediaTypes](https://www.iana.org/assignments/media-types/media-types.xhtml)]
    * of this complete JWT. This is intended for use by the JWT application when
    * values that are not JWTs could also be present in an application data
    * structure that can contain a JWT object; the application can use this value
@@ -22,8 +22,8 @@ export interface JwtHeader {
 
   /**
    * The "cty" (content type) Header Parameter defined by
-   * [[JWS](https://www.rfc-editor.org/rfc/rfc7519#ref-JWS)] and
-   * [[JWE](https://www.rfc-editor.org/rfc/rfc7519#ref-JWE)] is used by this
+   * [[JWS](https://www.rfc-editor.org/rfc/rfc7515.html)] and
+   * [[JWE](https://www.rfc-editor.org/rfc/rfc7516.html)] is used by this
    * specification to convey structural information about the JWT.
    */
   cty?: 'JWT';
