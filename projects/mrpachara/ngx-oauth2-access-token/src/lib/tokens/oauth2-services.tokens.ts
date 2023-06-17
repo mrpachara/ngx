@@ -12,6 +12,7 @@ import {
 } from '../types';
 import { configRefreshToken } from '../functions';
 
+/** The injection token for access token services */
 export const ACCESS_TOKEN_SERVICES = new InjectionToken<AccessTokenService[]>(
   'access-token-services',
   {
@@ -20,10 +21,12 @@ export const ACCESS_TOKEN_SERVICES = new InjectionToken<AccessTokenService[]>(
   },
 );
 
+/** The injection token renew access token source */
 export const RENEW_ACCESS_TOKEN_SOURCE = new InjectionToken<
   Observable<AccessTokenResponse>
 >('renew-access-token-source');
 
+/** The injection token for default access token response extractor informations */
 export const DEFAULT_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS = new InjectionToken<
   AccessTokenResponseExtractorInfo[]
 >('default-access-token-response-extractor-infos', {
@@ -33,6 +36,7 @@ export const DEFAULT_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS = new InjectionToken<
   ],
 });
 
+/** The injection token for scoped access token response extractor informations */
 export const ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS = new InjectionToken<
   AccessTokenResponseExtractorInfo[]
 >('access-token-response-extractor-infos', {
@@ -40,6 +44,7 @@ export const ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS = new InjectionToken<
   factory: () => [],
 });
 
+/** The injection token for authorization code services */
 export const AUTHORIZATION_CODE_SERVICES = new InjectionToken<
   AuthorizationCodeService[]
 >('authorization-code-services', {

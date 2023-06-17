@@ -9,15 +9,13 @@ import {
 import { JwkService } from '../services';
 import { JwtVerifier } from '../types';
 
-export type JwtInitializedState = {
-  initialized: boolean;
-};
-
+/** The injection token for JWT services */
 export const JWK_SERVICES = new InjectionToken<JwkService[]>('jwk-services', {
   providedIn: 'root',
   factory: () => [],
 });
 
+/** The injection token for default JWT verifiers */
 export const DEFAULT_JWT_VERIFIERS = new InjectionToken<JwtVerifier[]>(
   'default-jwt-verifiers',
   {
@@ -31,6 +29,7 @@ export const DEFAULT_JWT_VERIFIERS = new InjectionToken<JwtVerifier[]>(
   },
 );
 
+/** The injection token for scoped JWT verifiers */
 export const JWT_VERIFIERS = new InjectionToken<JwtVerifier[]>(
   'jwt-verifiers',
   {
