@@ -17,6 +17,7 @@ function promiseWrapper<T = unknown>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
+/** IndexedDB storage */
 class IndexedDbStorage implements KeyValuePairsStorage {
   private readonly keyObservableMap = new Map<string, Observable<unknown>>();
 
@@ -117,6 +118,7 @@ const dbPrefix = libPrefix;
 const storeObjectName = 'key-value-pairs' as const;
 const broadcastPrefix = `${libPrefix}-indexed-db` as const;
 
+/** IndexedDB storage factory */
 @Injectable({
   providedIn: 'root',
 })
@@ -159,7 +161,7 @@ export class IndexedDbStorageFactory implements KeyValuePairsStorageFactory {
   };
 
   constructor() {
-    // NOTE: Subject is a multicast observable.
+    // NOTE: Subject is a _multicast observable_.
     const storageEventSubject = new Subject<string | null>();
     this.storageEvent$ = storageEventSubject.asObservable();
 

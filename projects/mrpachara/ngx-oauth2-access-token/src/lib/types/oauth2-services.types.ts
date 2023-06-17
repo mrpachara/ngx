@@ -88,7 +88,7 @@ export interface AccessTokenResponseExtractor<
    * `AccessTokenService.extract()`.
    *
    * @param serviceInfo The service information of `AccessTokenService`
-   * @returns The observable pipe for extracted information
+   * @returns The _observable pipe_ for extracted information
    * @see `AccessTokeService.extract()`
    */
   extractPipe(

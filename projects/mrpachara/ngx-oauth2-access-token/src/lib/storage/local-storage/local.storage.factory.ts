@@ -10,6 +10,7 @@ import {
   KeyValuePairsStorageFactory,
 } from '../../types';
 
+/** Local storage */
 class LocalStorage implements KeyValuePairsStorage {
   private readonly keyObservableMap = new Map<string, Observable<unknown>>();
 
@@ -93,6 +94,7 @@ class LocalStorage implements KeyValuePairsStorage {
 
 const keyPrefix = `${libPrefix}-kvp` as const;
 
+/** Local storage factory */
 @Injectable({
   providedIn: 'root',
 })
@@ -116,7 +118,7 @@ export class LocalStorageFactory implements KeyValuePairsStorageFactory {
   private readonly storageEvent$: Observable<string | null>;
 
   constructor() {
-    // NOTE: Subject is a multicast observable.
+    // NOTE: Subject is a _multicast observable_.
     const storageEventSubject = new Subject<string | null>();
     this.storageEvent$ = storageEventSubject.asObservable();
 

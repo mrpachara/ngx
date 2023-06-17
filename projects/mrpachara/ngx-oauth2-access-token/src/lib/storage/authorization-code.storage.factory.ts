@@ -13,6 +13,7 @@ type StateDataContainer<T extends StateData> = {
   data: T;
 };
 
+/** Authorization code storage */
 export class AuthorizationCodeStorage {
   private readonly stateKey = (stateId: string) =>
     `${stateDataKeyName}-${stateId}` as const;
@@ -36,6 +37,12 @@ export class AuthorizationCodeStorage {
     return stateDataContainer;
   };
 
+  /**
+   * Load state data.
+   *
+   * @param stateId The state ID
+   * @returns The `Promise` of immuable state data
+   */
   async loadStateData<T extends StateData = StateData>(
     stateId: string,
   ): Promise<DeepReadonly<T>> {
@@ -56,6 +63,13 @@ export class AuthorizationCodeStorage {
     return storedStateDataContainer.data;
   }
 
+  /**
+   * Store state data.
+   *
+   * @param stateId The state ID
+   * @param stateData The state data to be stored
+   * @returns The `Promise` of immuable state data
+   */
   async storeStateData<T extends StateData = StateData>(
     stateId: string,
     stateData: T,
@@ -70,6 +84,12 @@ export class AuthorizationCodeStorage {
     return await this.loadStateData<T>(stateId);
   }
 
+  /**
+   * Remove state data.
+   *
+   * @param stateId The state ID
+   * @returns The `Promise` of immuable state data or `null` when not found
+   */
   async removeStateData<T extends StateData = StateData>(
     stateId: string,
   ): Promise<DeepReadonly<T | null>> {
@@ -86,6 +106,7 @@ export class AuthorizationCodeStorage {
   }
 }
 
+/** Authorization code storage factory creates storage for specific storage name */
 @Injectable({ providedIn: 'root' })
 export class AuthorizationCodeStorageFactory {
   private readonly storageFactory = inject(KEY_VALUE_PAIR_STORAGE_FACTORY);
@@ -120,6 +141,12 @@ export class AuthorizationCodeStorageFactory {
     return storage;
   }
 
+  /**
+   * Create storage from `name`. The `name` **MUST** be unique.
+   *
+   * @param name The name of storage
+   * @returns The storage
+   */
   create(name: string, stateTtl: number): AuthorizationCodeStorage {
     if (this.existingNameSet.has(name)) {
       throw new Error(

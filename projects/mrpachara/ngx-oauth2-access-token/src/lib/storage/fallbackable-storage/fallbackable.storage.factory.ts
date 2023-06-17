@@ -8,6 +8,7 @@ import {
   KeyValuePairsStorageFactory,
 } from '../../types';
 
+/** Fallbackable Storage */
 class FallbackableStorage implements KeyValuePairsStorage {
   get name() {
     return this.storageName;
@@ -44,6 +45,7 @@ class FallbackableStorage implements KeyValuePairsStorage {
   }
 }
 
+/** Fallbackable storage factory */
 @Injectable({
   providedIn: 'root',
 })
@@ -60,6 +62,14 @@ export class FallbackableStorageFactory implements KeyValuePairsStorageFactory {
         for (const storageFactoryType of this.storageFactoryTypes) {
           try {
             const storageFactory = this.injector.get(storageFactoryType);
+            if (this === storageFactory) {
+              console.warn(
+                `FallbackableStorageFactory cannot be used with itself.`,
+              );
+
+              continue;
+            }
+
             await storageFactory.supported();
 
             resolve(storageFactory);
@@ -74,10 +84,8 @@ export class FallbackableStorageFactory implements KeyValuePairsStorageFactory {
     },
   );
 
-  supported(): never {
-    throw new Error(
-      `Cannot use ${this.constructor.name} in another ${this.constructor.name}`,
-    );
+  async supported(): Promise<void> {
+    await this.storageFactory$;
   }
 
   private async createStoragePromise(
