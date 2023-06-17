@@ -18,7 +18,7 @@ import {
   provideAccessTokenResponseExtractors,
   provideAuthorizationCode,
   provideJwk,
-  provideKeyValuePairStorage,
+  provideKeyValuePairsStorage,
   provideOauth2Client,
   provideStateAction,
   randomString,
@@ -89,7 +89,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
 
     // NOTE: The ngx-oauth2-access-token provide functions
-    provideKeyValuePairStorage('ngx-oat', 1), // This is needed now.
+    provideKeyValuePairsStorage('ngx-oat', 1), // This is needed now.
     provideOauth2Client(clientConfig),
     provideAuthorizationCode(authorizationCodeConfig),
     provideAccessToken(
