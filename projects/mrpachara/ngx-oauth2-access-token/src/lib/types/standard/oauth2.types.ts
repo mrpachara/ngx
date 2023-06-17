@@ -190,7 +190,7 @@ export interface AccessTokenResponse {
 
 export type StandardGrantType = StandardGrantsAccesTokenRequest['grant_type'];
 
-/** Oauth 2.0 Error Response */
+/** OAuth 2.0 Error Response */
 export interface Oauth2ErrorResponse {
   /** REQUIRED. A single ASCII error code from the following: */
   error: string;

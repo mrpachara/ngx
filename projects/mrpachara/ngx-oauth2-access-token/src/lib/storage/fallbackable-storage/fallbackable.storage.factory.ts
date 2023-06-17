@@ -4,18 +4,18 @@ import { Observable, defer, switchMap } from 'rxjs';
 import { FALLBACKABLE_KEY_VALUE_PAIR_STORAGE_FACTORY_TOKENS } from '../../tokens';
 import {
   DeepReadonly,
-  KeyValuePairStorage,
-  KeyValuePairStorageFactory,
+  KeyValuePairsStorage,
+  KeyValuePairsStorageFactory,
 } from '../../types';
 
-class FallbackableStorage implements KeyValuePairStorage {
+class FallbackableStorage implements KeyValuePairsStorage {
   get name() {
     return this.storageName;
   }
 
   constructor(
     private readonly storageName: string,
-    private readonly storagePromise: Promise<KeyValuePairStorage>,
+    private readonly storagePromise: Promise<KeyValuePairsStorage>,
   ) {}
 
   async loadItem<T = unknown>(key: string): Promise<DeepReadonly<T | null>> {
@@ -47,14 +47,14 @@ class FallbackableStorage implements KeyValuePairStorage {
 @Injectable({
   providedIn: 'root',
 })
-export class FallbackableStorageFactory implements KeyValuePairStorageFactory {
+export class FallbackableStorageFactory implements KeyValuePairsStorageFactory {
   private readonly injector = inject(Injector);
 
   private readonly storageFactoryTypes = inject(
     FALLBACKABLE_KEY_VALUE_PAIR_STORAGE_FACTORY_TOKENS,
   );
 
-  private readonly storageFactory$ = new Promise<KeyValuePairStorageFactory>(
+  private readonly storageFactory$ = new Promise<KeyValuePairsStorageFactory>(
     (resolve, reject) => {
       (async () => {
         for (const storageFactoryType of this.storageFactoryTypes) {
@@ -69,7 +69,7 @@ export class FallbackableStorageFactory implements KeyValuePairStorageFactory {
           }
         }
 
-        reject(new Error('Cannot find supported KeyValuePairStorageFactory'));
+        reject(new Error('Cannot find supported KeyValuePairsStorageFactory'));
       })();
     },
   );
@@ -82,14 +82,14 @@ export class FallbackableStorageFactory implements KeyValuePairStorageFactory {
 
   private async createStoragePromise(
     storageName: string,
-  ): Promise<KeyValuePairStorage> {
+  ): Promise<KeyValuePairsStorage> {
     const storageFactory = await this.storageFactory$;
     return storageFactory.get(storageName);
   }
 
-  private readonly storageMap = new Map<string, KeyValuePairStorage>();
+  private readonly storageMap = new Map<string, KeyValuePairsStorage>();
 
-  get(storageName: string): KeyValuePairStorage {
+  get(storageName: string): KeyValuePairsStorage {
     if (!this.storageMap.has(storageName)) {
       this.storageMap.set(
         storageName,
@@ -100,6 +100,6 @@ export class FallbackableStorageFactory implements KeyValuePairStorageFactory {
       );
     }
 
-    return this.storageMap.get(storageName) as KeyValuePairStorage;
+    return this.storageMap.get(storageName) as KeyValuePairsStorage;
   }
 }

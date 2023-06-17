@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { StoredAccessTokenResponse } from './types';
 
 import { AccessTokenNotFoundError } from '../errors';
-import { DeepReadonly, KeyValuePairStorage } from '../types';
+import { DeepReadonly, KeyValuePairsStorage } from '../types';
 import { KEY_VALUE_PAIR_STORAGE_FACTORY } from '../tokens';
 
 const tokenDataKeyName = `access-token-data` as const;
@@ -14,11 +14,11 @@ export class AccessTokenStorage {
     DeepReadonly<StoredAccessTokenResponse | null>
   >;
 
-  get keyValuePairStorage() {
+  get keyValuePairsStorage() {
     return this.storage;
   }
 
-  constructor(private readonly storage: KeyValuePairStorage) {
+  constructor(private readonly storage: KeyValuePairsStorage) {
     this.accessTokenResponse$ =
       this.storage.watchItem<StoredAccessTokenResponse>(tokenDataKeyName);
   }

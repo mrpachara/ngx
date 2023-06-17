@@ -6,11 +6,11 @@ import { libPrefix } from '../../predefined';
 import { STORAGE_INFO } from '../../tokens';
 import {
   DeepReadonly,
-  KeyValuePairStorage,
-  KeyValuePairStorageFactory,
+  KeyValuePairsStorage,
+  KeyValuePairsStorageFactory,
 } from '../../types';
 
-class LocalStorage implements KeyValuePairStorage {
+class LocalStorage implements KeyValuePairsStorage {
   private readonly keyObservableMap = new Map<string, Observable<unknown>>();
 
   get name() {
@@ -96,7 +96,7 @@ const keyPrefix = `${libPrefix}-kvp` as const;
 @Injectable({
   providedIn: 'root',
 })
-export class LocalStorageFactory implements KeyValuePairStorageFactory {
+export class LocalStorageFactory implements KeyValuePairsStorageFactory {
   private readonly storageInfo = inject(STORAGE_INFO);
 
   private readonly storageNamespace =
@@ -134,9 +134,9 @@ export class LocalStorageFactory implements KeyValuePairStorageFactory {
       `${this.storagePrefix}-${storageName}-${key}` as const;
   }
 
-  private readonly storageMap = new Map<string, KeyValuePairStorage>();
+  private readonly storageMap = new Map<string, KeyValuePairsStorage>();
 
-  get(storageName: string): KeyValuePairStorage {
+  get(storageName: string): KeyValuePairsStorage {
     if (!this.storageMap.has(storageName)) {
       this.storageMap.set(
         storageName,
@@ -149,6 +149,6 @@ export class LocalStorageFactory implements KeyValuePairStorageFactory {
       );
     }
 
-    return this.storageMap.get(storageName) as KeyValuePairStorage;
+    return this.storageMap.get(storageName) as KeyValuePairsStorage;
   }
 }

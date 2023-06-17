@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 
 import { IdTokenNotFoundError } from '../errors';
-import { DeepReadonly, JwtTokenType, KeyValuePairStorage } from '../types';
+import { DeepReadonly, JwtTokenType, KeyValuePairsStorage } from '../types';
 
 const tokenDataKeyName = `id-token-data` as const;
 
@@ -14,7 +14,7 @@ export type IdTokenContainer = {
 })
 export class IdTokenStorage {
   async loadIdToken(
-    storage: KeyValuePairStorage,
+    storage: KeyValuePairsStorage,
   ): Promise<DeepReadonly<JwtTokenType>> {
     const storedIdTokenContainer = await storage.loadItem<IdTokenContainer>(
       tokenDataKeyName,
@@ -28,13 +28,13 @@ export class IdTokenStorage {
   }
 
   async storeIdToken(
-    storage: KeyValuePairStorage,
+    storage: KeyValuePairsStorage,
     token: JwtTokenType,
   ): Promise<DeepReadonly<IdTokenContainer>> {
     return await storage.storeItem(tokenDataKeyName, { token });
   }
 
-  async removeIdToken(storage: KeyValuePairStorage): Promise<void> {
+  async removeIdToken(storage: KeyValuePairsStorage): Promise<void> {
     await storage.removeItem(tokenDataKeyName);
   }
 }

@@ -12,12 +12,12 @@ import {
   KEY_VALUE_PAIR_STORAGE_FACTORY,
   STORAGE_INFO,
 } from './tokens';
-import { KeyValuePairStorageFactory } from './types';
+import { KeyValuePairsStorageFactory } from './types';
 
-export function provideKeyValuePairStorage(
+export function provideKeyValuePairsStorage(
   name: string,
   version: number,
-  ...features: KeyValuePairStorageFeatures[]
+  ...features: KeyValuePairsStorageFeatures[]
 ): EnvironmentProviders {
   const factoryProviderFeatures = features.filter(
     (feature): feature is KeyValuepairStorageFactoryProviderFeature =>
@@ -27,7 +27,7 @@ export function provideKeyValuePairStorage(
 
   if (factoryProviderFeatures.length > 1) {
     throw new Error(
-      'Only one keyValuePairFactoryProvider feature allowed for KeyValuePairStorage!',
+      'Only one keyValuePairsFactoryProvider feature allowed for KeyValuePairsStorage!',
     );
   }
 
@@ -42,7 +42,7 @@ export function provideKeyValuePairStorage(
 
 export enum KeyValuepairStorageFeatureKind {
   KeyValuepairStorageFactoryProviderFeature,
-  FallbackableKeyValuePairStorageFactoryTokensFeature,
+  FallbackableKeyValuePairsStorageFactoryTokensFeature,
 }
 
 export interface KeyValuepairStorageFeature<
@@ -56,7 +56,7 @@ export type KeyValuepairStorageFactoryProviderFeature =
   KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.KeyValuepairStorageFactoryProviderFeature>;
 
 export function withKeyValuepairStorageFactoryProvider(
-  factory: () => KeyValuePairStorageFactory,
+  factory: () => KeyValuePairsStorageFactory,
 ): KeyValuepairStorageFactoryProviderFeature {
   return {
     kind: KeyValuepairStorageFeatureKind.KeyValuepairStorageFactoryProviderFeature,
@@ -69,17 +69,17 @@ export function withKeyValuepairStorageFactoryProvider(
   };
 }
 
-export type FallbackableKeyValuePairStorageFactoryTokensFeature =
-  KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.FallbackableKeyValuePairStorageFactoryTokensFeature>;
+export type FallbackableKeyValuePairsStorageFactoryTokensFeature =
+  KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.FallbackableKeyValuePairsStorageFactoryTokensFeature>;
 
-export function withFallbackableKeyValuePairStorageFactoryTokens(
+export function withFallbackableKeyValuePairsStorageFactoryTokens(
   tokens: (
-    | Type<KeyValuePairStorageFactory>
-    | InjectionToken<KeyValuePairStorageFactory>
+    | Type<KeyValuePairsStorageFactory>
+    | InjectionToken<KeyValuePairsStorageFactory>
   )[],
-): FallbackableKeyValuePairStorageFactoryTokensFeature {
+): FallbackableKeyValuePairsStorageFactoryTokensFeature {
   return {
-    kind: KeyValuepairStorageFeatureKind.FallbackableKeyValuePairStorageFactoryTokensFeature,
+    kind: KeyValuepairStorageFeatureKind.FallbackableKeyValuePairsStorageFactoryTokensFeature,
     providers: [
       ...tokens.map(
         (token) =>
@@ -93,6 +93,6 @@ export function withFallbackableKeyValuePairStorageFactoryTokens(
   };
 }
 
-export type KeyValuePairStorageFeatures =
+export type KeyValuePairsStorageFeatures =
   | KeyValuepairStorageFactoryProviderFeature
-  | FallbackableKeyValuePairStorageFactoryTokensFeature;
+  | FallbackableKeyValuePairsStorageFactoryTokensFeature;

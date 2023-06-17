@@ -362,7 +362,7 @@ export class AccessTokenService {
         extractor as AccessTokenResponseExtractor,
       ) as C,
       client: this.client,
-      storage: this.storage.keyValuePairStorage,
+      storage: this.storage.keyValuePairsStorage,
     };
   }
 

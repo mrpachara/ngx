@@ -1,7 +1,7 @@
 import { Observable } from 'rxjs';
 import { DeepReadonly } from './utils.type';
 
-export interface KeyValuePairStorage {
+export interface KeyValuePairsStorage {
   readonly name: string;
 
   loadItem<T = unknown>(key: string): Promise<DeepReadonly<T | null>>;
@@ -18,7 +18,7 @@ export interface KeyValuePairStorage {
   keys(): Promise<string[]>;
 }
 
-export interface KeyValuePairStorageFactory {
+export interface KeyValuePairsStorageFactory {
   supported(): Promise<void>;
-  get(storageName: string): KeyValuePairStorage;
+  get(storageName: string): KeyValuePairsStorage;
 }

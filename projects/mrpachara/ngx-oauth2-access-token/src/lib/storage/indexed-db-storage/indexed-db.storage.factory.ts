@@ -6,8 +6,8 @@ import { libPrefix } from '../../predefined';
 import { STORAGE_INFO } from '../../tokens';
 import {
   DeepReadonly,
-  KeyValuePairStorage,
-  KeyValuePairStorageFactory,
+  KeyValuePairsStorage,
+  KeyValuePairsStorageFactory,
 } from '../../types';
 
 function promiseWrapper<T = unknown>(request: IDBRequest<T>): Promise<T> {
@@ -17,7 +17,7 @@ function promiseWrapper<T = unknown>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
-class IndexedDbStorage implements KeyValuePairStorage {
+class IndexedDbStorage implements KeyValuePairsStorage {
   private readonly keyObservableMap = new Map<string, Observable<unknown>>();
 
   get name() {
@@ -114,13 +114,13 @@ type ChangedKey = {
 };
 
 const dbPrefix = libPrefix;
-const storeObjectName = 'key-value-pair' as const;
+const storeObjectName = 'key-value-pairs' as const;
 const broadcastPrefix = `${libPrefix}-indexed-db` as const;
 
 @Injectable({
   providedIn: 'root',
 })
-export class IndexedDbStorageFactory implements KeyValuePairStorageFactory {
+export class IndexedDbStorageFactory implements KeyValuePairsStorageFactory {
   private readonly storageInfo = inject(STORAGE_INFO);
 
   private readonly broadcastName =
@@ -193,9 +193,9 @@ export class IndexedDbStorageFactory implements KeyValuePairStorageFactory {
     } as ChangedKey);
   };
 
-  private readonly storageMap = new Map<string, KeyValuePairStorage>();
+  private readonly storageMap = new Map<string, KeyValuePairsStorage>();
 
-  get(storageName: string): KeyValuePairStorage {
+  get(storageName: string): KeyValuePairsStorage {
     if (this.broadcastChannel !== null) {
       if (!this.storageMap.has(storageName)) {
         this.storageMap.set(
@@ -211,7 +211,7 @@ export class IndexedDbStorageFactory implements KeyValuePairStorageFactory {
         );
       }
 
-      return this.storageMap.get(storageName) as KeyValuePairStorage;
+      return this.storageMap.get(storageName) as KeyValuePairsStorage;
     }
 
     throw new Error(
