@@ -15,6 +15,7 @@ import {
 
 const latencyTime = 2 * 5 * 1000;
 
+/** Refresh token service */
 @Injectable({
   providedIn: 'root',
 })
@@ -86,6 +87,13 @@ export class RefreshTokenService
     );
   }
 
+  /**
+   * Fetch refresh token from storage only. The method will be used by
+   * `AccessTokenService` internally.
+   *
+   * @param serviceInfo The service information from `AccessTokenService`
+   * @returns The `Observable` of access token
+   */
   fetchToken(
     serviceInfo: AccessTokenServiceInfo<RefreshTokenFullConfig>,
   ): Observable<string> {

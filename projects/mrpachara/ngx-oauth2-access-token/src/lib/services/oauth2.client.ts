@@ -15,9 +15,11 @@ import {
   StandardGrantsParams,
 } from '../types';
 
+/** OAuth 2.0 client */
 export class Oauth2Client {
   private readonly http = inject(HttpClient);
 
+  /** The client name */
   get name() {
     return this.config.name;
   }
@@ -72,6 +74,13 @@ export class Oauth2Client {
     };
   }
 
+  /**
+   * Request for the new access token. The method **DO NOT** store the new
+   * access token. The new access token **MUST** be stored manually.
+   *
+   * @param params The requesting parameters
+   * @returns The `Observable` of access token response
+   */
   requestAccessToken<T extends StandardGrantsParams>(
     params: T,
   ): Observable<AccessTokenResponse> {
@@ -117,6 +126,12 @@ export class Oauth2Client {
       );
   }
 
+  /**
+   * Get the client credential parameters. The result always exclude
+   * `client_secret`.
+   *
+   * @returns The client credential paramters excluding `client_secret`
+   */
   getClientParams(): { client_id: string } {
     return this.generateClientParams(false);
   }
