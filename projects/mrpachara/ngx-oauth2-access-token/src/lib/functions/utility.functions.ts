@@ -1,5 +1,11 @@
 import { DeepReadonly } from '../types';
 
+/**
+ * Make `obj` to be deep frozen.
+ *
+ * @param obj The object to be frozen
+ * @returns The immuable object
+ */
 export function deepFreeze<T = unknown>(obj: T): DeepReadonly<T> {
   const frozenObjSet = new Set<unknown>();
   const queue: unknown[] = [];

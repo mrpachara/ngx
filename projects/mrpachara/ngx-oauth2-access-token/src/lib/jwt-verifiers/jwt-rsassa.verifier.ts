@@ -3,6 +3,7 @@ import { Injectable, isDevMode } from '@angular/core';
 import { JwkBase, JwtInfo, JwtVerifier, Provided } from '../types';
 import { isJwkRsassa } from '../functions/jwk.functions';
 
+/** RSASSA verifier */
 @Injectable({
   providedIn: 'root',
 })

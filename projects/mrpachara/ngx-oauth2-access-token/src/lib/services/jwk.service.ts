@@ -60,8 +60,13 @@ export class JwkService {
    * Verify the given JWT information.
    *
    * @param jwtInfo The JWT information
-   * @returns The `Promise` of `boolean`. It will be `true` for veirified and
+   * @returns The `Promise` of `boolean`. It will be `true` for approved and
    *   `false` for refuted
+   * @throws `SignatureNotFoundError` when `jwtInfo` is not provided `signature`
+   * @throws `MatchedJwkNotFoundError` when matched JWKs from the loaded JWK Set
+   *   are not found
+   * @throws `SupportedJwkAlgNotFoundError` when supported algorithm is not
+   *   found
    */
   async verify(jwtInfo: JwtInfo): Promise<boolean> {
     if (!isProvidedSignature(jwtInfo)) {

@@ -10,8 +10,8 @@ export interface JwtVerifier {
    *
    * @param jwtInfo The given JWT info
    * @param jwks The array of possible JWKs.
-   * @returns `Promise` of `boolean` if this verifier can verify JWT and return
-   *   `Promise` of `undefined` if it cannot.
+   * @returns `Promise` of `boolean` when the verifier can approve or refute JWT
+   *   and `undefined` if it cannot.
    */
   verify(
     jwtInfo: Provided<JwtInfo, 'signature'>,

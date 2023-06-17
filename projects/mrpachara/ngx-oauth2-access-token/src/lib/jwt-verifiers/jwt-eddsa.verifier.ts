@@ -3,6 +3,7 @@ import { Injectable, isDevMode } from '@angular/core';
 import { isJwkEddsa } from '../functions';
 import { JwkBase, JwtInfo, JwtVerifier, Provided } from '../types';
 
+/** EdDSA verifier */
 @Injectable({
   providedIn: 'root',
 })

@@ -3,6 +3,7 @@ import { Injectable, isDevMode } from '@angular/core';
 import { JwkBase, JwtInfo, JwtVerifier, Provided } from '../types';
 import { isJwkHmac } from '../functions';
 
+/** HMAC verifier */
 @Injectable({
   providedIn: 'root',
 })

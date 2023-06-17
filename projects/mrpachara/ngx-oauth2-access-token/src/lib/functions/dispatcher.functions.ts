@@ -1,6 +1,12 @@
 import { InvalidScopeError } from '../errors';
 import { Scopes } from '../types';
 
+/**
+ * Validate and transform array of scopes to string.
+ *
+ * @param scopes The array of scopes
+ * @returns The scope text or `InvalidScopeError` when `scopes` is invalid
+ */
 export function validateAndTransformScopes(
   scopes: Scopes,
 ): string | InvalidScopeError {
