@@ -15,6 +15,26 @@ import {
 } from '../errors';
 import { AuthorizationCodeService, StateActionService } from '../services';
 
+/**
+ * The processes of authorization code callback URL.
+ *
+ * 1. Get authorization code and other inforamtion
+ * 2. Verify state data
+ * 3. Exchange authorization code for access token
+ * 4. Handle state action to perform access token response task
+ *
+ * @param stateId The state ID
+ * @param code The authorization code
+ * @param error The error from authorization code server
+ * @param error_description The error description from authorization code server
+ * @param authorizationCodeService The authorization code service
+ * @param stateActionService The state action service
+ * @returns The `Observable` of the returned value from the handler
+ * @throws `ErrorResponseCallbackError` when authorization code server return
+ *   error
+ * @throws `BadResponseCallbackError` when authorization code server return
+ *   invalid information
+ */
 export function oauth2Callback(
   stateId: string | null,
   code: string | null,
@@ -83,7 +103,7 @@ export function oauth2Callback(
           ? err.cause.stateData
           : null;
 
-      return of(stateActionService.handerError(err, stateData)).pipe(
+      return of(stateActionService.handleError(err, stateData)).pipe(
         switchMap(() => throwError(() => err)),
       );
     }),

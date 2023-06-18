@@ -10,6 +10,12 @@ import {
 } from '../types';
 import { base64UrlDecode } from './crypto.functions';
 
+/**
+ * Extract an information from JWT token.
+ *
+ * @param token The JWT
+ * @returns JWT information with unknown payload type
+ */
 export function extractJwt<T extends JwtClaims = JwtClaims>(
   token: JwtTokenType,
 ): JwtUnknownInfo<T> {
@@ -47,18 +53,36 @@ export function extractJwt<T extends JwtClaims = JwtClaims>(
   } as JwtUnknownInfo<T>;
 }
 
+/**
+ * Type guard for provided signature JWT.
+ *
+ * @param jwtInfo The JWT information with unknown paylod type
+ * @returns `true` when `jwtInfo` is `Provided<JwtUnknownInfo<T>, 'signature'>`
+ */
 export function isProvidedSignature<T extends JwtClaims>(
   jwtInfo: JwtUnknownInfo<T>,
 ): jwtInfo is Provided<JwtUnknownInfo<T>, 'signature'> {
   return typeof jwtInfo.signature !== 'undefined';
 }
 
+/**
+ * Type guard for encrypted payload JWT.
+ *
+ * @param jwtInfo The JWT information with unknown paylod type
+ * @returns `true` when `jwtInfo` is `JwtBaseInfo<EncryptedPayload>`
+ */
 export function isJwtEncryptedPayload<T extends JwtClaims>(
   jwtInfo: JwtUnknownInfo<T>,
 ): jwtInfo is JwtBaseInfo<EncryptedPayload> {
   return typeof jwtInfo.payload === 'string';
 }
 
+/**
+ * Type guard for claims payload JWT.
+ *
+ * @param jwtInfo The JWT information with unknown paylod type
+ * @returns `true` when `jwtInfo` is `JwtInfo<T>`
+ */
 export function isJwtClaimsPayload<T extends JwtClaims>(
   jwtInfo: JwtUnknownInfo<T>,
 ): jwtInfo is JwtInfo<T> {

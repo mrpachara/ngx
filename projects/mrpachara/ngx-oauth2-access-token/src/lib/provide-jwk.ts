@@ -1,5 +1,7 @@
 import {
   EnvironmentProviders,
+  ExistingProvider,
+  FactoryProvider,
   InjectionToken,
   Provider,
   Type,
@@ -12,6 +14,25 @@ import { JwkService } from './services';
 import { JWK_SERVICES } from './tokens';
 import { JwkConfig, JwkFullConfig } from './types';
 
+/**
+ * Provide JWK service and its features. For creating multiple JWK services, use
+ * `provideJwk()` multiple times with `withJwkProvider()` feature, e.g.:
+ *
+ * ```typescript
+ * provideJwk(configA),
+ * provideJwk(
+ *   configB,
+ *   withJwkProvider(
+ *     JWK_SERVICE_B,
+ *     (fullConfigB) => new JwkService(fullConfigB),
+ *   ),
+ * ),
+ * ```
+ *
+ * @param config The configuration of service
+ * @param features The provider features
+ * @returns `EnvironmentProviders`
+ */
 export function provideJwk(
   config: JwkConfig,
   ...features: JwkFeatures[]
@@ -26,6 +47,7 @@ export function provideJwk(
     },
   );
 
+  // ## FOR ##: normalizing featrues
   const providerFeatures = features.filter(
     (feature): feature is JwkProviderFeature =>
       feature.kind === JwkFeatureKind.JwkProviderFeature,
@@ -41,25 +63,15 @@ export function provideJwk(
     );
   }
 
+  // ## FOR ##: JwkProviderFeature
   features
     .filter(
       (feature): feature is JwkProviderFeature =>
         feature.kind === JwkFeatureKind.JwkProviderFeature,
     )
-    .forEach((feature) =>
-      feature.providers.push(
-        {
-          provide: feature.injectionToken,
-          useFactory: () => feature.factory(inject(fullConfigToken)),
-        },
-        {
-          provide: JWK_SERVICES,
-          multi: true,
-          useExisting: feature.injectionToken,
-        },
-      ),
-    );
+    .forEach((feature) => feature.assign(fullConfigToken));
 
+  // ## FOR ##: making providers
   return makeEnvironmentProviders([
     { provide: fullConfigToken, useValue: fullConfig },
 
@@ -76,22 +88,46 @@ export interface JwkFeature<K extends JwkFeatureKind> {
   readonly providers: Provider[];
 }
 
+/** JWK service provider feature */
 export type JwkProviderFeature<T extends JwkService = JwkService> =
   JwkFeature<JwkFeatureKind.JwkProviderFeature> & {
-    readonly injectionToken: Type<T> | InjectionToken<T>;
+    readonly token: Type<T> | InjectionToken<T>;
     readonly factory: (fullConfig: JwkFullConfig) => T;
+    assign(fullConfigToken: InjectionToken<JwkFullConfig>): void;
   };
 
+/**
+ * Provide another `JwkService` than the default one.
+ *
+ * @param token The injection token or class to be used
+ * @param factory The factory for creating instance
+ * @returns `JwkProviderFeature`
+ */
 export function withJwkProvider<T extends JwkService>(
-  injectionToken: Type<T> | InjectionToken<T>,
+  token: Type<T> | InjectionToken<T>,
   factory: (fullConfig: JwkFullConfig) => T,
 ): JwkProviderFeature {
   return {
     kind: JwkFeatureKind.JwkProviderFeature,
     providers: [],
-    injectionToken,
+    token,
     factory,
+    assign(fullConfigToken) {
+      this.providers.splice(0);
+      this.providers.push(
+        {
+          provide: this.token,
+          useFactory: () => this.factory(inject(fullConfigToken)),
+        } as FactoryProvider,
+        {
+          provide: JWK_SERVICES,
+          multi: true,
+          useExisting: this.token,
+        } as ExistingProvider,
+      );
+    },
   };
 }
 
+/** All JWK features */
 export type JwkFeatures = JwkProviderFeature;

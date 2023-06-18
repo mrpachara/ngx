@@ -4,8 +4,13 @@ import { HttpContextToken, HttpErrorResponse } from '@angular/common/http';
 import { Oauth2Client } from '../services';
 import { Oauth2ClientErrorTransformer } from '../types';
 
+/**
+ * The token for `HttpClient` indicates that **DO NOT** assign access token for
+ * this request. It is useful for HTTP request interceptors.
+ */
 export const SKIP_ASSIGNING_ACCESS_TOKEN = new HttpContextToken(() => false);
 
+/** The injection token for OAuth 2.0 clients */
 export const OATUTH2_CLIENTS = new InjectionToken<Oauth2Client[]>(
   'oauth2-clients',
   {
@@ -14,9 +19,10 @@ export const OATUTH2_CLIENTS = new InjectionToken<Oauth2Client[]>(
   },
 );
 
-export const OAUTH2_CLIENT_ERROR_TRANSFORMER =
+/** The injection token for OAuth 2.0 error response transformer function */
+export const DEFAULT_OAUTH2_CLIENT_ERROR_TRANSFORMER =
   new InjectionToken<Oauth2ClientErrorTransformer>(
-    'oauth2-client-error-gransformer',
+    'default-oauth2-client-error-transformer',
     {
       providedIn: 'root',
       factory() {

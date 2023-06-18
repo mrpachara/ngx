@@ -12,6 +12,12 @@ import {
 } from './types';
 import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from './tokens';
 
+/**
+ * Provide state action and state action error handlers.
+ *
+ * @param features The provider features
+ * @returns `EnvironmentProviders`
+ */
 export function provideStateAction(
   ...features: StateActionFeatures[]
 ): EnvironmentProviders {
@@ -30,9 +36,40 @@ export interface StateActionFeature<K extends StateActionFeatureKind> {
   readonly providers: Provider[];
 }
 
+/** State action handler feature */
 export type StateActionHandlerFeature =
   StateActionFeature<StateActionFeatureKind.StateActionHandlerFeature>;
 
+/**
+ * Provide state action hander. You can define `SteteActionInfo` first. Then use
+ * the defined `SteteActionInfo` with this feature, e.g.:
+ *
+ * ```typescript
+ * type MyAction = StatActionInfo<'my_action', {
+ *   a: sting;
+ *   b?: number;
+ *   c: boolean;
+ * }>;
+ *
+ * // in app.conf.ts providers
+ *
+ * provideStateAction(
+ *   withStateActionHandler<MyAction>(
+ *     'my_action',
+ *     () => {
+ *       // inject required services if needed
+ *       return (accessTokenResponse, stateData) => {
+ *         // The type of accessTokenResponse and stateData can be infered correctly.
+ *       };
+ *     }),
+ *   ),
+ * ),
+ * ```
+ *
+ * @param name The name of state action
+ * @param factory The factory for creating instance
+ * @returns `StateActionHandlerFeature`
+ */
 export function withStateActionHandler<I extends StateActionInfo>(
   name: I['name'],
   factory: () => StateActionHandler<StateAction<I>, unknown>,
@@ -49,9 +86,16 @@ export function withStateActionHandler<I extends StateActionInfo>(
   };
 }
 
+/** State action error hander feature */
 export type StateActionErrorHandlerFeature =
   StateActionFeature<StateActionFeatureKind.StateActionErrorHandlerFeature>;
 
+/**
+ * Provide state action error hander.
+ *
+ * @param factory The factory for creating instance
+ * @returns `StateActionErrorHandlerFeature`
+ */
 export function withStateActionErrorHandler(
   factory: () => StateActionErrorHandler,
 ): StateActionErrorHandlerFeature {
@@ -61,6 +105,7 @@ export function withStateActionErrorHandler(
   };
 }
 
+/** All state action features */
 export type StateActionFeatures =
   | StateActionHandlerFeature
   | StateActionErrorHandlerFeature;

@@ -30,10 +30,12 @@ const stateIdLength = 32;
 
 type GenUrlParams = Omit<AuthorizationCodeParams, 'state'>;
 
+/** Authorization code service */
 export class AuthorizationCodeService {
   private readonly storageFactory = inject(AuthorizationCodeStorageFactory);
   private readonly storage: AuthorizationCodeStorage;
 
+  /** The service name */
   get name() {
     return this.config.name;
   }
@@ -116,6 +118,15 @@ export class AuthorizationCodeService {
     return url;
   };
 
+  /**
+   * Fetch authorization code url.
+   *
+   * @param scopes The requesting scopes
+   * @param stateData The state data wanted to be stored for requesting
+   * @param additionalParams The additional parameters for requesting. It will
+   *   extend the static additional parameters from the counfiguation.
+   * @returns The `Promise` of authorization code requesting `URL`
+   */
   async fetchAuthorizationCodeUrl<T extends StateData>(
     scopes: Scopes,
     stateData?: T,
@@ -143,18 +154,42 @@ export class AuthorizationCodeService {
     return this.generateAuthorizationCodeUrl(stateId, storedStateData, params);
   }
 
+  /**
+   * Load and clear state data.
+   *
+   * @param stateId The state ID to be cleared
+   * @returns The `Promise` of immubable state data or `null` when not found
+   */
   async clearState<T extends StateData = StateData>(
     stateId: string,
   ): Promise<DeepReadonly<(T & StateAuthorizationCode) | null>> {
     return await this.removeStateData<T>(stateId);
   }
 
+  /**
+   * Load and verify state data.
+   *
+   * @param stateId The state ID to be verified
+   * @returns The `Observable` of verified state data. Another cases thorw an
+   *   error.
+   * @throws An error of other cases including refused state data and state data
+   *   is not found
+   */
   verifyState<T extends StateData = StateData>(
     stateId: string,
   ): Observable<DeepReadonly<T & StateAuthorizationCode>> {
     return defer(() => this.loadStateData<T & StateAuthorizationCode>(stateId));
   }
 
+  /**
+   * Exchange authorization code for the new access token. The method **DO NOT**
+   * store the new access token. The new access token **MUST** be stored
+   * manually.
+   *
+   * @param stateId The state ID for exchanging
+   * @param authorizationCode The authorization code to be exchanged
+   * @returns The `Observable` of immuable access token response and state data
+   */
   exchangeAuthorizationCode<T extends StateData = StateData>(
     stateId: string,
     authorizationCode: string,

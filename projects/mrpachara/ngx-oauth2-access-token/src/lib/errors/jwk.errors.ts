@@ -19,13 +19,12 @@ export class MatchedJwkNotFoundError extends Error {
 }
 
 export class SupportedJwkAlgNotFoundError extends Error {
-  constructor(jwk: JwkBase) {
-    super(
-      `The supported JWK algorithm for '${JSON.stringify(jwk)}' is not found.`,
-      {
-        cause: jwk,
-      },
-    );
+  constructor(jwks: JwkBase[]) {
+    const keyIds = jwks.map((jwk) => `${jwk.kty}:${jwk.kid}`);
+
+    super(`The supported JWK algorithm for '${keyIds}' is not found.`, {
+      cause: jwks,
+    });
     this.name = this.constructor.name;
   }
 }

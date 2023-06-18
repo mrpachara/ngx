@@ -1,5 +1,7 @@
 import {
   EnvironmentProviders,
+  ExistingProvider,
+  FactoryProvider,
   InjectionToken,
   Provider,
   Type,
@@ -14,7 +16,7 @@ import {
   SharedProviderFeatureKind,
 } from './provide-shared.features';
 import { AccessTokenService, Oauth2Client } from './services';
-import { ACCESS_TOKEN_SERVICES, RENEW_ACCESS_TOKEN_SOURCE } from './tokens';
+import { ACCESS_TOKEN_SERVICES } from './tokens';
 import {
   AccessTokenConfig,
   AccessTokenFullConfig,
@@ -22,6 +24,35 @@ import {
   AccessTokenResponseExtractorInfo,
 } from './types';
 
+/**
+ * Provide access token service and its features. For creating multiple access
+ * token services, use `provideAccessToken()` multiple times with
+ * `withAccessTokenProvider()` feature, e.g.:
+ *
+ * ```typescript
+ * provideAccessToken(configA),
+ * provideAccessToken(
+ *   configB,
+ *   withAccessTokenProvider(
+ *     ACCESS_TOKEN_SERVICE_B,
+ *     (
+ *       fullConfigB,
+ *       extractorInfosB,
+ *       renewAccessTokenSourceB,
+ *     ) => new AccessTokenService(
+ *       fullConfig,
+ *       extractorInfos,
+ *       renewAccessTokenSource,
+ *       inject(OAUTH2_CLIENT_B),
+ *     ),
+ *   ),
+ * ),
+ * ```
+ *
+ * @param config The configuration of service
+ * @param features The provider features
+ * @returns `EnvironmentProviders`
+ */
 export function provideAccessToken(
   config: AccessTokenConfig,
   ...features: AccessTokenFeatures[]
@@ -36,6 +67,10 @@ export function provideAccessToken(
     },
   );
 
+  const renewAccessTokenSourceToken = new InjectionToken<
+    Observable<AccessTokenResponse>
+  >(`renew-access-token-source-${fullConfig.name}`);
+
   const extractorInfosToken = new InjectionToken<
     AccessTokenResponseExtractorInfo[]
   >(`access-token-extractor-infos-${fullConfig.name}`, {
@@ -43,6 +78,7 @@ export function provideAccessToken(
     factory: () => [],
   });
 
+  // ## FOR ##: normalizing featrues
   const providerFeatures = features.filter(
     (feature): feature is AccessTokenProviderFeature =>
       feature.kind === AccessTokenFeatureKind.AccessTokenProviderFeature,
@@ -58,40 +94,26 @@ export function provideAccessToken(
     features.push(
       withAccessTokenProvider(
         AccessTokenService,
-        (fullConfig, extractorInfos) =>
+        (fullConfig, extractorInfos, renewAccessTokenSource) =>
           new AccessTokenService(
             fullConfig,
-            inject(Oauth2Client),
             extractorInfos,
-            inject(RENEW_ACCESS_TOKEN_SOURCE, { optional: true }),
+            renewAccessTokenSource,
+            inject(Oauth2Client),
           ),
       ),
     );
   }
 
+  // ## FOR ##: RenewAccessTokenSourceFeature
   features
     .filter(
-      (feature): feature is AccessTokenProviderFeature =>
-        feature.kind === AccessTokenFeatureKind.AccessTokenProviderFeature,
+      (feature): feature is RenewAccessTokenSourceFeature =>
+        feature.kind === AccessTokenFeatureKind.RenewAccessTokenSourceFeature,
     )
-    .forEach((feature) =>
-      feature.providers.push(
-        {
-          provide: feature.injectionToken,
-          useFactory: () =>
-            feature.factory(
-              inject(fullConfigToken),
-              inject(extractorInfosToken),
-            ),
-        },
-        {
-          provide: ACCESS_TOKEN_SERVICES,
-          multi: true,
-          useExisting: feature.injectionToken,
-        },
-      ),
-    );
+    .forEach((feature) => feature.assign(renewAccessTokenSourceToken));
 
+  // ## FOR ##: AccessTokenResponseExtractorFeature
   features
     .filter(
       (feature): feature is AccessTokenResponseExtractorFeature =>
@@ -100,6 +122,21 @@ export function provideAccessToken(
     )
     .forEach((feature) => feature.assign(extractorInfosToken));
 
+  // ## FOR ##: AccessTokenProviderFeature
+  features
+    .filter(
+      (feature): feature is AccessTokenProviderFeature =>
+        feature.kind === AccessTokenFeatureKind.AccessTokenProviderFeature,
+    )
+    .forEach((feature) =>
+      feature.assign(
+        fullConfigToken,
+        extractorInfosToken,
+        renewAccessTokenSourceToken,
+      ),
+    );
+
+  // ## FOR ##: making providers
   return makeEnvironmentProviders([
     features.map((feature) => feature.providers),
   ]);
@@ -115,48 +152,96 @@ export interface AccessTokenFeature<K extends AccessTokenFeatureKind> {
   readonly providers: Provider[];
 }
 
+/** Access token service provider feature */
 export type AccessTokenProviderFeature<
   T extends AccessTokenService = AccessTokenService,
 > = AccessTokenFeature<AccessTokenFeatureKind.AccessTokenProviderFeature> & {
-  injectionToken: Type<T> | InjectionToken<T>;
-  factory: (
+  readonly token: Type<T> | InjectionToken<T>;
+  readonly factory: (
     config: AccessTokenFullConfig,
     extractorInfos: AccessTokenResponseExtractorInfo[],
+    renewAccessTokenSource: Observable<AccessTokenResponse> | null,
   ) => T;
+  assign(
+    fullConfigToken: InjectionToken<AccessTokenFullConfig>,
+    extractorInfosToken: InjectionToken<AccessTokenResponseExtractorInfo[]>,
+    renewAccessTokenSourceToken: InjectionToken<
+      Observable<AccessTokenResponse>
+    >,
+  ): void;
 };
 
+/**
+ * Provide another `AccessTokenService` than the default one.
+ *
+ * @param token The injection token or class to be used
+ * @param factory The factory for creating instance
+ * @returns `AccessTokenProviderFeature`
+ */
 export function withAccessTokenProvider<T extends AccessTokenService>(
-  injectionToken: Type<T> | InjectionToken<T>,
+  token: Type<T> | InjectionToken<T>,
   factory: (
     config: AccessTokenFullConfig,
     extractorInfos: AccessTokenResponseExtractorInfo[],
+    renewAccessTokenSource: Observable<AccessTokenResponse> | null,
   ) => T,
 ): AccessTokenProviderFeature {
   return {
     kind: AccessTokenFeatureKind.AccessTokenProviderFeature,
     providers: [],
-    injectionToken,
+    token,
     factory,
+    assign(fullConfigToken, extractorInfosToken, renewAccessTokenSourceToken) {
+      this.providers.splice(0);
+      this.providers.push(
+        {
+          provide: this.token,
+          useFactory: () =>
+            this.factory(
+              inject(fullConfigToken),
+              inject(extractorInfosToken),
+              inject(renewAccessTokenSourceToken, { optional: true }),
+            ),
+        } as FactoryProvider,
+        {
+          provide: ACCESS_TOKEN_SERVICES,
+          multi: true,
+          useExisting: this.token,
+        } as ExistingProvider,
+      );
+    },
   };
 }
 
+/** Renew access token source feature */
 export type RenewAccessTokenSourceFeature =
-  AccessTokenFeature<AccessTokenFeatureKind.RenewAccessTokenSourceFeature>;
+  AccessTokenFeature<AccessTokenFeatureKind.RenewAccessTokenSourceFeature> & {
+    assign(token: InjectionToken<Observable<AccessTokenResponse>>): void;
+  };
 
+/**
+ * Provide a renew access toke resource.
+ *
+ * @param sourceFactory The source factory
+ * @returns `RenewAccessTokenSourceFeature`
+ */
 export function withRenewAccessTokenSource(
   sourceFactory: () => Observable<AccessTokenResponse>,
 ): RenewAccessTokenSourceFeature {
   return {
     kind: AccessTokenFeatureKind.RenewAccessTokenSourceFeature,
-    providers: [
-      {
-        provide: RENEW_ACCESS_TOKEN_SOURCE,
+    providers: [],
+    assign(token): void {
+      this.providers.splice(0);
+      this.providers.push({
+        provide: token,
         useFactory: sourceFactory,
-      },
-    ],
+      } as FactoryProvider);
+    },
   };
 }
 
+/** All access token features */
 export type AccessTokenFeatures =
   | AccessTokenProviderFeature
   | RenewAccessTokenSourceFeature

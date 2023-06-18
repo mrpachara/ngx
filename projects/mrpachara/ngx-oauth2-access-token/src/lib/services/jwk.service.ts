@@ -15,6 +15,7 @@ import {
 } from '../tokens';
 import { JwkFullConfig, JwkSet, JwtInfo, JwtVerifier } from '../types';
 
+/** JWK service */
 export class JwkService {
   private http = inject(HttpClient);
   private defaultVerifiers = inject(DEFAULT_JWT_VERIFIERS);
@@ -27,10 +28,12 @@ export class JwkService {
     optional: true,
   });
 
+  /** The service name */
   get name() {
     return this.config.name;
   }
 
+  /** The issuer for the service */
   get issuer() {
     return this.config.issuer;
   }
@@ -53,20 +56,32 @@ export class JwkService {
     });
   }
 
+  /**
+   * Verify the given JWT information.
+   *
+   * @param jwtInfo The JWT information
+   * @returns The `Promise` of `boolean`. It will be `true` for approved and
+   *   `false` for refuted
+   * @throws `SignatureNotFoundError` when `jwtInfo` is not provided `signature`
+   * @throws `MatchedJwkNotFoundError` when matched JWKs from the loaded JWK Set
+   *   are not found
+   * @throws `SupportedJwkAlgNotFoundError` when supported algorithm is not
+   *   found
+   */
   async verify(jwtInfo: JwtInfo): Promise<boolean> {
     if (!isProvidedSignature(jwtInfo)) {
       throw new SignatureNotFoundError(jwtInfo.token, jwtInfo);
     }
 
     const jwkSet = await firstValueFrom(this.fetchJwkSet());
-    const jwk = findJwk(jwtInfo.header, jwkSet.keys);
+    const jwks = findJwk(jwtInfo.header, jwkSet.keys);
 
-    if (typeof jwk === 'undefined') {
+    if (jwks.length === 0) {
       throw new MatchedJwkNotFoundError(jwtInfo.header);
     }
 
     for (const verifier of this.verifiers) {
-      const result = await verifier.verify(jwtInfo, jwk);
+      const result = await verifier.verify(jwtInfo, jwks);
 
       if (typeof result === 'undefined') {
         continue;
@@ -75,6 +90,6 @@ export class JwkService {
       return result;
     }
 
-    throw new SupportedJwkAlgNotFoundError(jwk);
+    throw new SupportedJwkAlgNotFoundError(jwks);
   }
 }

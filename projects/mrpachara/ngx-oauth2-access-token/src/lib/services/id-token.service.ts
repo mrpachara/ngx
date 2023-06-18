@@ -17,6 +17,7 @@ import {
   JwtTokenType,
 } from '../types';
 
+/** ID token service */
 @Injectable({
   providedIn: 'root',
 })

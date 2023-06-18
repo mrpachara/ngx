@@ -11,7 +11,10 @@ import {
   StateActionHandlers,
 } from '../types';
 
-@Injectable({ providedIn: 'root' })
+/** State action service */
+@Injectable({
+  providedIn: 'root',
+})
 export class StateActionService {
   private readonly handlerEntries = inject(STATE_ACTION_HANDLERS);
   private readonly errorHandler = inject(STATE_ACTION_ERROR_HANDLER);
@@ -25,6 +28,14 @@ export class StateActionService {
     }, {} as StateActionHandlers);
   }
 
+  /**
+   * Dispatch access token response and state data to handlers.
+   *
+   * @param accessToken The access token response to be dispatched
+   * @param stateData The state data to be dispatched
+   * @returns The `Observable` of `R` or `void` when state action is not
+   *   provided.
+   */
   dispatch<S extends StateAction, R>(
     accessToken: AccessTokenResponse,
     stateData: S,
@@ -47,7 +58,14 @@ export class StateActionService {
     });
   }
 
-  handerError(
+  /**
+   * Handle the given error.
+   *
+   * @param err The error for handling
+   * @param stateData The state data for handling if can be provided
+   * @returns The `ObservableInput` of `void`
+   */
+  handleError(
     err: unknown,
     stateData: StateAction | null,
   ): ObservableInput<void> {

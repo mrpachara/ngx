@@ -3,16 +3,23 @@ import { Injectable } from '@angular/core';
 import { StoredRefreshToken } from './types';
 
 import { RefreshTokenNotFoundError } from '../errors';
-import { DeepReadonly, KeyValuePairStorage } from '../types';
+import { DeepReadonly, KeyValuePairsStorage } from '../types';
 
 const tokenDataKeyName = `refresh-token-data` as const;
 
+/** Refresh token storage */
 @Injectable({
   providedIn: 'root',
 })
 export class RefreshTokenStorage {
+  /**
+   * Load refresh token.
+   *
+   * @param storage The storage for loading
+   * @returns The `Promise` of immuable stored refresh token
+   */
   async loadRefreshToken(
-    storage: KeyValuePairStorage,
+    storage: KeyValuePairsStorage,
   ): Promise<DeepReadonly<StoredRefreshToken>> {
     const storedRefreshToken = await storage.loadItem<StoredRefreshToken>(
       tokenDataKeyName,
@@ -25,14 +32,27 @@ export class RefreshTokenStorage {
     return storedRefreshToken;
   }
 
+  /**
+   * Store refresh token.
+   *
+   * @param storage The storage for storing
+   * @param soringRefreshToken The refresh token to be stored
+   * @returns The `Promise` of immuable stored refresh token
+   */
   async storeRefreshToken(
-    storage: KeyValuePairStorage,
-    storedIdToken: StoredRefreshToken,
+    storage: KeyValuePairsStorage,
+    storingRefreshToken: StoredRefreshToken,
   ): Promise<DeepReadonly<StoredRefreshToken>> {
-    return await storage.storeItem(tokenDataKeyName, storedIdToken);
+    return await storage.storeItem(tokenDataKeyName, storingRefreshToken);
   }
 
-  async removeRefreshToken(storage: KeyValuePairStorage): Promise<void> {
+  /**
+   * Remove refresh token.
+   *
+   * @param storage The storage for removing
+   * @returns The `Promise` of `void`
+   */
+  async removeRefreshToken(storage: KeyValuePairsStorage): Promise<void> {
     await storage.removeItem(tokenDataKeyName);
   }
 }

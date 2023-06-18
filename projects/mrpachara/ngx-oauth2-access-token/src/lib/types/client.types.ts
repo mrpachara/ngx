@@ -5,7 +5,7 @@ import {
   AuthorizationCodeGrantAccessTokenRequest,
   AuthorizationCodeRequest,
   ClientGrantAccessTokenRequest,
-  CustomGrantAccessTokenRequest,
+  ExtensionGrantAccessTokenRequest,
   Oauth2ErrorResponse,
   PasswordGrantAccessTokenRequest,
   RefreshTokenGrantAccessTokenRequest,
@@ -19,33 +19,48 @@ type OmitClientDetails<
     | AuthorizationCodeRequest,
 > = Omit<T, 'client_id' | 'client_secret'>;
 
+/** The service parameters for requesting access token */
 export type GrantParams = OmitClientDetails<AccessTokenRequest>;
 
+/** The service parameters for requesting access token by using password grant */
 export type PasswordGrantParams =
   OmitClientDetails<PasswordGrantAccessTokenRequest>;
 
+/** The service parameters for requesting access token by using client grant */
 export type ClientGrantParams =
   OmitClientDetails<ClientGrantAccessTokenRequest>;
 
+/**
+ * The service parameters for requesting access token by using authorization
+ * code grant
+ */
 export type AuthorizationCodeGrantParams =
   OmitClientDetails<AuthorizationCodeGrantAccessTokenRequest>;
 
+/**
+ * The service parameters for requesting access token by using refresh token
+ * grant
+ */
 export type RefreshTokenGrantParams =
   OmitClientDetails<RefreshTokenGrantAccessTokenRequest>;
 
-export type CustomGrantParams =
-  OmitClientDetails<CustomGrantAccessTokenRequest>;
+/** The service parameters for requesting access token by using extension grant */
+export type ExtensionGrantParams =
+  OmitClientDetails<ExtensionGrantAccessTokenRequest>;
 
+/** The service parameters for requesting access token by using standard grant */
 export type StandardGrantsParams =
   | PasswordGrantParams
   | ClientGrantParams
   | AuthorizationCodeGrantParams
   | RefreshTokenGrantParams
-  | CustomGrantParams;
+  | ExtensionGrantParams;
 
+/** The service parameters for requesting authrization code */
 export type AuthorizationCodeParams =
   OmitClientDetails<AuthorizationCodeRequest>;
 
+/** OAuth 2.0 error response transformer function */
 export type Oauth2ClientErrorTransformer = (
   err: HttpErrorResponse,
-) => Oauth2ErrorResponse;
+) => Required<Oauth2ErrorResponse>;

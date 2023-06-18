@@ -32,7 +32,7 @@ import {
   configIdToken,
   provideAccessToken,
   provideAuthorizationCode,
-  provideKeyValuePairStorage,
+  provideKeyValuePairsStorage,
   provideOauth2Client,
   provideStateAction,
   randomString,
@@ -104,7 +104,7 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
 
     // NOTE: The ngx-oauth2-access-token provide functions
-    provideKeyValuePairStorage('ngx-oat', 1), // This is needed now.
+    provideKeyValuePairsStorage('ngx-oat', 1), // This is needed now.
     provideOauth2Client(clientConfig),
     provideAuthorizationCode(authorizationCodeConfig),
     provideAccessToken(
@@ -226,7 +226,7 @@ FILE: `src/app/app.routes.ts`
 ```typescript
 import { Routes } from '@angular/router';
 
-import { AutorizationCodeCallbackComponent } from '@mrpachara/ngx-oauth2-access-token';
+import { AuthorizationCodeCallbackComponent } from '@mrpachara/ngx-oauth2-access-token';
 
 import { HomeComponent } from './core/home/home.component';
 
@@ -239,7 +239,7 @@ export const routes: Routes = [
 
   {
     path: 'google/authorization',
-    component: AutorizationCodeCallbackComponent,
+    component: AuthorizationCodeCallbackComponent,
   },
 ];
 ```

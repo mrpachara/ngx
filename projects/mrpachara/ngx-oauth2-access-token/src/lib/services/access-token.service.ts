@@ -51,20 +51,21 @@ import {
 } from '../types';
 import {
   ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
-  DEFAULT_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
+  PREREQUIRED_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
 } from '../tokens';
 import { HttpErrorResponse } from '@angular/common/http';
 import { validateAndTransformScopes } from '../functions';
 
 const latencyTime = 2 * 5 * 1000;
 
+/** Access token service */
 export class AccessTokenService {
   private readonly storageFactory = inject(AccessTokenStorageFactory);
   private readonly storage: AccessTokenStorage;
   private readonly refreshTokenService = inject(RefreshTokenService);
 
-  private readonly defaultExtractors = inject(
-    DEFAULT_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
+  private readonly prerequiredExtractors = inject(
+    PREREQUIRED_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
   );
   private readonly scopedExtractors = inject(
     ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
@@ -96,18 +97,19 @@ export class AccessTokenService {
     DeepReadonly<StoredAccessTokenResponse>
   >;
 
+  /** The name of service */
   get name() {
     return this.config.name;
   }
 
   constructor(
     private readonly config: AccessTokenFullConfig,
-    private readonly client: Oauth2Client,
     private readonly individualExtractors: AccessTokenResponseExtractorInfo[],
     private readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
+    private readonly client: Oauth2Client,
   ) {
     this.extractorMap = new Map([
-      ...this.defaultExtractors,
+      ...this.prerequiredExtractors,
       ...(this.parentExtractors ?? []),
       ...(this.scopedExtractors ?? []),
       ...this.individualExtractors,
@@ -362,7 +364,7 @@ export class AccessTokenService {
         extractor as AccessTokenResponseExtractor,
       ) as C,
       client: this.client,
-      storage: this.storage.keyValuePairStorage,
+      storage: this.storage.keyValuePairsStorage,
     };
   }
 
@@ -399,6 +401,16 @@ export class AccessTokenService {
     return this.accessTokenResponse$;
   }
 
+  /**
+   * Fetch access token information.
+   *
+   * @param watchMode The mode for fetching, when `watchMode` is `true`, the
+   *   observable emits value every times access token is changed. The default
+   *   value is `false`.
+   * @returns The `Observable` of immuable access token information. If
+   *   `watchMode` is `false`, it emits only one value. But if `watchMode` is
+   *   `ture`, it fetch and emit the first one and the following changed value.
+   */
   fetchToken(watchMode = false): Observable<DeepReadonly<AccessTokenInfo>> {
     return this.applyWatch(watchMode).pipe(
       map((storedAccessTokenResponse) => ({
@@ -408,6 +420,16 @@ export class AccessTokenService {
     );
   }
 
+  /**
+   * Fetch access token response information.
+   *
+   * @param watchMode The mode for fetching, when `watchMode` is `true`, the
+   *   observable emits value every times access token is changed. The default
+   *   value is `false`.
+   * @returns The `Observable` of immuable access token information. If
+   *   `watchMode` is `false`, it emits only one value. But if `watchMode` is
+   *   `ture`, it fetch and emit the first one and the following changed value.
+   */
   fetchResponse<R extends AccessTokenResponse = AccessTokenResponse>(
     watchMode = false,
   ): Observable<DeepReadonly<AccessTokenResponseInfo<R>>> {
@@ -416,6 +438,15 @@ export class AccessTokenService {
     >;
   }
 
+  /**
+   * Exchange refresh token for the new access token. The method will store the
+   * new access token internally.
+   *
+   * @param scopes The new scopes for the new access token. If it is not
+   *   specified, the OAuth server use the same scopes as the previous one. If
+   *   it is specified, it **MUST** be a subset of the previous one.
+   * @returns The `Observable` of immuable access token response
+   */
   exchangeRefreshToken(
     scopes?: Scopes,
   ): Observable<DeepReadonly<AccessTokenResponse>> {
@@ -424,6 +455,18 @@ export class AccessTokenService {
     );
   }
 
+  /**
+   * Fetch access token response information and extract response by using
+   * `extractor`.
+   *
+   * @param extractor The extractor
+   * @param watchMode The mode for fetching, when `watchMode` is `true`, the
+   *   observable emits value every times access token is changed. The default
+   *   value is `false`.
+   * @returns The `Observable` of immuable access token information. If
+   *   `watchMode` is `false`, it emits only one value. But if `watchMode` is
+   *   `ture`, it fetch and emit the first one and the following changed value.
+   */
   extract<T extends AccessTokenResponse, C, R>(
     extractor: AccessTokenResponseExtractor<T, C, R>,
     watchMode = false,
@@ -433,6 +476,12 @@ export class AccessTokenService {
     );
   }
 
+  /**
+   * Set the new access token response manually.
+   *
+   * @param accessTokenResponse The access token response to be set
+   * @returns The `Promise` of immuable access token response
+   */
   async setAccessTokenResponse(
     accessTokenResponse: AccessTokenResponse,
   ): Promise<DeepReadonly<AccessTokenResponse>> {
@@ -444,10 +493,21 @@ export class AccessTokenService {
     );
   }
 
+  /**
+   * Remove only access token.
+   *
+   * @returns The `Promise` of `void`.
+   */
   async removeToken(): Promise<void> {
     return await this.removeStoredAccessTokenResponse();
   }
 
+  /**
+   * Clear all tokens including access token and the related data from
+   * extractors.
+   *
+   * @returns The `Promise` of `void`.
+   */
   async clearAllTokens(): Promise<void> {
     await this.removeToken();
     await this.clearToListeners();

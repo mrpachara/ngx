@@ -1,3 +1,4 @@
+/** TypeScript primative types */
 export type Primitive =
   | string
   | number
@@ -7,16 +8,19 @@ export type Primitive =
   | undefined
   | null;
 
+/** Pick only the optional properties */
 export type PickOptional<T> = {
   [K in keyof T as undefined extends T[K] ? K : never]-?: T[K];
 };
 
+/** Make all properties in T required except K */
 export type RequiredExcept<T, K extends keyof T> = Required<Omit<T, K>> &
   Pick<T, K>;
 
 // export type RequiredOnly<T, K extends keyof T> = Required<Pick<T, K>> &
 //   Omit<T, K>;
 
+/** Make K properties in T required */
 export type RequiredOnly<T, K extends keyof T> = T & {
   [P in K]-?: T[P];
 };
@@ -25,12 +29,15 @@ export type RequiredOnly<T, K extends keyof T> = T & {
 //   [prob in K]: undefined;
 // };
 
+/** Make K properties in T undefined */
 export type UndefinedOnly<T, K extends keyof T> = T & {
   [P in K]: undefined;
 };
 
+/** Alias of `RequiredOnly` for more clear meaning */
 export type Provided<T, K extends keyof T> = RequiredOnly<T, K>;
 
+/** Mak all properties and nested properties of T readonly */
 export type DeepReadonly<T> = T extends Primitive
   ? Readonly<T>
   : {

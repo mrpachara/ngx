@@ -21,40 +21,49 @@ export interface SharedProviderFeature<K extends SharedProviderFeatureKind> {
   readonly providers: Provider[];
 }
 
+/** Access token response extractor feature */
 export type AccessTokenResponseExtractorFeature<
   T extends AccessTokenResponse = AccessTokenResponse,
   C = unknown,
 > = SharedProviderFeature<SharedProviderFeatureKind.AccessTokenResponseExtractorFeature> & {
-  type: Type<AccessTokenResponseExtractor<T, C>>;
-  config: C;
-  assign(
-    token:
-      | Type<AccessTokenResponseExtractorInfo[]>
-      | InjectionToken<AccessTokenResponseExtractorInfo[]>,
-  ): void;
+  readonly token:
+    | Type<AccessTokenResponseExtractor<T, C>>
+    | InjectionToken<AccessTokenResponseExtractor<T, C>>;
+  readonly fullConfig: C;
+  assign(token: InjectionToken<AccessTokenResponseExtractorInfo[]>): void;
 };
 
+/**
+ * Provide access token response extractor. It can be used repeatedly in both
+ * `provideAccessTokenResponseExtractors()` and `provideAccessToken()`. When use
+ * it in `provideAccessTokenResponseExtractors()`, it provides globally. But
+ * when use it in `provideAccessToken()`, it will be local extractor for that
+ * `AccessTokenService`.
+ *
+ * @param token The injection token or class to be used
+ * @param fullConfig The full configuration of extractor.
+ * @returns `AccessTokenResponseExtractorFeature`
+ */
 export function withAccessTokenResponseExtractor<
   T extends AccessTokenResponse,
   C,
 >(
-  type: Type<AccessTokenResponseExtractor<T, C>>,
-  config: C,
+  token:
+    | Type<AccessTokenResponseExtractor<T, C>>
+    | InjectionToken<AccessTokenResponseExtractor<T, C>>,
+  fullConfig: C,
 ): AccessTokenResponseExtractorFeature<T, C> {
   return {
     kind: SharedProviderFeatureKind.AccessTokenResponseExtractorFeature,
-    type: type,
-    config: config,
     providers: [],
-    assign(
-      token:
-        | Type<AccessTokenResponseExtractorInfo[]>
-        | InjectionToken<AccessTokenResponseExtractorInfo[]>,
-    ): void {
+    token,
+    fullConfig,
+    assign(token) {
+      this.providers.splice(0);
       this.providers.push({
         provide: token,
         multi: true,
-        useFactory: () => [inject(this.type), this.config] as const,
+        useFactory: () => [inject(this.token), this.fullConfig] as const,
       });
     },
   };

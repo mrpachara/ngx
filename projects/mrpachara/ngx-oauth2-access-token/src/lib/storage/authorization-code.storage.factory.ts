@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 
 import { StateExpiredError, StateNotFoundError } from '../errors';
-import { DeepReadonly, KeyValuePairStorage, StateData } from '../types';
+import { DeepReadonly, KeyValuePairsStorage, StateData } from '../types';
 import { KEY_VALUE_PAIR_STORAGE_FACTORY } from '../tokens';
 
 const stateDataKeyName = `oauth-code-state` as const;
@@ -13,13 +13,14 @@ type StateDataContainer<T extends StateData> = {
   data: T;
 };
 
+/** Authorization code storage */
 export class AuthorizationCodeStorage {
   private readonly stateKey = (stateId: string) =>
     `${stateDataKeyName}-${stateId}` as const;
 
   constructor(
     private readonly stateTtl: number,
-    private readonly storage: Promise<KeyValuePairStorage>,
+    private readonly storage: Promise<KeyValuePairsStorage>,
   ) {}
 
   private readonly loadStateDataContainer = async <
@@ -36,6 +37,12 @@ export class AuthorizationCodeStorage {
     return stateDataContainer;
   };
 
+  /**
+   * Load state data.
+   *
+   * @param stateId The state ID
+   * @returns The `Promise` of immuable state data
+   */
   async loadStateData<T extends StateData = StateData>(
     stateId: string,
   ): Promise<DeepReadonly<T>> {
@@ -56,6 +63,13 @@ export class AuthorizationCodeStorage {
     return storedStateDataContainer.data;
   }
 
+  /**
+   * Store state data.
+   *
+   * @param stateId The state ID
+   * @param stateData The state data to be stored
+   * @returns The `Promise` of immuable state data
+   */
   async storeStateData<T extends StateData = StateData>(
     stateId: string,
     stateData: T,
@@ -70,6 +84,12 @@ export class AuthorizationCodeStorage {
     return await this.loadStateData<T>(stateId);
   }
 
+  /**
+   * Remove state data.
+   *
+   * @param stateId The state ID
+   * @returns The `Promise` of immuable state data or `null` when not found
+   */
   async removeStateData<T extends StateData = StateData>(
     stateId: string,
   ): Promise<DeepReadonly<T | null>> {
@@ -86,6 +106,7 @@ export class AuthorizationCodeStorage {
   }
 }
 
+/** Authorization code storage factory creates storage for specific storage name */
 @Injectable({ providedIn: 'root' })
 export class AuthorizationCodeStorageFactory {
   private readonly storageFactory = inject(KEY_VALUE_PAIR_STORAGE_FACTORY);
@@ -93,7 +114,7 @@ export class AuthorizationCodeStorageFactory {
 
   private async createStorage(
     storageName: string,
-  ): Promise<KeyValuePairStorage> {
+  ): Promise<KeyValuePairsStorage> {
     const storage = this.storageFactory.get(storageName);
 
     const currentTime = Date.now();
@@ -120,6 +141,12 @@ export class AuthorizationCodeStorageFactory {
     return storage;
   }
 
+  /**
+   * Create storage from `name`. The `name` **MUST** be unique.
+   *
+   * @param name The name of storage
+   * @returns The storage
+   */
   create(name: string, stateTtl: number): AuthorizationCodeStorage {
     if (this.existingNameSet.has(name)) {
       throw new Error(
