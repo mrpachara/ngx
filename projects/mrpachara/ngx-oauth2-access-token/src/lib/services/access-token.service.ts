@@ -51,7 +51,7 @@ import {
 } from '../types';
 import {
   ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
-  DEFAULT_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
+  PREREQUIRED_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
 } from '../tokens';
 import { HttpErrorResponse } from '@angular/common/http';
 import { validateAndTransformScopes } from '../functions';
@@ -64,8 +64,8 @@ export class AccessTokenService {
   private readonly storage: AccessTokenStorage;
   private readonly refreshTokenService = inject(RefreshTokenService);
 
-  private readonly defaultExtractors = inject(
-    DEFAULT_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
+  private readonly prerequiredExtractors = inject(
+    PREREQUIRED_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
   );
   private readonly scopedExtractors = inject(
     ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
@@ -104,12 +104,12 @@ export class AccessTokenService {
 
   constructor(
     private readonly config: AccessTokenFullConfig,
-    private readonly client: Oauth2Client,
     private readonly individualExtractors: AccessTokenResponseExtractorInfo[],
     private readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
+    private readonly client: Oauth2Client,
   ) {
     this.extractorMap = new Map([
-      ...this.defaultExtractors,
+      ...this.prerequiredExtractors,
       ...(this.parentExtractors ?? []),
       ...(this.scopedExtractors ?? []),
       ...this.individualExtractors,

@@ -14,11 +14,33 @@ import {
 } from './tokens';
 import { KeyValuePairsStorageFactory } from './types';
 
+/**
+ * Provide key-value paires storage factory and its features. You can provide
+ * **only one** key-value paires storge factory but you can change the default
+ * `FallbackableStorageFactory` by using
+ * `withKeyValuePairsStorageFactoryProvider()` feature, e.g.:
+ *
+ * ```typescript
+ * provideKeyValuePairsStorage(
+ *   'my-app',
+ *   1,
+ *   withKeyValuePairsStorageFactoryProvider(
+ *     () => inject(IndexedDbStorageFactory),
+ *   ),
+ * ),
+ * ```
+ *
+ * @param name The application storage name
+ * @param version The version of storage
+ * @param features The provider features
+ * @returns `EnvironmentProviders`
+ */
 export function provideKeyValuePairsStorage(
   name: string,
   version: number,
   ...features: KeyValuePairsStorageFeatures[]
 ): EnvironmentProviders {
+  // ## FOR ##: normalizing featrues
   const factoryProviderFeatures = features.filter(
     (feature): feature is KeyValuepairStorageFactoryProviderFeature =>
       feature.kind ===
@@ -31,6 +53,7 @@ export function provideKeyValuePairsStorage(
     );
   }
 
+  // ## FOR ##: making providers
   return makeEnvironmentProviders([
     {
       provide: STORAGE_INFO,
@@ -52,10 +75,18 @@ export interface KeyValuepairStorageFeature<
   readonly providers: Provider[];
 }
 
+/** Key-value paires storage factory provider feature */
 export type KeyValuepairStorageFactoryProviderFeature =
   KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.KeyValuepairStorageFactoryProviderFeature>;
 
-export function withKeyValuepairStorageFactoryProvider(
+/**
+ * Provide another instance of key-value paires storage factory than the default
+ * one.
+ *
+ * @param factory The factory for creating instance
+ * @returns `KeyValuepairStorageFactoryProviderFeature`
+ */
+export function withKeyValuePairsStorageFactoryProvider(
   factory: () => KeyValuePairsStorageFactory,
 ): KeyValuepairStorageFactoryProviderFeature {
   return {
@@ -69,14 +100,22 @@ export function withKeyValuepairStorageFactoryProvider(
   };
 }
 
+/** Fallbackable key-value pairs storage factory tokens feature */
 export type FallbackableKeyValuePairsStorageFactoryTokensFeature =
   KeyValuepairStorageFeature<KeyValuepairStorageFeatureKind.FallbackableKeyValuePairsStorageFactoryTokensFeature>;
 
+/**
+ * Provide the fallbackable sequence of key-value pairs storage factory tokens
+ * that can **only work** with `FallbackableStorageFactory`.
+ *
+ * @param tokens The injection tokens or classes
+ * @returns `FallbackableKeyValuePairsStorageFactoryTokensFeature`
+ */
 export function withFallbackableKeyValuePairsStorageFactoryTokens(
-  tokens: (
+  ...tokens: (
     | Type<KeyValuePairsStorageFactory>
     | InjectionToken<KeyValuePairsStorageFactory>
-  )[],
+  )[]
 ): FallbackableKeyValuePairsStorageFactoryTokensFeature {
   return {
     kind: KeyValuepairStorageFeatureKind.FallbackableKeyValuePairsStorageFactoryTokensFeature,
@@ -93,6 +132,7 @@ export function withFallbackableKeyValuePairsStorageFactoryTokens(
   };
 }
 
+/** All key-value pairs storage features */
 export type KeyValuePairsStorageFeatures =
   | KeyValuepairStorageFactoryProviderFeature
   | FallbackableKeyValuePairsStorageFactoryTokensFeature;

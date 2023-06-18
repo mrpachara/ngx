@@ -18,15 +18,23 @@ type MessageInfo = {
   message: string | null;
 };
 
+function nullableAttribute(value: string | undefined) {
+  return value ?? null;
+}
+
+/**
+ * The simple component for handling authorization code callback URL processes.
+ * It can work with `withComponentInputBinding()`.
+ */
 @Component({
-  selector: 'oat-autorization-code-callback',
+  selector: 'oat-authorization-code-callback',
   standalone: true,
   imports: [CommonModule],
   templateUrl: './autorization-code-callback.component.html',
   styleUrls: ['./autorization-code-callback.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AutorizationCodeCallbackComponent implements OnInit {
+export class AuthorizationCodeCallbackComponent implements OnInit {
   protected readonly messageInfo = signal<MessageInfo>({
     type: null,
     message: null,
@@ -36,20 +44,21 @@ export class AutorizationCodeCallbackComponent implements OnInit {
     () => `cl-${this.messageInfo().type}`,
   );
 
-  @Input() state?: string;
-  @Input() code?: string;
-  @Input() error?: string;
-  @Input() errro_description?: string;
+  @Input({ transform: nullableAttribute }) state: string | null = null;
+  @Input({ transform: nullableAttribute }) code: string | null = null;
+  @Input({ transform: nullableAttribute }) error: string | null = null;
+  @Input({ transform: nullableAttribute }) errro_description: string | null =
+    null;
 
   private readonly authorizationCodeService = inject(AuthorizationCodeService);
   private readonly stateActionService = inject(StateActionService);
 
   ngOnInit(): void {
     oauth2Callback(
-      this.state ?? null,
-      this.code ?? null,
-      this.error ?? null,
-      this.errro_description ?? null,
+      this.state,
+      this.code,
+      this.error,
+      this.errro_description,
       this.authorizationCodeService,
       this.stateActionService,
     )

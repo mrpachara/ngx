@@ -20,9 +20,9 @@ export const OATUTH2_CLIENTS = new InjectionToken<Oauth2Client[]>(
 );
 
 /** The injection token for OAuth 2.0 error response transformer function */
-export const OAUTH2_CLIENT_ERROR_TRANSFORMER =
+export const DEFAULT_OAUTH2_CLIENT_ERROR_TRANSFORMER =
   new InjectionToken<Oauth2ClientErrorTransformer>(
-    'oauth2-client-error-gransformer',
+    'default-oauth2-client-error-transformer',
     {
       providedIn: 'root',
       factory() {

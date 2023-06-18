@@ -1,5 +1,7 @@
 import {
   EnvironmentProviders,
+  ExistingProvider,
+  FactoryProvider,
   InjectionToken,
   Provider,
   Type,
@@ -12,6 +14,27 @@ import { AuthorizationCodeService, Oauth2Client } from './services';
 import { AUTHORIZATION_CODE_SERVICES } from './tokens';
 import { AuthorizationCodeConfig, AuthorizationCodeFullConfig } from './types';
 
+/**
+ * Provide authorization code service and its features. For creating multiple
+ * authorization code services, use `provideAuthorizationCode()` multiple times
+ * with `withAuthorizationCodeProvider()` feature, e.g.:
+ *
+ * ```typescript
+ * provideAuthorizationCode(configA),
+ * provideAuthorizationCode(
+ *   configB,
+ *   withAuthorizationCodeProvider(
+ *     AUTHORIZATION_CODE_SERVICE_B,
+ *     (fullConfigB) =>
+ *       new AuthorizationCodeService(fullConfigB, inject(OAUTH2_CLIENT_B)),
+ *   ),
+ * ),
+ * ```
+ *
+ * @param config The configuration of service
+ * @param features The provider features
+ * @returns `EnvironmentProviders`
+ */
 export function provideAuthorizationCode(
   config: AuthorizationCodeConfig,
   ...features: AuthorizationCodeFeatures[]
@@ -26,6 +49,7 @@ export function provideAuthorizationCode(
     },
   );
 
+  // ## FOR ##: normalizing featrues
   const prodiverFeatures = features.filter(
     (feature): feature is AuthorizationCodeProviderFeature =>
       feature.kind ===
@@ -48,25 +72,16 @@ export function provideAuthorizationCode(
     );
   }
 
+  // ## FOR ##: AuthorizationCodeProviderFeature
   features
     .filter(
       (feature): feature is AuthorizationCodeProviderFeature =>
         feature.kind ===
         AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature,
     )
-    .forEach((feature) =>
-      feature.providers.push(
-        {
-          provide: feature.injectionToken,
-          useFactory: () => feature.factory(inject(fullConfigToken)),
-        },
-        {
-          provide: AUTHORIZATION_CODE_SERVICES,
-          useExisting: feature.injectionToken,
-        },
-      ),
-    );
+    .forEach((feature) => feature.assign(fullConfigToken));
 
+  // ## FOR ##: making providers
   return makeEnvironmentProviders([
     features.map((feature) => feature.providers),
   ]);
@@ -83,26 +98,49 @@ export interface AuthorizationCodeFeature<
   readonly providers: Provider[];
 }
 
+/** Authorization code service provider feature */
 export type AuthorizationCodeProviderFeature<
   T extends AuthorizationCodeService = AuthorizationCodeService,
 > =
   AuthorizationCodeFeature<AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature> & {
-    injectionToken: Type<T> | InjectionToken<T>;
-    factory: (fullConfig: AuthorizationCodeFullConfig) => T;
+    readonly token: Type<T> | InjectionToken<T>;
+    readonly factory: (fullConfig: AuthorizationCodeFullConfig) => T;
+    assign(fullConfigToken: InjectionToken<AuthorizationCodeFullConfig>): void;
   };
 
+/**
+ * Provide another `AuthorizationCodeService` than the default one.
+ *
+ * @param token The injection token or class to be used
+ * @param factory The factory for creating instance
+ * @returns `AuthorizationCodeProviderFeature`
+ */
 export function withAuthorizationCodeProvider<
   T extends AuthorizationCodeService,
 >(
-  injectionToken: Type<T> | InjectionToken<T>,
+  token: Type<T> | InjectionToken<T>,
   factory: (fullConfig: AuthorizationCodeFullConfig) => T,
 ): AuthorizationCodeProviderFeature {
   return {
     kind: AuthorizationCodeFeatureKind.AuthorizationCodeProviderFeature,
     providers: [],
-    injectionToken,
+    token,
     factory,
+    assign(fullConfigToken) {
+      this.providers.splice(0);
+      this.providers.push(
+        {
+          provide: this.token,
+          useFactory: () => this.factory(inject(fullConfigToken)),
+        } as FactoryProvider,
+        {
+          provide: AUTHORIZATION_CODE_SERVICES,
+          useExisting: this.token,
+        } as ExistingProvider,
+      );
+    },
   };
 }
 
+/** All authorization code features */
 export type AuthorizationCodeFeatures = AuthorizationCodeProviderFeature;
