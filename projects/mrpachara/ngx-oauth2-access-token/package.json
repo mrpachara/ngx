@@ -1,6 +1,6 @@
 {
   "name": "@mrpachara/ngx-oauth2-access-token",
-  "version": "0.0.1-pre.12",
+  "version": "0.0.1-pre.13",
   "keywords": [
     "angular",
     "oauth 2.0"
@@ -14,8 +14,8 @@
     "registry": "https://npm.pkg.github.com"
   },
   "peerDependencies": {
-    "@angular/common": "^16.2.10",
-    "@angular/core": "^16.2.10"
+    "@angular/common": "^17.0.0",
+    "@angular/core": "^17.0.0"
   },
   "dependencies": {
     "tslib": "^2.3.0"
