@@ -1,10 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  Input,
   OnInit,
   computed,
   inject,
+  input,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -44,21 +44,31 @@ export class AuthorizationCodeCallbackComponent implements OnInit {
     () => `cl-${this.messageInfo().type}`,
   );
 
-  @Input({ transform: nullableAttribute }) state: string | null = null;
-  @Input({ transform: nullableAttribute }) code: string | null = null;
-  @Input({ transform: nullableAttribute }) error: string | null = null;
-  @Input({ transform: nullableAttribute }) errro_description: string | null =
-    null;
+  readonly state = input<string | null, string | undefined>(null, {
+    transform: nullableAttribute,
+  });
+
+  readonly code = input<string | null, string | undefined>(null, {
+    transform: nullableAttribute,
+  });
+
+  readonly error = input<string | null, string | undefined>(null, {
+    transform: nullableAttribute,
+  });
+
+  readonly errro_description = input<string | null, string | undefined>(null, {
+    transform: nullableAttribute,
+  });
 
   private readonly authorizationCodeService = inject(AuthorizationCodeService);
   private readonly stateActionService = inject(StateActionService);
 
   ngOnInit(): void {
     oauth2Callback(
-      this.state,
-      this.code,
-      this.error,
-      this.errro_description,
+      this.state(),
+      this.code(),
+      this.error(),
+      this.errro_description(),
       this.authorizationCodeService,
       this.stateActionService,
     )
