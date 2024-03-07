@@ -41,7 +41,7 @@ export class AuthorizationCodeCallbackComponent implements OnInit {
   });
 
   protected readonly messageClass = computed(
-    () => `cl-${this.messageInfo().type}`,
+    () => `oat-cl-${this.messageInfo().type}` as const,
   );
 
   readonly state = input<string | null, string | undefined>(null, {
