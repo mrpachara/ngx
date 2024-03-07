@@ -1,8 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 
 import { StateExpiredError, StateNotFoundError } from '../errors';
-import { DeepReadonly, KeyValuePairsStorage, StateData } from '../types';
 import { KEY_VALUE_PAIR_STORAGE_FACTORY } from '../tokens';
+import { DeepReadonly, KeyValuePairsStorage, StateData } from '../types';
 
 const stateDataKeyName = `oauth-code-state` as const;
 
@@ -30,9 +30,8 @@ export class AuthorizationCodeStorage {
   ) => {
     const storage = await this.storage;
 
-    const stateDataContainer = await storage.loadItem<StateDataContainer<T>>(
-      stateKey,
-    );
+    const stateDataContainer =
+      await storage.loadItem<StateDataContainer<T>>(stateKey);
 
     return stateDataContainer;
   };
@@ -126,9 +125,8 @@ export class AuthorizationCodeStorageFactory {
     );
 
     for (const stateKey of stateKeys) {
-      const storedStateDataContainer = await storage.loadItem<
-        StateDataContainer<StateData>
-      >(stateKey);
+      const storedStateDataContainer =
+        await storage.loadItem<StateDataContainer<StateData>>(stateKey);
 
       if (
         storedStateDataContainer &&

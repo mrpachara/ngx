@@ -1,12 +1,12 @@
 import { InjectionToken, inject } from '@angular/core';
 
+import { configRefreshToken } from '../functions';
 import {
   AccessTokenService,
   AuthorizationCodeService,
   RefreshTokenService,
 } from '../services';
 import { AccessTokenResponseExtractorInfo } from '../types';
-import { configRefreshToken } from '../functions';
 
 /** The injection token for access token services */
 export const ACCESS_TOKEN_SERVICES = new InjectionToken<AccessTokenService[]>(

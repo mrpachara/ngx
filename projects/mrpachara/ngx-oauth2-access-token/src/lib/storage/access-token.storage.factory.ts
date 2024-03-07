@@ -4,8 +4,8 @@ import { Observable } from 'rxjs';
 import { StoredAccessTokenResponse } from './types';
 
 import { AccessTokenNotFoundError } from '../errors';
-import { DeepReadonly, KeyValuePairsStorage } from '../types';
 import { KEY_VALUE_PAIR_STORAGE_FACTORY } from '../tokens';
+import { DeepReadonly, KeyValuePairsStorage } from '../types';
 
 const tokenDataKeyName = `access-token-data` as const;
 

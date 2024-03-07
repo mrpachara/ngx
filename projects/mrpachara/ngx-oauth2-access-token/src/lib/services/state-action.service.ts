@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { defer, Observable, ObservableInput, throwError } from 'rxjs';
+import { Observable, ObservableInput, defer, throwError } from 'rxjs';
 
 import { StateActionNotFoundError } from '../errors';
 import { isStateActionProvided } from '../functions';

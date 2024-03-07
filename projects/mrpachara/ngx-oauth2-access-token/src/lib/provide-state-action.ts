@@ -4,13 +4,13 @@ import {
   makeEnvironmentProviders,
 } from '@angular/core';
 
+import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from './tokens';
 import {
   StateAction,
   StateActionErrorHandler,
   StateActionHandler,
   StateActionInfo,
 } from './types';
-import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from './tokens';
 
 /**
  * Provide state action and state action error handlers.

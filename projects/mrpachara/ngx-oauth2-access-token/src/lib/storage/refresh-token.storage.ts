@@ -21,9 +21,8 @@ export class RefreshTokenStorage {
   async loadRefreshToken(
     storage: KeyValuePairsStorage,
   ): Promise<DeepReadonly<StoredRefreshToken>> {
-    const storedRefreshToken = await storage.loadItem<StoredRefreshToken>(
-      tokenDataKeyName,
-    );
+    const storedRefreshToken =
+      await storage.loadItem<StoredRefreshToken>(tokenDataKeyName);
 
     if (storedRefreshToken === null) {
       throw new RefreshTokenNotFoundError(storage.name);

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { OATUTH2_CLIENTS } from '../tokens';
 import { Oauth2Client } from '../services';
+import { OATUTH2_CLIENTS } from '../tokens';
 
 /** OAuth 2.0 client resolver */
 @Injectable({

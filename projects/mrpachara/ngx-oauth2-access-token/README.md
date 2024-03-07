@@ -20,7 +20,7 @@ File: `src/app/app.config.ts`
 ```typescript
 // ... import other modules
 
-import {
+import  {
   AccessTokenConfig,
   AccessTokenResponse,
   AuthorizationCodeConfig,
@@ -42,7 +42,7 @@ import {
   withStateActionHandler,
 } from '@mrpachara/ngx-oauth2-access-token';
 
-import { routes } from './app.routes';
+import  { routes } from './app.routes';
 
 const clientConfig: Oauth2ClientConfig = {
   name: 'google',
@@ -224,11 +224,11 @@ export const appConfig: ApplicationConfig = {
 FILE: `src/app/app.routes.ts`
 
 ```typescript
-import { Routes } from '@angular/router';
+import  { Routes } from '@angular/router';
 
-import { AuthorizationCodeCallbackComponent } from '@mrpachara/ngx-oauth2-access-token';
+import  { AuthorizationCodeCallbackComponent } from '@mrpachara/ngx-oauth2-access-token';
 
-import { HomeComponent } from './core/home/home.component';
+import  { HomeComponent } from './core/home/home.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },

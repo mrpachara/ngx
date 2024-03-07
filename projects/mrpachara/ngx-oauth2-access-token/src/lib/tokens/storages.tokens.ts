@@ -1,9 +1,9 @@
 import { InjectionToken, Type } from '@angular/core';
 
-import { KeyValuePairsStorageFactory } from '../types';
+import { FallbackableStorageFactory } from '../storage/fallbackable-storage/fallbackable.storage.factory';
 import { IndexedDbStorageFactory } from '../storage/indexed-db-storage/indexed-db.storage.factory';
 import { LocalStorageFactory } from '../storage/local-storage/local.storage.factory';
-import { FallbackableStorageFactory } from '../storage/fallbackable-storage/fallbackable.storage.factory';
+import { KeyValuePairsStorageFactory } from '../types';
 
 /** The injection token for storage information */
 export const STORAGE_INFO = new InjectionToken<{

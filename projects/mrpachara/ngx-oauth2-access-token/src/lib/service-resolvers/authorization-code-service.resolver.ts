@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { AUTHORIZATION_CODE_SERVICES } from '../tokens';
 import { AuthorizationCodeService } from '../services';
+import { AUTHORIZATION_CODE_SERVICES } from '../tokens';
 
 /** Authorization code service resolver */
 @Injectable({

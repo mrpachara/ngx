@@ -1,10 +1,10 @@
-import { inject } from '@angular/core';
 import {
   HttpClient,
   HttpContext,
   HttpErrorResponse,
 } from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
+import { inject } from '@angular/core';
+import { Observable, catchError, throwError } from 'rxjs';
 
 import { Oauth2ClientResponseError } from '../errors';
 import { SKIP_ASSIGNING_ACCESS_TOKEN } from '../tokens';
@@ -107,16 +107,16 @@ export class Oauth2Client {
                 err instanceof HttpErrorResponse
                   ? this.errorTransformer(err)
                   : err instanceof Error
-                  ? {
-                      error: err.name,
-                      error_description: err.message,
-                    }
-                  : {
-                      error: 'Unknown',
-                      error_description: `${
-                        typeof err === 'object' ? JSON.stringify(err) : err
-                      }`,
-                    },
+                    ? {
+                        error: err.name,
+                        error_description: err.message,
+                      }
+                    : {
+                        error: 'Unknown',
+                        error_description: `${
+                          typeof err === 'object' ? JSON.stringify(err) : err
+                        }`,
+                      },
                 {
                   cause: err,
                 },

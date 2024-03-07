@@ -7,12 +7,7 @@ import { TestBed } from '@angular/core/testing';
 import { AccessTokenService } from './access-token.service';
 import { NGX_OAUTH2_ACCESS_TOKEN_PROVIDERS } from './ngx-oauth2-access-token.module';
 import { ACCESS_TOKEN_CONFIG, OAUTH2_CLIENT_CONFIG } from './tokens';
-import {
-  AccessToken,
-  AccessTokenConfig,
-  Oauth2ClientConfig,
-  PasswordGrantParams,
-} from './types';
+import { AccessToken, AccessTokenConfig, Oauth2ClientConfig } from './types';
 
 const oauth2ClientConfig: Oauth2ClientConfig = {
   name: 'test',

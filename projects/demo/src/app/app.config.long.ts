@@ -1,10 +1,10 @@
+import { provideHttpClient } from '@angular/common/http';
 import { ApplicationConfig, inject } from '@angular/core';
 import {
   Router,
   provideRouter,
   withComponentInputBinding,
 } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { clientId, clientSecret } from '../secrets/oauth-client';

@@ -23,9 +23,8 @@ export class IdTokenStorage {
   async loadIdToken(
     storage: KeyValuePairsStorage,
   ): Promise<DeepReadonly<JwtTokenType>> {
-    const storedIdTokenContainer = await storage.loadItem<IdTokenContainer>(
-      tokenDataKeyName,
-    );
+    const storedIdTokenContainer =
+      await storage.loadItem<IdTokenContainer>(tokenDataKeyName);
 
     if (storedIdTokenContainer === null) {
       throw new IdTokenNotFoundError(storage.name);

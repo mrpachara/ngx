@@ -1,5 +1,7 @@
 import { inject, isDevMode } from '@angular/core';
 import {
+  Observable,
+  Subject,
   catchError,
   concat,
   defer,
@@ -9,12 +11,10 @@ import {
   from,
   map,
   merge,
-  Observable,
   of,
   pipe,
   race,
   share,
-  Subject,
   switchMap,
   take,
   tap,
@@ -24,6 +24,7 @@ import {
 import { Oauth2Client } from './oauth2.client';
 import { RefreshTokenService } from './refresh-token.service';
 
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   AccessTokenExpiredError,
   InvalidScopeError,
@@ -31,11 +32,16 @@ import {
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
 } from '../errors';
+import { validateAndTransformScopes } from '../functions';
 import {
   AccessTokenStorage,
   AccessTokenStorageFactory,
   StoredAccessTokenResponse,
 } from '../storage';
+import {
+  ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
+  PREREQUIRED_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
+} from '../tokens';
 import {
   AccessTokenFullConfig,
   AccessTokenInfo,
@@ -49,12 +55,6 @@ import {
   Scopes,
   StandardGrantsParams,
 } from '../types';
-import {
-  ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
-  PREREQUIRED_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
-} from '../tokens';
-import { HttpErrorResponse } from '@angular/common/http';
-import { validateAndTransformScopes } from '../functions';
 
 const latencyTime = 2 * 5 * 1000;
 

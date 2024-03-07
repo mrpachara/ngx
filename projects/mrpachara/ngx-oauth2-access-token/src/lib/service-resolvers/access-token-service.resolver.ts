@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { ACCESS_TOKEN_SERVICES } from '../tokens';
 import { AccessTokenService } from '../services';
+import { ACCESS_TOKEN_SERVICES } from '../tokens';
 
 /** Access token service resolver */
 @Injectable({

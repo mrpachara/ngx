@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { JWK_SERVICES } from '../tokens';
-import { JwkService } from '../services';
-import { JwtInfo, JwtUnknownInfo } from '../types';
 import { isJwtClaimsPayload } from '../functions';
+import { JwkService } from '../services';
+import { JWK_SERVICES } from '../tokens';
+import { JwtInfo, JwtUnknownInfo } from '../types';
 
 /** JWK service resolver */
 @Injectable({

@@ -26,7 +26,7 @@ export function provideJwtVerifiers(
           provide: JWT_VERIFIERS,
           multi: true,
           useExisting: verifier,
-        } as ExistingProvider),
+        }) as ExistingProvider,
     ),
   ]);
 }

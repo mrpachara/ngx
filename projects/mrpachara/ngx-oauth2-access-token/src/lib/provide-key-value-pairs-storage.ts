@@ -126,7 +126,7 @@ export function withFallbackableKeyValuePairsStorageFactoryTokens(
             provide: FALLBACKABLE_KEY_VALUE_PAIR_STORAGE_FACTORY_TOKENS,
             multi: true,
             useValue: token,
-          } as ValueProvider),
+          }) as ValueProvider,
       ),
     ],
   };
