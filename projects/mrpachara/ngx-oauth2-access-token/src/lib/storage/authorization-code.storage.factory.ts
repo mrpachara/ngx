@@ -8,10 +8,10 @@ const stateDataKeyName = `oauth-code-state` as const;
 
 const stateClearTtl = 10 * 60 * 1000;
 
-type StateDataContainer<T extends StateData> = {
+interface StateDataContainer<T extends StateData> {
   expiresAt: number;
   data: T;
-};
+}
 
 /** Authorization code storage */
 export class AuthorizationCodeStorage {
@@ -98,7 +98,7 @@ export class AuthorizationCodeStorage {
       const stateData = await this.loadStateData<T>(stateId);
       await storage.removeItem(this.stateKey(stateId));
       return stateData;
-    } catch (err) {
+    } catch {
       await storage.removeItem(this.stateKey(stateId));
       return null;
     }

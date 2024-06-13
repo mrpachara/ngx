@@ -1,11 +1,18 @@
-import { HttpTestingController, TestRequest, provideHttpClientTesting } from '@angular/common/http/testing';
+import {
+  HttpTestingController,
+  TestRequest,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { isOauthError } from './functions';
 
+import {
+  provideHttpClient,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { Oauth2Client } from './oauth2.client';
 import { OAUTH2_CLIENT_CONFIG } from './tokens';
 import { Oauth2ClientConfig, PasswordGrantParams } from './types';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 export const http401 = {
   status: 401,
@@ -48,7 +55,6 @@ export const expectAccessToken = (
   expect(req.request.headers.get('Authorization'))
     .withContext('has Authorization header')
     .toBeTruthy();
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const [authzType, authzValue] = req.request.headers
     .get('Authorization')!
     .split(' ', 2);
@@ -67,13 +73,13 @@ describe('Oauth2Client', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-    imports: [],
-    providers: [
+      imports: [],
+      providers: [
         { provide: OAUTH2_CLIENT_CONFIG, useValue: oauth2ClientConfig },
         provideHttpClient(withInterceptorsFromDi()),
         provideHttpClientTesting(),
-    ]
-});
+      ],
+    });
     service = TestBed.inject(Oauth2Client);
     httpTestingController = TestBed.inject(HttpTestingController);
   });

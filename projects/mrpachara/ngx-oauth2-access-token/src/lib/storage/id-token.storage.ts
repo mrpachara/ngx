@@ -5,9 +5,9 @@ import { DeepReadonly, JwtTokenType, KeyValuePairsStorage } from '../types';
 
 const tokenDataKeyName = `id-token-data` as const;
 
-export type IdTokenContainer = {
+export interface IdTokenContainer {
   token: JwtTokenType;
-};
+}
 
 /** ID token storage */
 @Injectable({

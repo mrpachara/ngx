@@ -31,7 +31,7 @@ export function deepFreeze<T = unknown>(obj: T): DeepReadonly<T> {
     frozenObjSet.add(frozenObj);
 
     Object.keys(frozenObj).forEach((key) => {
-      const nextObj = (frozenObj as { [prop: string]: unknown })[key];
+      const nextObj = (frozenObj as Record<string, unknown>)[key];
       enqueue(nextObj);
     });
   }

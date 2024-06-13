@@ -13,10 +13,10 @@ import { take } from 'rxjs';
 import { oauth2Callback } from '../../functions';
 import { AuthorizationCodeService, StateActionService } from '../../services';
 
-type MessageInfo = {
+interface MessageInfo {
   type: 'info' | 'error' | null;
   message: string | null;
-};
+}
 
 function nullableAttribute(value: string | undefined) {
   return value ?? null;

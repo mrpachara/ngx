@@ -1,8 +1,6 @@
 import { inject } from '@angular/core';
 import { defer, from, map, Observable, switchMap } from 'rxjs';
 
-import { Oauth2Client } from './oauth2.client';
-
 import { InvalidScopeError } from '../errors';
 import {
   base64UrlEncode,
@@ -25,6 +23,7 @@ import {
   StateAuthorizationCode,
   StateData,
 } from '../types';
+import { Oauth2Client } from './oauth2.client';
 
 const stateIdLength = 32;
 
@@ -130,7 +129,7 @@ export class AuthorizationCodeService {
   async fetchAuthorizationCodeUrl<T extends StateData>(
     scopes: Scopes,
     stateData?: T,
-    additionalParams?: { [param: string]: string },
+    additionalParams?: Record<string, string>,
   ): Promise<URL> {
     const scope = validateAndTransformScopes(scopes);
 

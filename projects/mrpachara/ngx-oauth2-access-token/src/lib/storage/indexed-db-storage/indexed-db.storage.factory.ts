@@ -110,9 +110,9 @@ class IndexedDbStorage implements KeyValuePairsStorage {
   }
 }
 
-type ChangedKey = {
+interface ChangedKey {
   key: string | null;
-};
+}
 
 const dbPrefix = libPrefix;
 const storeObjectName = 'key-value-pairs' as const;

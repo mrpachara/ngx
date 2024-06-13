@@ -1,15 +1,15 @@
 import { CodeChallengeMethod } from './standard.types';
 import { RequiredExcept } from './utils.type';
 
-type NameableConfig = {
+interface NameableConfig {
   /** The name of service, it is REQUIRED. */
   readonly name: string;
-};
+}
 
-type AdditionalParams = {
+interface AdditionalParams {
   /** Additional parameters, it is an OPTIONAL. */
-  readonly additionalParams: { readonly [param: string]: string };
-};
+  readonly additionalParams: Readonly<Record<string, string>>;
+}
 
 /** OAuth 2.0 client configuration */
 export type Oauth2ClientConfig = NameableConfig & {
@@ -79,26 +79,26 @@ export type AuthorizationCodeConfig = NameableConfig &
 export type AuthorizationCodeFullConfig = Required<AuthorizationCodeConfig>;
 
 /** Refresh token configuration */
-export type RefreshTokenConfig = {
+export interface RefreshTokenConfig {
   /**
    * The _life-time_ of refresh token, the default value is `2_592_000_000`
    * miliseconds (30 days).
    */
   readonly refreshTokenTtl?: number;
-};
+}
 
 /** Refresh token full configuration */
 export type RefreshTokenFullConfig = Required<RefreshTokenConfig>;
 
 /** ID token configuration */
-export type IdTokenConfig = {
+export interface IdTokenConfig {
   /**
    * By default, the ID token will be extracted from `id_token` claim. If this
    * property is `true`, the ID token will be extracted from `access_token`
    * cliam. The default value is `false`.
    */
   readonly providedInAccessToken?: boolean;
-};
+}
 
 /** ID token full configuration */
 export type IdTokenFullConfig = Required<IdTokenConfig>;

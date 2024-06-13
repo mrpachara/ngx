@@ -1,4 +1,5 @@
 import { Observable } from 'rxjs';
+
 import { DeepReadonly } from './utils.type';
 
 /** The interface for key-value pairs storage */

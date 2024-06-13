@@ -1,5 +1,7 @@
 import { OperatorFunction } from 'rxjs';
 
+import { Oauth2Client } from '../services';
+import { StoredAccessTokenResponse } from '../storage';
 import { AccessTokenFullConfig } from './config.types';
 import {
   AccessTokenResponse,
@@ -11,9 +13,6 @@ import {
 import { KeyValuePairsStorage } from './storages.types';
 import { DeepReadonly } from './utils.type';
 
-import { Oauth2Client } from '../services';
-import { StoredAccessTokenResponse } from '../storage';
-
 /** The type of OAuth scopes */
 export type Scopes = [string, ...string[]];
 
@@ -21,7 +20,7 @@ export type Scopes = [string, ...string[]];
 export type StateData = object;
 
 /** Access token service information */
-export type AccessTokenServiceInfo<C = unknown> = {
+export interface AccessTokenServiceInfo<C = unknown> {
   /** The configuration of `AccessTokenService` */
   serviceConfig: AccessTokenFullConfig;
 
@@ -33,7 +32,7 @@ export type AccessTokenServiceInfo<C = unknown> = {
 
   /** The storage of `AccessTokenService` */
   storage: KeyValuePairsStorage;
-};
+}
 
 /** Access token response information */
 export type AccessTokenResponseInfo<
@@ -97,13 +96,13 @@ export interface AccessTokenResponseExtractor<
 }
 
 /** Access token information */
-export type AccessTokenInfo = {
+export interface AccessTokenInfo {
   /** The type for using access token */
   type: string;
 
   /** The access token */
   token: string;
-};
+}
 
 /** The state data extension for authorization code */
 export type StateAuthorizationCode = StateData & {
@@ -121,7 +120,7 @@ export type AccessTokenResponseExtractorInfo<
 export type EncryptedPayload = string;
 
 /** The JWT base information */
-export type JwtBaseInfo<T extends JwtClaims | EncryptedPayload> = {
+export interface JwtBaseInfo<T extends JwtClaims | EncryptedPayload> {
   /** The JWT */
   token: JwtTokenType;
 
@@ -136,7 +135,7 @@ export type JwtBaseInfo<T extends JwtClaims | EncryptedPayload> = {
 
   /** The JWT signature */
   signature?: Uint8Array;
-};
+}
 
 /** JWT information */
 export type JwtInfo<T extends JwtClaims = JwtClaims> = JwtBaseInfo<T>;

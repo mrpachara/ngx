@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { inject, isDevMode } from '@angular/core';
 import {
   Observable,
@@ -21,10 +22,6 @@ import {
   throwError,
 } from 'rxjs';
 
-import { Oauth2Client } from './oauth2.client';
-import { RefreshTokenService } from './refresh-token.service';
-
-import { HttpErrorResponse } from '@angular/common/http';
 import {
   AccessTokenExpiredError,
   InvalidScopeError,
@@ -55,6 +52,8 @@ import {
   Scopes,
   StandardGrantsParams,
 } from '../types';
+import { Oauth2Client } from './oauth2.client';
+import { RefreshTokenService } from './refresh-token.service';
 
 const latencyTime = 2 * 5 * 1000;
 
@@ -125,7 +124,7 @@ export class AccessTokenService {
           const storedAccessTokenResponse =
             await this.loadStoredAccessTokenResponse();
           await this.updateToListeners(storedAccessTokenResponse);
-        } catch (err) {
+        } catch {
           // Prevent error.
         } finally {
           resolve();

@@ -1,10 +1,10 @@
 import { StateData } from '../types';
 
-export type CallbackErrorCause = {
+export interface CallbackErrorCause {
   error: string;
   error_description?: string;
   stateData?: StateData;
-};
+}
 
 export class CallbackError extends Error {
   override readonly cause!: CallbackErrorCause;

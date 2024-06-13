@@ -5,13 +5,13 @@ import { AccessTokenResponse } from './standard.types';
 import { RequiredOnly } from './utils.type';
 
 /** The state action information */
-export type StateActionInfo<N extends string = string, T = unknown> = {
+export interface StateActionInfo<N extends string = string, T = unknown> {
   /** The name of action */
   name: N;
 
   /** The data of action */
   data: T;
-};
+}
 
 /** The state data extension for state action */
 export type StateAction<S extends StateActionInfo = StateActionInfo> =
@@ -48,6 +48,7 @@ export type StateActionErrorHandler = (
 ) => ObservableInput<void>;
 
 /** The action name and handler pairs */
-export type StateActionHandlers = {
-  [action: string]: StateActionHandler<StateAction, unknown>;
-};
+export type StateActionHandlers = Record<
+  string,
+  StateActionHandler<StateAction, unknown>
+>;

@@ -55,7 +55,8 @@
             "lintFilePatterns": [
               "projects/mrpachara/ngx-oauth2-access-token/**/*.ts",
               "projects/mrpachara/ngx-oauth2-access-token/**/*.html"
-            ]
+            ],
+            "eslintConfig": "projects/mrpachara/ngx-oauth2-access-token/eslint.config.js"
           }
         }
       }
@@ -169,7 +170,8 @@
             "lintFilePatterns": [
               "projects/demo/**/*.ts",
               "projects/demo/**/*.html"
-            ]
+            ],
+            "eslintConfig": "projects/demo/eslint.config.js"
           }
         }
       }
