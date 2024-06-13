@@ -115,8 +115,8 @@ interface ChangedKey {
 }
 
 const dbPrefix = libPrefix;
-const storeObjectName = 'key-value-pairs' as const;
-const broadcastPrefix = `${libPrefix}-indexed-db` as const;
+const storeObjectName = 'key-value-pairs';
+const broadcastPrefix = `${libPrefix}-indexed-db`;
 
 /** IndexedDB storage factory */
 @Injectable({

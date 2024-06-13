@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { IdTokenNotFoundError } from '../errors';
 import { DeepReadonly, JwtTokenType, KeyValuePairsStorage } from '../types';
 
-const tokenDataKeyName = `id-token-data` as const;
+const tokenDataKeyName = `id-token-data`;
 
 export interface IdTokenContainer {
   token: JwtTokenType;

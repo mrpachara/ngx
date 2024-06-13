@@ -6,7 +6,7 @@ import { KEY_VALUE_PAIR_STORAGE_FACTORY } from '../tokens';
 import { DeepReadonly, KeyValuePairsStorage } from '../types';
 import { StoredAccessTokenResponse } from './types';
 
-const tokenDataKeyName = `access-token-data` as const;
+const tokenDataKeyName = `access-token-data`;
 
 /** Access token storage */
 export class AccessTokenStorage {

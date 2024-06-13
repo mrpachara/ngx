@@ -92,7 +92,7 @@ class LocalStorage implements KeyValuePairsStorage {
   }
 }
 
-const keyPrefix = `${libPrefix}-kvp` as const;
+const keyPrefix = `${libPrefix}-kvp`;
 
 /** Local storage factory */
 @Injectable({

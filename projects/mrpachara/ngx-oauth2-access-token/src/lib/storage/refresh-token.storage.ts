@@ -4,7 +4,7 @@ import { RefreshTokenNotFoundError } from '../errors';
 import { DeepReadonly, KeyValuePairsStorage } from '../types';
 import { StoredRefreshToken } from './types';
 
-const tokenDataKeyName = `refresh-token-data` as const;
+const tokenDataKeyName = `refresh-token-data`;
 
 /** Refresh token storage */
 @Injectable({

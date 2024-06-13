@@ -4,7 +4,7 @@ import { StateExpiredError, StateNotFoundError } from '../errors';
 import { KEY_VALUE_PAIR_STORAGE_FACTORY } from '../tokens';
 import { DeepReadonly, KeyValuePairsStorage, StateData } from '../types';
 
-const stateDataKeyName = `oauth-code-state` as const;
+const stateDataKeyName = `oauth-code-state`;
 
 const stateClearTtl = 10 * 60 * 1000;
 
@@ -118,7 +118,7 @@ export class AuthorizationCodeStorageFactory {
 
     const currentTime = Date.now();
 
-    const prefix = `${stateDataKeyName}-` as const;
+    const prefix = `${stateDataKeyName}-`;
 
     const stateKeys = (await storage.keys()).filter((key) =>
       key.startsWith(prefix),
