@@ -1,13 +1,11 @@
-import {
-  HttpClientTestingModule,
-  HttpTestingController,
-} from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
 import { AccessTokenService } from './access-token.service';
 import { NGX_OAUTH2_ACCESS_TOKEN_PROVIDERS } from './ngx-oauth2-access-token.module';
 import { ACCESS_TOKEN_CONFIG, OAUTH2_CLIENT_CONFIG } from './tokens';
 import { AccessToken, AccessTokenConfig, Oauth2ClientConfig } from './types';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 const oauth2ClientConfig: Oauth2ClientConfig = {
   name: 'test',
@@ -27,16 +25,18 @@ describe('AccessTokenService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [HttpClientTestingModule],
-      providers: [
+    imports: [],
+    providers: [
         ...NGX_OAUTH2_ACCESS_TOKEN_PROVIDERS,
         { provide: OAUTH2_CLIENT_CONFIG, useValue: oauth2ClientConfig },
         {
-          provide: ACCESS_TOKEN_CONFIG,
-          useValue: accessTokenServiceConfig,
+            provide: ACCESS_TOKEN_CONFIG,
+            useValue: accessTokenServiceConfig,
         },
-      ],
-    });
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting(),
+    ]
+});
     service = TestBed.inject(AccessTokenService);
   });
 
