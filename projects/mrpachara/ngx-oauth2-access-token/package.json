@@ -14,8 +14,8 @@
     "registry": "https://npm.pkg.github.com"
   },
   "peerDependencies": {
-    "@angular/common": "^18.1.3",
-    "@angular/core": "^18.1.3"
+    "@angular/common": "^18.2.2",
+    "@angular/core": "^18.2.2"
   },
   "dependencies": {
     "tslib": "^2.3.0"
