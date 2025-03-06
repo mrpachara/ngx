@@ -27,12 +27,11 @@ function nullableAttribute(value: string | undefined) {
  * It can work with `withComponentInputBinding()`.
  */
 @Component({
-  selector: 'oat-authorization-code-callback',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './autorization-code-callback.component.html',
-  styleUrls: ['./autorization-code-callback.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'oat-authorization-code-callback',
+    imports: [CommonModule],
+    templateUrl: './autorization-code-callback.component.html',
+    styleUrls: ['./autorization-code-callback.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AuthorizationCodeCallbackComponent implements OnInit {
   protected readonly messageInfo = signal<MessageInfo>({

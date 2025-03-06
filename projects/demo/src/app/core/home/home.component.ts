@@ -16,12 +16,11 @@ import {
 } from '@mrpachara/ngx-oauth2-access-token';
 
 @Component({
-  selector: 'app-home',
-  standalone: true,
-  imports: [CommonModule],
-  templateUrl: './home.component.html',
-  styleUrls: ['./home.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
+    selector: 'app-home',
+    imports: [CommonModule],
+    templateUrl: './home.component.html',
+    styleUrls: ['./home.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent {
   private readonly accessTokenService = inject(AccessTokenService);
