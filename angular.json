@@ -4,7 +4,7 @@
   "cli": {
     "packageManager": "yarn",
     "analytics": "53c702bd-563d-4e78-8d0c-fb77c82850a7",
-    "schematicCollections": ["@angular-eslint/schematics"]
+    "schematicCollections": ["angular-eslint"]
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -13,14 +13,7 @@
       "schematics": {
         "@schematics/angular:component": {
           "style": "scss",
-          "standalone": true,
           "changeDetection": "OnPush"
-        },
-        "@schematics/angular:directive": {
-          "standalone": true
-        },
-        "@schematics/angular:pipe": {
-          "standalone": true
         }
       },
       "root": "projects/mrpachara/ngx-oauth2-access-token",
@@ -46,7 +39,7 @@
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
             "tsConfig": "projects/mrpachara/ngx-oauth2-access-token/tsconfig.spec.json",
-            "polyfills": ["zone.js", "zone.js/testing"]
+            "polyfills": []
           }
         },
         "lint": {
@@ -66,14 +59,7 @@
       "schematics": {
         "@schematics/angular:component": {
           "style": "scss",
-          "standalone": true,
           "changeDetection": "OnPush"
-        },
-        "@schematics/angular:directive": {
-          "standalone": true
-        },
-        "@schematics/angular:pipe": {
-          "standalone": true
         }
       },
       "root": "projects/demo",
@@ -86,12 +72,14 @@
             "outputPath": "dist/demo",
             "index": "projects/demo/src/index.html",
             "browser": "projects/demo/src/main.ts",
-            "polyfills": ["zone.js"],
+            "polyfills": [],
             "tsConfig": "projects/demo/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              "projects/demo/src/favicon.ico",
-              "projects/demo/src/assets"
+              {
+                "glob": "**/*",
+                "input": "projects/demo/public"
+              }
             ],
             "styles": ["projects/demo/src/styles.scss"],
             "scripts": []
@@ -101,13 +89,13 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kb",
-                  "maximumError": "1mb"
+                  "maximumWarning": "500kB",
+                  "maximumError": "1MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kb",
-                  "maximumError": "4kb"
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
                 }
               ],
               "outputHashing": "all",
@@ -153,12 +141,14 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "polyfills": ["zone.js", "zone.js/testing"],
+            "polyfills": [],
             "tsConfig": "projects/demo/tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-              "projects/demo/src/favicon.ico",
-              "projects/demo/src/assets"
+              {
+                "glob": "**/*",
+                "input": "projects/demo/public"
+              }
             ],
             "styles": ["projects/demo/src/styles.scss"],
             "scripts": []
