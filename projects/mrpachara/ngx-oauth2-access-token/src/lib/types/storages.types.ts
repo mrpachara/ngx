@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 
-import { DeepReadonly } from './utils.type';
+import { DeepReadonly } from './utils';
 
 /** The interface for key-value pairs storage */
 export interface KeyValuePairsStorage {

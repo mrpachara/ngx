@@ -8,17 +8,12 @@ import {
   SupportedJwkAlgNotFoundError,
 } from '../errors';
 import { findJwk, isProvidedSignature } from '../functions';
-import {
-  DEFAULT_JWT_VERIFIERS,
-  JWT_VERIFIERS,
-  SKIP_ASSIGNING_ACCESS_TOKEN,
-} from '../tokens';
+import { JWT_VERIFIERS, SKIP_ASSIGNING_ACCESS_TOKEN } from '../tokens';
 import { JwkFullConfig, JwkSet, JwtInfo, JwtVerifier } from '../types';
 
 /** JWK service */
 export class JwkService {
   private http = inject(HttpClient);
-  private defaultVerifiers = inject(DEFAULT_JWT_VERIFIERS);
   private parentVerifiers = inject(JWT_VERIFIERS, {
     skipSelf: true,
     optional: true,
@@ -45,7 +40,6 @@ export class JwkService {
       ...new Set([
         ...(this.scopedVerifiers ?? []),
         ...(this.parentVerifiers ?? []),
-        ...this.defaultVerifiers,
       ]),
     ];
   }
@@ -80,8 +74,8 @@ export class JwkService {
       throw new MatchedJwkNotFoundError(jwtInfo.header);
     }
 
-    for (const verifier of this.verifiers) {
-      const result = await verifier.verify(jwtInfo, jwks);
+    for (const verify of this.verifiers) {
+      const result = await verify(jwtInfo, jwks);
 
       if (typeof result === 'undefined') {
         continue;

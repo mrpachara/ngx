@@ -202,11 +202,12 @@ export class AuthorizationCodeService {
           grant_type: 'authorization_code',
           code: authorizationCode,
           redirect_uri: this.config.redirectUri,
+          ...(stateData.codeVerifier
+            ? {
+                code_verifier: stateData.codeVerifier,
+              }
+            : {}),
         };
-
-        if (stateData.codeVerifier) {
-          params.code_verifier = stateData.codeVerifier;
-        }
 
         return this.client.requestAccessToken(params).pipe(
           switchMap((accessTokenResponse) => {

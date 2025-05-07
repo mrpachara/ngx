@@ -55,7 +55,7 @@ import {
 import { Oauth2Client } from './oauth2.client';
 import { RefreshTokenService } from './refresh-token.service';
 
-const latencyTime = 2 * 5 * 1000;
+const latencyTime = 2 * 5 * 1_000;
 
 /** Access token service */
 export class AccessTokenService {

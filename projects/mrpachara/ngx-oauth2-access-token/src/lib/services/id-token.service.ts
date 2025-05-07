@@ -14,7 +14,7 @@ import {
   IdTokenFullConfig,
   IdTokenInfo,
   IdTokenResponse,
-  JwtTokenType,
+  JwtToken,
 } from '../types';
 
 /** ID token service */
@@ -33,7 +33,7 @@ export class IdTokenService
 
   private readonly storeIdToken = (
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
-    token: JwtTokenType,
+    token: JwtToken,
   ) => this.storage.storeIdToken(serviceInfo.storage, token);
 
   private readonly loadIdTokenInfo = async (
@@ -53,7 +53,7 @@ export class IdTokenService
 
   private extractAndValidateIdToken(
     serviceName: string,
-    token: JwtTokenType,
+    token: JwtToken,
   ): DeepReadonly<IdTokenInfo> {
     const idTokenInfo = extractJwt<IdTokenClaims>(token);
 
@@ -75,7 +75,7 @@ export class IdTokenService
     >,
   ): Promise<void> {
     const token = serviceInfo.config.providedInAccessToken
-      ? (accessTokenResponseInfo.response.access_token as JwtTokenType)
+      ? (accessTokenResponseInfo.response.access_token as JwtToken)
       : accessTokenResponseInfo.response.id_token;
 
     if (token) {

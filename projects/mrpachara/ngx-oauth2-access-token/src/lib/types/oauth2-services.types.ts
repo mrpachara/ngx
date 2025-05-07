@@ -8,10 +8,10 @@ import {
   IdTokenClaims,
   JwtClaims,
   JwtHeader,
-  JwtTokenType,
-} from './standard.types';
+  JwtToken,
+} from './standard';
 import { KeyValuePairsStorage } from './storages.types';
-import { DeepReadonly } from './utils.type';
+import { DeepReadonly } from './utils';
 
 /** The type of OAuth scopes */
 export type Scopes = [string, ...string[]];
@@ -22,16 +22,16 @@ export type StateData = object;
 /** Access token service information */
 export interface AccessTokenServiceInfo<C = unknown> {
   /** The configuration of `AccessTokenService` */
-  serviceConfig: AccessTokenFullConfig;
+  readonly serviceConfig: AccessTokenFullConfig;
 
   /** The configuration of extractor */
-  config: C;
+  readonly config: C;
 
   /** The OAuth 2.0 client of `AccessTokenService` */
-  client: Oauth2Client;
+  readonly client: Oauth2Client;
 
   /** The storage of `AccessTokenService` */
-  storage: KeyValuePairsStorage;
+  readonly storage: KeyValuePairsStorage;
 }
 
 /** Access token response information */
@@ -106,6 +106,7 @@ export interface AccessTokenInfo {
 
 /** The state data extension for authorization code */
 export type StateAuthorizationCode = StateData & {
+  // TODO: add readonly
   /** The code verifier for PKCE */
   codeVerifier?: string;
 };
@@ -122,19 +123,19 @@ export type EncryptedPayload = string;
 /** The JWT base information */
 export interface JwtBaseInfo<T extends JwtClaims | EncryptedPayload> {
   /** The JWT */
-  token: JwtTokenType;
+  readonly token: JwtToken;
 
   /** The content, to be signed, part of JWT */
-  content: string;
+  readonly content: string;
 
   /** The JWT header */
-  header: JwtHeader;
+  readonly header: JwtHeader;
 
   /** The JWT payload */
-  payload: T;
+  readonly payload: T;
 
   /** The JWT signature */
-  signature?: Uint8Array;
+  readonly signature?: Uint8Array;
 }
 
 /** JWT information */
@@ -148,7 +149,7 @@ export type JwtUnknownInfo<T extends JwtClaims = JwtClaims> =
 /** The access token response extension for ID token response */
 export type IdTokenResponse = AccessTokenResponse & {
   /** The ID token */
-  id_token?: JwtTokenType;
+  readonly id_token?: JwtToken;
 };
 
 /** ID token information */

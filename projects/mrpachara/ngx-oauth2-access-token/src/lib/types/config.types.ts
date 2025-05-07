@@ -1,5 +1,5 @@
-import { CodeChallengeMethod } from './standard.types';
-import { RequiredExcept } from './utils.type';
+import { CodeChallengeMethod } from './standard';
+import { RequiredExcept } from './utils';
 
 interface NameableConfig {
   /** The name of service, it is REQUIRED. */

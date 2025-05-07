@@ -10,8 +10,6 @@ export * from './lib/types';
 export * from './lib/service-resolvers';
 export * from './lib/services';
 
-export * from './lib/jwt-verifiers';
-
 export * from './lib/provide-access-token';
 export * from './lib/provide-access-token-response-extractors';
 export * from './lib/provide-authorization-code';

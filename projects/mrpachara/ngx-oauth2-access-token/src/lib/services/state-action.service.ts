@@ -22,10 +22,13 @@ export class StateActionService {
   private handlers: StateActionHandlers;
 
   constructor() {
-    this.handlers = this.handlerEntries.reduce((carry, entry) => {
-      carry[entry[0]] = entry[1];
-      return carry;
-    }, {} as StateActionHandlers);
+    this.handlers = this.handlerEntries.reduce(
+      (carry, entry) => {
+        carry[entry[0]] = entry[1];
+        return carry;
+      },
+      {} as Record<string, StateActionHandler<StateAction, unknown>>,
+    );
   }
 
   /**

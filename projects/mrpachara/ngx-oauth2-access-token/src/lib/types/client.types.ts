@@ -10,7 +10,7 @@ import {
   PasswordGrantAccessTokenRequest,
   RefreshTokenGrantAccessTokenRequest,
   StandardGrantsAccesTokenRequest,
-} from './standard.types';
+} from './standard';
 
 type OmitClientDetails<
   T extends
