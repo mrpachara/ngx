@@ -9,7 +9,7 @@ import {
   makeEnvironmentProviders,
 } from '@angular/core';
 
-import { configAuthorizationCode } from './functions';
+import { configAuthorizationCode } from './helpers';
 import { AuthorizationCodeService, Oauth2Client } from './services';
 import { AUTHORIZATION_CODE_SERVICES } from './tokens';
 import { AuthorizationCodeConfig, AuthorizationCodeFullConfig } from './types';

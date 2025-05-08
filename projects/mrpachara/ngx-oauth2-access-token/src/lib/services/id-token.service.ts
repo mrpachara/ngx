@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { catchError, pipe, switchMap } from 'rxjs';
 
 import { IdTokenEncryptedError, IdTokenExpiredError } from '../errors';
-import { extractJwt, isJwtEncryptedPayload } from '../functions';
+import { extractJwt, isJwtEncryptedPayload } from '../helpers';
 import { IdTokenStorage } from '../storage';
 import {
   AccessTokenResponseExtractor,

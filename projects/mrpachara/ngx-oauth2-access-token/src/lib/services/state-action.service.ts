@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, ObservableInput, defer, throwError } from 'rxjs';
 
 import { StateActionNotFoundError } from '../errors';
-import { isStateActionProvided } from '../functions';
+import { isStateActionProvided } from '../helpers';
 import { STATE_ACTION_ERROR_HANDLER, STATE_ACTION_HANDLERS } from '../tokens';
 import {
   AccessTokenResponse,

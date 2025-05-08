@@ -14,11 +14,15 @@ export interface StoredAccessTokenResponse<
   response: T;
 }
 
-/** Stored access token response */
-export interface StoredRefreshToken {
+export interface StoredData<T> {
   /** The time that token will expire (unix timestamp) */
-  expiresAt: number;
+  readonly expiresAt: number;
 
-  /** The refresh token */
-  token: string;
+  readonly data: T;
 }
+
+/** Stored access token */
+export type StoredAccessToken = StoredData<AccessTokenResponse>;
+
+/** Stored access token */
+export type StoredRefreshToken = StoredData<string>;

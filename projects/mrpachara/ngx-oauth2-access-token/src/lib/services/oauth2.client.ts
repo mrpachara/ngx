@@ -1,138 +1,82 @@
-import {
-  HttpClient,
-  HttpContext,
-  HttpErrorResponse,
-} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { Observable, catchError, throwError } from 'rxjs';
-
-import { Oauth2ClientResponseError } from '../errors';
-import { SKIP_ASSIGNING_ACCESS_TOKEN } from '../tokens';
+import { firstValueFrom } from 'rxjs';
+import { configOauth2Client } from '../helpers';
 import {
   AccessTokenResponse,
-  Oauth2ClientErrorTransformer,
+  Oauth2ClientConfig,
   Oauth2ClientFullConfig,
-  StandardGrantsParams,
+  StandardGrantsAccesTokenRequest,
 } from '../types';
 
-/** OAuth 2.0 client */
+/**
+ * OAuth 2.0 client.
+ *
+ * **Note:** provided by factory pattern.
+ */
 export class Oauth2Client {
+  private readonly config: Oauth2ClientFullConfig;
+
   private readonly http = inject(HttpClient);
 
-  /** The client name */
+  /** The name of Oauth2Client */
   get name() {
     return this.config.name;
   }
 
-  constructor(
-    private readonly config: Oauth2ClientFullConfig,
-    private readonly errorTransformer: Oauth2ClientErrorTransformer,
-  ) {}
+  /** The client id of Oauth2Cient */
+  get clientId() {
+    return this.config.clientId;
+  }
 
-  private generateClientHeaderIfNeeded():
-    | { Authorization: string }
-    | undefined {
+  constructor(config: Oauth2ClientConfig) {
+    this.config = configOauth2Client(config);
+  }
+
+  private generateHeaderAndBody(request: StandardGrantsAccesTokenRequest) {
     if (this.config.clientCredentialsInParams) {
-      return undefined;
-    }
-
-    const authData = btoa(
-      `${this.config.clientId}:${this.config.clientSecret ?? ''}`,
-    );
-
-    return {
-      Authorization: `Basic ${authData}`,
-    };
-  }
-
-  private generateClientParamIfNeeded(withSecret = false):
-    | {
-        client_id: string;
-        client_secret?: string;
-      }
-    | undefined {
-    if (!this.config.clientCredentialsInParams) {
-      return undefined;
-    }
-
-    return this.generateClientParams(withSecret);
-  }
-
-  private generateClientParams<T extends boolean>(
-    withSecret: T,
-  ): true extends T
-    ? {
-        client_id: string;
-        client_secret?: string;
-      }
-    : { client_id: string } {
-    return {
-      client_id: this.config.clientId,
-      ...(withSecret && this.config.clientSecret
-        ? { client_secret: this.config.clientSecret }
-        : {}),
-    };
-  }
-
-  /**
-   * Request for the new access token. The method **DO NOT** store the new
-   * access token. The new access token **MUST** be stored manually.
-   *
-   * @param params The requesting parameters
-   * @returns The `Observable` of access token response
-   */
-  requestAccessToken<T extends StandardGrantsParams>(
-    params: T,
-  ): Observable<AccessTokenResponse> {
-    return this.http
-      .post<AccessTokenResponse>(
-        this.config.accessTokenUrl,
-        {
-          ...params,
-          ...this.generateClientParamIfNeeded(true),
+      return {
+        headers: undefined,
+        body: {
+          ...request,
+          client_id: this.config.clientId,
+          ...(this.config.clientSecret
+            ? {
+                client_secret: this.config.clientSecret,
+              }
+            : {}),
         },
-        {
-          context: new HttpContext().set(SKIP_ASSIGNING_ACCESS_TOKEN, true),
-          headers: {
-            ...this.generateClientHeaderIfNeeded(),
-          },
-        },
-      )
-      .pipe(
-        catchError((err: unknown) => {
-          return throwError(
-            () =>
-              new Oauth2ClientResponseError(
-                this.config.name,
-                err instanceof HttpErrorResponse
-                  ? this.errorTransformer(err)
-                  : err instanceof Error
-                    ? {
-                        error: err.name,
-                        error_description: err.message,
-                      }
-                    : {
-                        error: 'Unknown',
-                        error_description: `${
-                          typeof err === 'object' ? JSON.stringify(err) : err
-                        }`,
-                      },
-                {
-                  cause: err,
-                },
-              ),
-          );
-        }),
+      };
+    } else {
+      const authData = btoa(
+        `${this.config.clientId}:${this.config.clientSecret ?? ''}`,
       );
+
+      return {
+        headers: {
+          Authorization: `Basic ${authData}` as const,
+        },
+        body: { ...request },
+      };
+    }
   }
 
   /**
-   * Get the client credential parameters. The result always exclude
-   * `client_secret`.
+   * Fetch the new access token. The method **DO NOT** store the new access
+   * token. The new access token **MUST** be stored manually.
    *
-   * @returns The client credential paramters excluding `client_secret`
+   * @param request The requesting parameters
+   * @returns The `Promise` of access token response
    */
-  getClientParams(): { client_id: string } {
-    return this.generateClientParams(false);
+  async fetchAccessToken<RES extends AccessTokenResponse = AccessTokenResponse>(
+    request: StandardGrantsAccesTokenRequest,
+  ): Promise<RES> {
+    const { headers, body } = this.generateHeaderAndBody(request);
+
+    return firstValueFrom(
+      this.http.post<RES>(this.config.accessTokenUrl, body, {
+        headers: headers,
+      }),
+    );
   }
 }

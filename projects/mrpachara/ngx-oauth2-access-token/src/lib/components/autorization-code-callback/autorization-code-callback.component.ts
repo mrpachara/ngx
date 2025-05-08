@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { take } from 'rxjs';
 
-import { oauth2Callback } from '../../functions';
+import { oauth2Callback } from '../../helpers';
 import { AuthorizationCodeService, StateActionService } from '../../services';
 
 interface MessageInfo {
@@ -27,11 +27,11 @@ function nullableAttribute(value: string | undefined) {
  * It can work with `withComponentInputBinding()`.
  */
 @Component({
-    selector: 'oat-authorization-code-callback',
-    imports: [CommonModule],
-    templateUrl: './autorization-code-callback.component.html',
-    styleUrls: ['./autorization-code-callback.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush
+  selector: 'oat-authorization-code-callback',
+  imports: [CommonModule],
+  templateUrl: './autorization-code-callback.component.html',
+  styleUrls: ['./autorization-code-callback.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AuthorizationCodeCallbackComponent implements OnInit {
   protected readonly messageInfo = signal<MessageInfo>({

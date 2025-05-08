@@ -1,6 +1,6 @@
 import { InjectionToken, inject } from '@angular/core';
 
-import { configRefreshToken } from '../functions';
+import { configRefreshToken } from '../helpers';
 import {
   AccessTokenService,
   AuthorizationCodeService,

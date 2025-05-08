@@ -6,6 +6,7 @@
     "angular"
   ],
   "description": "Monorepo for Angular libaries",
+  "type": "module",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",

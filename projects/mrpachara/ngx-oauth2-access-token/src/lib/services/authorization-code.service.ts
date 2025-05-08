@@ -7,7 +7,7 @@ import {
   randomString,
   sha256,
   validateAndTransformScopes,
-} from '../functions';
+} from '../helpers';
 import {
   AuthorizationCodeStorage,
   AuthorizationCodeStorageFactory,
@@ -23,7 +23,7 @@ import {
   StateAuthorizationCode,
   StateData,
 } from '../types';
-import { Oauth2Client } from './oauth2.client';
+import { Oauth2Client } from './old/oauth2.client';
 
 const stateIdLength = 32;
 

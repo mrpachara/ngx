@@ -7,7 +7,7 @@ import {
   SignatureNotFoundError,
   SupportedJwkAlgNotFoundError,
 } from '../errors';
-import { findJwk, isProvidedSignature } from '../functions';
+import { findJwk, isProvidedSignature } from '../helpers';
 import { JWT_VERIFIERS, SKIP_ASSIGNING_ACCESS_TOKEN } from '../tokens';
 import { JwkFullConfig, JwkSet, JwtInfo, JwtVerifier } from '../types';
 

@@ -41,28 +41,3 @@ export type DeepReadonly<T> = T extends Primitive
   : {
       readonly [P in keyof T]: DeepReadonly<T[P]>;
     };
-
-// NOTE: just for testing
-// type xxx = DeepReadonly<number[]>;
-// type yyy = DeepReadonly<[number, string, boolean, 'abcd']>;
-// const sym = Symbol('abcd');
-// type zzz = DeepReadonly<{
-//   a: number;
-//   b?: string;
-//   c: Array<{
-//     e: number | null;
-//     f?: [number, boolean, string];
-//   }>;
-//   d: {
-//     e?: {
-//       f: number[];
-//       g: (
-//         | string
-//         | {
-//             h?: ['a', 'b'];
-//           }
-//       )[];
-//     };
-//   };
-//   [sym]: number;
-// }>;

@@ -9,7 +9,7 @@ import {
   makeEnvironmentProviders,
 } from '@angular/core';
 
-import { configOauth2Client } from './functions';
+import { configOauth2Client } from './helpers';
 import { Oauth2Client } from './services';
 import {
   DEFAULT_OAUTH2_CLIENT_ERROR_TRANSFORMER,

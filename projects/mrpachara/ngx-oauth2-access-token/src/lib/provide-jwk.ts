@@ -9,7 +9,7 @@ import {
   makeEnvironmentProviders,
 } from '@angular/core';
 
-import { configJwk } from './functions';
+import { configJwk } from './helpers';
 import { JwkService } from './services';
 import { JWK_SERVICES } from './tokens';
 import { JwkConfig, JwkFullConfig } from './types';

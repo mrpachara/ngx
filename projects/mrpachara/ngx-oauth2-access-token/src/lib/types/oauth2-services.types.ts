@@ -98,10 +98,10 @@ export interface AccessTokenResponseExtractor<
 /** Access token information */
 export interface AccessTokenInfo {
   /** The type for using access token */
-  type: string;
+  readonly type: string;
 
   /** The access token */
-  token: string;
+  readonly token: string;
 }
 
 /** The state data extension for authorization code */

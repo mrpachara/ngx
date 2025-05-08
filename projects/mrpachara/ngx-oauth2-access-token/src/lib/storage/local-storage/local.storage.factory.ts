@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { filter, Observable, Subject, switchMap } from 'rxjs';
 
-import { deepFreeze } from '../../functions';
+import { deepFreeze } from '../../helpers';
 import { libPrefix } from '../../predefined';
 import { STORAGE_INFO } from '../../tokens';
 import {

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 
-import { isJwtClaimsPayload } from '../functions';
+import { isJwtClaimsPayload } from '../helpers';
 import { JwkService } from '../services';
 import { JWK_SERVICES } from '../tokens';
 import { JwtInfo, JwtUnknownInfo } from '../types';

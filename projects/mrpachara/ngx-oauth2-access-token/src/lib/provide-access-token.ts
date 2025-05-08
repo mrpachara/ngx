@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { configAccessToken } from './functions';
+import { configAccessToken } from './helpers';
 import {
   AccessTokenResponseExtractorFeature,
   SharedProviderFeatureKind,

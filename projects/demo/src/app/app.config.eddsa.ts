@@ -203,5 +203,6 @@ export const appConfig: ApplicationConfig = {
       }),
     ),
     provideJwk(jwkConfig),
+    // provideJwtVerifiers(verifyEddsa)
   ],
 };

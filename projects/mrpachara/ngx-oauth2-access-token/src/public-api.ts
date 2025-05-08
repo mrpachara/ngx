@@ -3,7 +3,7 @@
  */
 
 export * from './lib/errors';
-export * from './lib/functions';
+export * from './lib/helpers';
 export * from './lib/tokens';
 export * from './lib/types';
 

@@ -1,5 +1,5 @@
 import { HttpContextToken, HttpErrorResponse } from '@angular/common/http';
-import { InjectionToken } from '@angular/core';
+import { inject, InjectionToken } from '@angular/core';
 
 import { Oauth2Client } from '../services';
 import { Oauth2ClientErrorTransformer } from '../types';
@@ -18,6 +18,26 @@ export const OATUTH2_CLIENTS = new InjectionToken<Oauth2Client[]>(
     factory: () => [],
   },
 );
+
+/**
+ * Inject Oauth2Client from the given name.
+ *
+ * @param name Oauth2Client name.
+ * @returns Oauth2Client Oauth2Client from the given name.
+ * @throws If is not found.
+ * @publicApi
+ */
+export function injectOauth2Client(name: string): Oauth2Client {
+  const clients = inject(OATUTH2_CLIENTS);
+
+  const client = clients.find((client) => client.name === name);
+
+  if (!client) {
+    throw new Error(`Oauth2 client '${name}' is not found.`);
+  }
+
+  return client;
+}
 
 /** The injection token for OAuth 2.0 error response transformer function */
 export const DEFAULT_OAUTH2_CLIENT_ERROR_TRANSFORMER =
