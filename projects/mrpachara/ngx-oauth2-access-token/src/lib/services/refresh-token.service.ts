@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, defer, pipe, switchMap } from 'rxjs';
 
 import { RefreshTokenExpiredError } from '../errors';
-import { RefreshTokenStorage } from '../storage';
 import {
   AccessTokenResponse,
   AccessTokenResponseExtractor,

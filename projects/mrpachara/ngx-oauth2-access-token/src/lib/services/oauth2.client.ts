@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { configOauth2Client } from '../helpers';
+import { configOauth2Client, takeUntilAbortignal } from '../helpers';
 import {
   AccessTokenResponse,
   Oauth2ClientConfig,
@@ -70,13 +70,16 @@ export class Oauth2Client {
    */
   async fetchAccessToken<RES extends AccessTokenResponse = AccessTokenResponse>(
     request: StandardGrantsAccesTokenRequest,
+    signal?: AbortSignal,
   ): Promise<RES> {
     const { headers, body } = this.generateHeaderAndBody(request);
 
     return firstValueFrom(
-      this.http.post<RES>(this.config.accessTokenUrl, body, {
-        headers: headers,
-      }),
+      this.http
+        .post<RES>(this.config.accessTokenUrl, body, {
+          headers: headers,
+        })
+        .pipe(takeUntilAbortignal(signal)),
     );
   }
 }

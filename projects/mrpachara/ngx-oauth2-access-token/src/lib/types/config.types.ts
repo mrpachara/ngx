@@ -45,6 +45,12 @@ export type AccessTokenConfig = NameableConfig &
      * default value is `600_000` miliseconds (10 minutes).
      */
     readonly accessTokenTtl?: number;
+
+    /**
+     * The _life-time_ of refresh token, the default value is `2_592_000_000`
+     * miliseconds (30 days).
+     */
+    readonly refreshTokenTtl?: number;
   };
 
 /** Access token full configuration */

@@ -3,7 +3,7 @@ import { catchError, pipe, switchMap } from 'rxjs';
 
 import { IdTokenEncryptedError, IdTokenExpiredError } from '../errors';
 import { extractJwt, isJwtEncryptedPayload } from '../helpers';
-import { IdTokenStorage } from '../storage';
+import { IdTokenStorage } from '../storages';
 import {
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,

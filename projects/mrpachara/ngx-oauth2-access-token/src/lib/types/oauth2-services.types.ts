@@ -1,7 +1,7 @@
 import { OperatorFunction } from 'rxjs';
 
 import { Oauth2Client } from '../services';
-import { StoredAccessTokenResponse } from '../storage';
+import { StoredAccessTokenResponse } from '../storages';
 import { AccessTokenFullConfig } from './config.types';
 import {
   AccessTokenResponse,

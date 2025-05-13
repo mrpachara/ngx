@@ -34,7 +34,7 @@ import {
   AccessTokenStorage,
   AccessTokenStorageFactory,
   StoredAccessTokenResponse,
-} from '../../storage';
+} from '../../storages';
 import {
   ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
   PREREQUIRED_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,

@@ -36,12 +36,17 @@ export function configOauth2Client(
   } as const;
 }
 
-const defaultAccessTokenTtl = 10 * 60 * 1_000;
+/** `600_000` miliseconds (10 minutes) */
+const defaultAccessTokenTtl = 600_000;
+
+/** `2_592_000_000` miliseconds (30 days) */
+const defaultRefreshTokenTtl = 2_592_000_000;
 
 /** Default access token configuration */
 export const defaultAccessTokenConfig: PickOptional<AccessTokenConfig> = {
   additionalParams: {} as const,
   accessTokenTtl: defaultAccessTokenTtl,
+  refreshTokenTtl: defaultRefreshTokenTtl,
 } as const;
 
 /**
@@ -85,8 +90,6 @@ export function configAuthorizationCode(
     ...config,
   } as const;
 }
-
-const defaultRefreshTokenTtl = 30 * 24 * 60 * 60 * 1_000;
 
 /** Default refresh token configuration */
 export const defaultRefreshTokenConfig: PickOptional<RefreshTokenConfig> = {

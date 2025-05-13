@@ -11,7 +11,7 @@ import {
 import {
   AuthorizationCodeStorage,
   AuthorizationCodeStorageFactory,
-} from '../storage';
+} from '../storages';
 import {
   AccessTokenResponse,
   AuthorizationCodeFullConfig,
