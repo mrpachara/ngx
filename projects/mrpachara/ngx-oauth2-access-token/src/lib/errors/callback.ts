@@ -1,9 +1,7 @@
-import { StateData } from '../types';
-
 export interface CallbackErrorCause {
   error: string;
   error_description?: string;
-  stateData?: StateData;
+  stateData?: unknown;
 }
 
 export class CallbackError extends Error {
@@ -18,7 +16,7 @@ export class CallbackError extends Error {
 }
 
 export class BadResponseCallbackError extends CallbackError {
-  constructor(message = 'Bad request to callback.', stateData?: StateData) {
+  constructor(message = 'Bad request to callback.', stateData?: unknown) {
     super({
       error: 'BadResponseCallbackError',
       error_description: message,

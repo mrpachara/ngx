@@ -1,222 +1,206 @@
-import { inject } from '@angular/core';
-import { defer, from, map, Observable, switchMap } from 'rxjs';
-
-import { InvalidScopeError } from '../errors';
+import { inject, Injectable } from '@angular/core';
+import { StateExpiredError, StateNotFoundError } from '../errors';
 import {
+  assignRequestData,
   base64UrlEncode,
   randomString,
   sha256,
   validateAndTransformScopes,
 } from '../helpers';
 import {
-  AuthorizationCodeStorage,
-  AuthorizationCodeStorageFactory,
-} from '../storages';
+  AUTHORIZATION_CODE_CONFIG,
+  AUTHORIZATION_CODE_STORAGE,
+} from '../tokens';
 import {
-  AccessTokenResponse,
-  AuthorizationCodeFullConfig,
-  AuthorizationCodeGrantParams,
-  AuthorizationCodeParams,
-  CodeChallengeMethod,
-  DeepReadonly,
+  AdditionalParams,
+  AuthorizationCodeConfigWithId,
+  AuthorizationCodeRequest,
+  PickOptionalExcept,
   Scopes,
-  StateAuthorizationCode,
-  StateData,
+  WithoutCodeChallengeRequest,
 } from '../types';
-import { Oauth2Client } from './old/oauth2.client';
+import { AccessTokenService } from './access-token.service';
 
-const stateIdLength = 32;
+/** Default authorization code configuration */
+const defaultAuthorizationCodeConfig: PickOptionalExcept<
+  AuthorizationCodeConfigWithId,
+  'pkce'
+> = {
+  stateLength: 32,
+  stateTtl: 600_000,
+  codeVerifierLength: 56,
+} as const;
 
-type GenUrlParams = Omit<AuthorizationCodeParams, 'state'>;
+const existingNameSet = new Set<string>();
 
-/** Authorization code service */
-export class AuthorizationCodeService {
-  private readonly storageFactory = inject(AuthorizationCodeStorageFactory);
-  private readonly storage: AuthorizationCodeStorage;
-
-  /** The service name */
-  get name() {
-    return this.config.name;
+function configure(config: AuthorizationCodeConfigWithId) {
+  if (typeof config.id.description === 'undefined') {
+    throw new Error(`authorization-code service id MUST has description`);
   }
 
-  constructor(
-    private readonly config: AuthorizationCodeFullConfig,
-    private readonly client: Oauth2Client,
-  ) {
-    this.storage = this.storageFactory.create(
-      this.config.name,
-      this.config.stateTtl,
+  if (existingNameSet.has(config.id.description)) {
+    throw new Error(
+      `Non-unique authorization-code service id description '${config.id.description}'`,
     );
   }
 
-  private readonly loadStateData = <
-    T extends StateAuthorizationCode = StateAuthorizationCode,
-  >(
-    stateId: string,
-  ) => this.storage.loadStateData<T>(stateId);
+  existingNameSet.add(config.id.description);
 
-  private readonly storeStateData = <
-    T extends StateAuthorizationCode = StateAuthorizationCode,
-  >(
-    stateId: string,
-    stateData: T,
-  ) => this.storage.storeStateData<T>(stateId, stateData);
+  return {
+    ...defaultAuthorizationCodeConfig,
+    ...config,
+  } as const;
+}
 
-  private readonly removeStateData = <
-    T extends StateAuthorizationCode = StateAuthorizationCode,
-  >(
-    stateId: string,
-  ) => this.storage.removeStateData<T>(stateId);
+@Injectable()
+export class AuthorizationCodeService {
+  private readonly config = configure(inject(AUTHORIZATION_CODE_CONFIG));
 
-  private readonly generateCodeChallenge = async (
-    stateData: StateAuthorizationCode,
-  ): Promise<
-    | {
-        code_challenge: string;
-        code_challenge_method: CodeChallengeMethod;
-      }
-    | undefined
-  > => {
-    if (this.config.pkce === 'none') {
-      return undefined;
-    }
+  private readonly accessTokenService = inject(AccessTokenService);
 
-    const codeVerifier = randomString(this.config.codeVerifierLength);
-    const codeChallenge =
-      this.config.pkce === 'plain'
-        ? codeVerifier
-        : base64UrlEncode(await sha256(codeVerifier));
-    stateData.codeVerifier = codeVerifier;
+  private readonly storage = inject(AUTHORIZATION_CODE_STORAGE);
 
-    return {
-      code_challenge: codeChallenge,
-      code_challenge_method: this.config.pkce,
-    };
-  };
+  get id() {
+    return this.config.id;
+  }
 
-  private readonly generateAuthorizationCodeUrl = async (
-    stateId: string,
-    stateData: StateAuthorizationCode,
-    authorizationCodeParams: GenUrlParams,
-  ): Promise<URL> => {
-    await this.storeStateData(stateId, stateData);
+  get name() {
+    return this.config.id.description!;
+  }
 
-    const url = new URL(this.config.authorizationCodeUrl);
+  readonly #init$: Promise<void>;
 
-    Object.entries({
-      ...this.config.additionalParams,
-      ...authorizationCodeParams,
-      state: stateId,
-      ...this.client.getClientParams(),
-    }).forEach(([key, value]) => {
-      if (typeof value !== 'undefined') {
-        url.searchParams.set(key, `${value}`);
-      }
-    });
-
-    return url;
-  };
+  constructor() {
+    this.#init$ = this.storage.removeExpired();
+  }
 
   /**
-   * Fetch authorization code url.
+   * Generate authorization code url.
    *
    * @param scopes The requesting scopes
    * @param stateData The state data wanted to be stored for requesting
-   * @param additionalParams The additional parameters for requesting. It will
-   *   extend the static additional parameters from the counfiguation.
+   * @param params The additional parameters for requesting.
    * @returns The `Promise` of authorization code requesting `URL`
+   * @throws InvalidScopeError
    */
-  async fetchAuthorizationCodeUrl<T extends StateData>(
+  async generateUrl<T>(
     scopes: Scopes,
-    stateData?: T,
-    additionalParams?: Record<string, string>,
+    stateData: T,
+    { params = {} as AdditionalParams } = {},
   ): Promise<URL> {
+    await this.#init$;
+
+    const state = randomString(this.config.stateLength);
+
     const scope = validateAndTransformScopes(scopes);
 
-    if (scope instanceof InvalidScopeError) {
-      throw scope;
+    const {
+      codeChallengeMethod = undefined,
+      codeVerifier = undefined,
+      codeChallenge = undefined,
+    } = typeof this.config.pkce === 'undefined'
+      ? {}
+      : await (async () => {
+          const codeChallengeMethod = this.config.pkce;
+          const codeVerifier = randomString(this.config.codeVerifierLength);
+          const codeChallenge =
+            codeChallengeMethod === 'plain'
+              ? codeVerifier
+              : base64UrlEncode(await sha256(codeVerifier));
+
+          return { codeChallengeMethod, codeVerifier, codeChallenge };
+        })();
+
+    const authorizationCodeRequest: AuthorizationCodeRequest = {
+      response_type: 'code',
+      client_id: this.accessTokenService.clientId,
+      redirect_uri: this.config.redirectUri,
+      scope,
+      state,
+      ...(typeof codeChallenge === 'undefined'
+        ? ({} as WithoutCodeChallengeRequest)
+        : {
+            ...(typeof codeChallengeMethod === 'undefined'
+              ? {}
+              : { code_challenge_method: codeChallengeMethod }),
+            code_challenge: codeChallenge,
+          }),
+    } as const;
+
+    const url = new URL(this.config.authorizationCodeUrl);
+
+    assignRequestData(url.searchParams, authorizationCodeRequest, { params });
+
+    await this.storage.store<T>(state, {
+      expiresAt: Date.now() + this.config.stateTtl,
+      ...(typeof codeVerifier === 'undefined' ? {} : { codeVerifier }),
+      data: stateData,
+    });
+
+    return url;
+  }
+
+  /**
+   * Exchange _authorization code_ for the new _access token_. Use fetch from
+   * `AccessTokenService` that stores the new _access token_.
+   *
+   * @param state The state for exchanging
+   * @param code The authorization code to be exchanged
+   * @param params The additional parameters for requesting.
+   * @returns The `Promise` of state data
+   * @throws StateNotFoundError | StateExpiredError
+   */
+  async exchangeCode<T>(
+    state: string,
+    code: string,
+    { params = undefined as AdditionalParams | undefined } = {},
+  ): Promise<T> {
+    await this.#init$;
+
+    const storedStateData = await this.storage.remove<T>(state);
+
+    if (typeof storedStateData === 'undefined') {
+      throw new StateNotFoundError();
     }
 
-    const stateId = randomString(stateIdLength);
-    const storedStateData: StateAuthorizationCode = {
-      ...stateData,
-    };
+    if (storedStateData.expiresAt <= Date.now()) {
+      throw new StateExpiredError();
+    }
 
-    const params: GenUrlParams = {
-      ...additionalParams,
-      response_type: 'code',
-      redirect_uri: this.config.redirectUri,
-      scope: scope,
-      ...(await this.generateCodeChallenge(storedStateData)),
-    };
+    const { codeVerifier } = storedStateData;
 
-    return this.generateAuthorizationCodeUrl(stateId, storedStateData, params);
+    await this.accessTokenService.fetch(
+      'authorization_code',
+      code,
+      this.config.redirectUri,
+      {
+        codeVerifier,
+        params,
+      },
+    );
+
+    return storedStateData.data;
   }
 
   /**
    * Load and clear state data.
    *
-   * @param stateId The state ID to be cleared
-   * @returns The `Promise` of immubable state data or `null` when not found
+   * @param state The state to be cleared
+   * @returns The `Promise` of state data or `undefined` when not found or
+   *   expired
    */
-  async clearState<T extends StateData = StateData>(
-    stateId: string,
-  ): Promise<DeepReadonly<(T & StateAuthorizationCode) | null>> {
-    return await this.removeStateData<T>(stateId);
-  }
+  async clearState<T>(state: string): Promise<T | undefined> {
+    await this.#init$;
 
-  /**
-   * Load and verify state data.
-   *
-   * @param stateId The state ID to be verified
-   * @returns The `Observable` of verified state data. Another cases thorw an
-   *   error.
-   * @throws An error of other cases including refused state data and state data
-   *   is not found
-   */
-  verifyState<T extends StateData = StateData>(
-    stateId: string,
-  ): Observable<DeepReadonly<T & StateAuthorizationCode>> {
-    return defer(() => this.loadStateData<T & StateAuthorizationCode>(stateId));
-  }
+    const storedStateData = await this.storage.remove<T>(state);
 
-  /**
-   * Exchange authorization code for the new access token. The method **DO NOT**
-   * store the new access token. The new access token **MUST** be stored
-   * manually.
-   *
-   * @param stateId The state ID for exchanging
-   * @param authorizationCode The authorization code to be exchanged
-   * @returns The `Observable` of immuable access token response and state data
-   */
-  exchangeAuthorizationCode<T extends StateData = StateData>(
-    stateId: string,
-    authorizationCode: string,
-  ): Observable<{
-    accessTokenResponse: DeepReadonly<AccessTokenResponse>;
-    stateData: DeepReadonly<T & StateAuthorizationCode>;
-  }> {
-    return this.verifyState<T>(stateId).pipe(
-      switchMap((stateData) => {
-        const params: AuthorizationCodeGrantParams = {
-          grant_type: 'authorization_code',
-          code: authorizationCode,
-          redirect_uri: this.config.redirectUri,
-          ...(stateData.codeVerifier
-            ? {
-                code_verifier: stateData.codeVerifier,
-              }
-            : {}),
-        };
+    if (
+      typeof storedStateData === 'undefined' ||
+      storedStateData.expiresAt <= Date.now()
+    ) {
+      return undefined;
+    }
 
-        return this.client.requestAccessToken(params).pipe(
-          switchMap((accessTokenResponse) => {
-            return from(this.clearState(stateId)).pipe(
-              map(() => ({ accessTokenResponse, stateData })),
-            );
-          }),
-        );
-      }),
-    );
+    return storedStateData.data;
   }
 }

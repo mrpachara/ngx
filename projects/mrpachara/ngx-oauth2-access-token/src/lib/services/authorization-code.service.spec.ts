@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { AuthorizationCodeService } from './authorization-code.service';
 
-xdescribe('AuthorizationCodeService', () => {
+describe('AuthorizationCodeService', () => {
   let service: AuthorizationCodeService;
 
   beforeEach(() => {

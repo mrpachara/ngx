@@ -1,17 +1,39 @@
-<div>
-  <button type="button" (click)="renewAccessToken()">Renew Access Token</button>
-</div>
-
 <h2>Access Token</h2>
-<ng-container *ngIf="accessToken() as accessToken; else loading">
-  <pre>{{ accessToken | json }}</pre>
-</ng-container>
-<div *ngIf="errorAccessTokenMessage() as errorMessage">
-  <b class="cl-warn">AccessToken:</b>
-  <code>{{ errorMessage }}</code>
-</div>
+@switch (ready()) {
+  @case (undefined) {
+    <div>loading...</div>
+  }
 
-<h2>ID Token</h2>
+  @case (false) {
+    <div>
+      <button type="button" (click)="authorization()">Authorization</button>
+    </div>
+  }
+
+  @default {
+    <div>
+      <button type="button" (click)="renewAccessToken()">
+        Renew Access Token
+      </button>
+      <button type="button" (click)="clearAccessToken()">
+        Clear Access Token
+      </button>
+    </div>
+
+    @if (accessTokenResource.value(); as accessToken) {
+      <pre>{{ accessToken | json }}</pre>
+    }
+  }
+}
+
+@if (errorAccessTokenMessage(); as errorMessage) {
+  <div>
+    <b class="-cl-warn">AccessToken:</b>
+    <code>{{ errorMessage }}</code>
+  </div>
+}
+
+<!-- <h2>ID Token</h2>
 <ng-container *ngIf="idToken() as idToken; else loading">
   <h3>Header</h3>
   <pre>{{ idToken.header | json }}</pre>
@@ -29,8 +51,4 @@
 <div *ngIf="errorIdTokenMessage() as errorMessage">
   <b class="cl-warn">IdToken:</b>
   <code>{{ errorMessage }}</code>
-</div>
-
-<ng-template #loading>
-  <div>loading...</div>
-</ng-template>
+</div> -->

@@ -1,3 +1,5 @@
+import { MakeNever } from '../utils';
+
 /** Base Grant */
 export interface AccessTokenRequest {
   /** REQUIRED. The type of granting. */
@@ -23,27 +25,7 @@ interface Scopable {
    * REQUIRED. The scope of the access request as described by [Section
    * 3.3](https://www.rfc-editor.org/rfc/rfc6749.html#section-3.3).
    */
-  readonly scope: string;
-}
-
-/** Resource Owner Password Credentials Grant */
-export interface PasswordGrantAccessTokenRequest
-  extends AccessTokenRequest,
-    Scopable {
-  readonly grant_type: 'password';
-
-  /** REQUIRED. The resource owner username. */
-  readonly username: string;
-
-  /** REQUIRED. The resource owner password. */
-  readonly password: string;
-}
-
-/** Client Credentials Grant */
-export interface ClientGrantAccessTokenRequest
-  extends AccessTokenRequest,
-    Scopable {
-  readonly grant_type: 'client_credentials';
+  readonly scope?: string;
 }
 
 /** Authorization Code Grant */
@@ -72,6 +54,26 @@ export interface AuthorizationCodeGrantAccessTokenRequest
   readonly scope?: never;
 }
 
+/** Resource Owner Password Credentials Grant */
+export interface PasswordGrantAccessTokenRequest
+  extends AccessTokenRequest,
+    Scopable {
+  readonly grant_type: 'password';
+
+  /** REQUIRED. The resource owner username. */
+  readonly username: string;
+
+  /** REQUIRED. The resource owner password. */
+  readonly password: string;
+}
+
+/** Client Credentials Grant */
+export interface ClientGrantAccessTokenRequest
+  extends AccessTokenRequest,
+    Scopable {
+  readonly grant_type: 'client_credentials';
+}
+
 /** Refreshing an Access Token Grant */
 export interface RefreshTokenGrantAccessTokenRequest
   extends AccessTokenRequest {
@@ -90,24 +92,66 @@ export interface RefreshTokenGrantAccessTokenRequest
   readonly scope?: string;
 }
 
-/** Extension Grant */
-export interface ExtensionGrantAccessTokenRequest<
-  URN extends `urn:${string}` = `urn:${string}`,
-> extends AccessTokenRequest {
-  readonly grant_type: URN;
+export type ExtensionGrantType = `urn:${string}`;
+export type ExtensionGrantData = object & {
+  readonly grant_type?: never;
+} & {
+  readonly [K in keyof AccessTokenRequest]?: never;
+} & {
+  readonly [K in keyof Scopable]?: never;
+};
+
+export interface ExtensionWithoutDataGrant<
+  G extends ExtensionGrantType = ExtensionGrantType,
+> {
+  readonly grantType: G;
+  readonly dataType?: never;
 }
 
+export interface ExtensionWithDataGrant<
+  G extends ExtensionGrantType = ExtensionGrantType,
+  R extends ExtensionGrantData = ExtensionGrantData,
+> {
+  readonly grantType: G;
+  readonly dataType: R;
+}
+
+export type ExtensionWithoutDataGrantAccessTokenRequest<
+  EG extends ExtensionWithoutDataGrant = ExtensionWithoutDataGrant,
+> = AccessTokenRequest & {
+  readonly grant_type: EG['grantType'];
+};
+
+export type ExtensionWithDataGrantAccessTokenRequest<
+  EG extends ExtensionWithDataGrant = ExtensionWithDataGrant,
+> = AccessTokenRequest & {
+  readonly grant_type: EG['grantType'];
+} & {
+  readonly [K in keyof EG['dataType']]: EG['dataType'][K];
+};
+
+/** Extension Grant */
+export type ExtensionGrantAccessTokenRequest<
+  EG extends ExtensionWithoutDataGrant | ExtensionWithDataGrant =
+    | ExtensionWithoutDataGrant
+    | ExtensionWithDataGrant,
+> = EG extends ExtensionWithoutDataGrant
+  ? ExtensionWithoutDataGrantAccessTokenRequest<EG>
+  : EG extends ExtensionWithDataGrant
+    ? ExtensionWithDataGrantAccessTokenRequest<EG>
+    : never;
+
 export type StandardGrantsAccesTokenRequest =
+  | AuthorizationCodeGrantAccessTokenRequest
   | PasswordGrantAccessTokenRequest
   | ClientGrantAccessTokenRequest
-  | AuthorizationCodeGrantAccessTokenRequest
-  | RefreshTokenGrantAccessTokenRequest
-  | ExtensionGrantAccessTokenRequest;
+  | ExtensionGrantAccessTokenRequest
+  | RefreshTokenGrantAccessTokenRequest;
 
 export type CodeChallengeMethod = 'S256' | 'plain';
 
 /** Authorization Code Request */
-export interface AuthorizationCodeRequest {
+export interface AuthorizationCodeBasicRequest {
   /** REQUIRED. Value **MUST** be set to `"code"`. */
   readonly response_type: 'code';
 
@@ -127,18 +171,6 @@ export interface AuthorizationCodeRequest {
   readonly scope: string;
 
   /**
-   * REQUIRED, if authorization request as
-   * [PKCE](https://datatracker.ietf.org/doc/html/rfc7636). Code challenge.
-   */
-  readonly code_challenge?: string;
-
-  /**
-   * OPTIONAL, defaults to `"plain"` if not present in the request. Code
-   * verifier transformation method is `"S256"` or `"plain"`.
-   */
-  readonly code_challenge_method?: CodeChallengeMethod;
-
-  /**
    * REQUIRED. As described in [Section
    * 3.1.2](https://www.rfc-editor.org/rfc/rfc6749.html#section-3.1.2).
    */
@@ -151,8 +183,30 @@ export interface AuthorizationCodeRequest {
    * used for preventing cross-site request forgery as described in [Section
    * 10.12](https://www.rfc-editor.org/rfc/rfc6749.html#section-10.12).
    */
-  readonly state: string;
+  readonly state?: string;
 }
+
+/** Authorization Code with `code_challenge` Request */
+export interface WithCodeChallengeRequest {
+  /**
+   * REQUIRED, if authorization request as
+   * [PKCE](https://datatracker.ietf.org/doc/html/rfc7636). Code challenge.
+   */
+  readonly code_challenge: string;
+
+  /**
+   * OPTIONAL, defaults to `"plain"` if not present in the request. Code
+   * verifier transformation method is `"S256"` or `"plain"`.
+   */
+  readonly code_challenge_method?: CodeChallengeMethod;
+}
+
+/** Authorization Code **without** `code_challenge` Request */
+export type WithoutCodeChallengeRequest = MakeNever<WithCodeChallengeRequest>;
+
+/** Authorization Code Request */
+export type AuthorizationCodeRequest = AuthorizationCodeBasicRequest &
+  (WithCodeChallengeRequest | WithoutCodeChallengeRequest);
 
 /** Access Token Response */
 export interface AccessTokenResponse {

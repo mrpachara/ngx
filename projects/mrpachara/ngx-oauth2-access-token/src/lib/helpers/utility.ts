@@ -40,8 +40,29 @@ export function deepFreeze<T>(value: T): DeepReadonly<T> {
   return value as DeepReadonly<T>;
 }
 
-export async function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+export function isArray<T>(obj: T): obj is Extract<T, readonly unknown[]> {
+  return Array.isArray(obj);
+}
+
+export async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const ac = new AbortController();
+
+    const settle = (reason?: unknown) => {
+      ac.abort();
+      clearTimeout(handler);
+
+      if (typeof reason === 'undefined') {
+        resolve();
+      } else {
+        reject(reason);
+      }
+    };
+
+    const handler = setTimeout(settle, ms);
+
+    signal?.addEventListener('abort', settle, { signal: ac.signal });
+  });
 }
 
 export function takeUntilAbortignal<T>(signal?: AbortSignal) {

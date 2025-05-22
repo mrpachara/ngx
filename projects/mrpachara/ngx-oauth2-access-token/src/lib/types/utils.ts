@@ -13,6 +13,9 @@ export type PickOptional<T> = {
   [K in keyof T as undefined extends T[K] ? K : never]-?: T[K];
 };
 
+/** Pick the optional properties except K */
+export type PickOptionalExcept<T, K extends keyof T> = PickOptional<Omit<T, K>>;
+
 /** Make all properties in T required except K */
 export type RequiredExcept<T, K extends keyof T> = Required<Omit<T, K>> &
   Pick<T, K>;
@@ -28,6 +31,10 @@ export type RequiredOnly<T, K extends keyof T> = T & {
 // export type UndefinedOnly<T, K extends keyof T> = Omit<T, K> & {
 //   [prob in K]: undefined;
 // };
+
+export type MakeNever<T> = {
+  [prob in keyof T]?: never;
+};
 
 /** Make K properties in T undefined */
 export type UndefinedOnly<T, K extends keyof T> = T & Record<K, undefined>;

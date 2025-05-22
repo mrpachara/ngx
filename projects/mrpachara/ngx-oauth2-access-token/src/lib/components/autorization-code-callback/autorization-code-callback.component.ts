@@ -1,25 +1,31 @@
-import { CommonModule } from '@angular/common';
+import { NgClass } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  InjectionToken,
   OnInit,
   computed,
   inject,
   input,
   signal,
 } from '@angular/core';
-import { take } from 'rxjs';
 
-import { oauth2Callback } from '../../helpers';
-import { AuthorizationCodeService, StateActionService } from '../../services';
+import { authorizationCodeCallback } from '../../helpers';
+import { injectAuthorizationCodeService } from '../../tokens';
+
+export interface AuthorizationCodeCallbackData<T = unknown> {
+  readonly id: symbol;
+  readonly processFactory?: () => (stateData: T) => Promise<void> | void;
+}
+
+export const AUTHORIZATION_CODE_CALLBACK_DATA =
+  new InjectionToken<AuthorizationCodeCallbackData>(
+    'authorization-code-callback-data',
+  );
 
 interface MessageInfo {
   type: 'info' | 'error' | null;
   message: string | null;
-}
-
-function nullableAttribute(value: string | undefined) {
-  return value ?? null;
 }
 
 /**
@@ -28,12 +34,32 @@ function nullableAttribute(value: string | undefined) {
  */
 @Component({
   selector: 'oat-authorization-code-callback',
-  imports: [CommonModule],
+  imports: [NgClass],
   templateUrl: './autorization-code-callback.component.html',
   styleUrls: ['./autorization-code-callback.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AuthorizationCodeCallbackComponent implements OnInit {
+export class AuthorizationCodeCallbackComponent<T> implements OnInit {
+  private readonly data = inject<AuthorizationCodeCallbackData<T>>(
+    AUTHORIZATION_CODE_CALLBACK_DATA,
+  );
+
+  private readonly authorizationCodeService = injectAuthorizationCodeService(
+    this.data.id,
+  );
+
+  private readonly process = this.data.processFactory?.();
+
+  readonly processFactory = input;
+
+  readonly state = input<string>();
+
+  readonly code = input<string>();
+
+  readonly error = input<string>();
+
+  readonly errro_description = input<string>();
+
   protected readonly messageInfo = signal<MessageInfo>({
     type: null,
     message: null,
@@ -43,50 +69,24 @@ export class AuthorizationCodeCallbackComponent implements OnInit {
     () => `oat-cl-${this.messageInfo().type}` as const,
   );
 
-  readonly state = input<string | null, string | undefined>(null, {
-    transform: nullableAttribute,
-  });
+  async ngOnInit(): Promise<void> {
+    try {
+      const stateData = await authorizationCodeCallback<T>(
+        this.state(),
+        this.code(),
+        this.error(),
+        this.errro_description(),
+        this.authorizationCodeService,
+      );
 
-  readonly code = input<string | null, string | undefined>(null, {
-    transform: nullableAttribute,
-  });
-
-  readonly error = input<string | null, string | undefined>(null, {
-    transform: nullableAttribute,
-  });
-
-  readonly errro_description = input<string | null, string | undefined>(null, {
-    transform: nullableAttribute,
-  });
-
-  private readonly authorizationCodeService = inject(AuthorizationCodeService);
-  private readonly stateActionService = inject(StateActionService);
-
-  ngOnInit(): void {
-    oauth2Callback(
-      this.state(),
-      this.code(),
-      this.error(),
-      this.errro_description(),
-      this.authorizationCodeService,
-      this.stateActionService,
-    )
-      .pipe(take(1))
-      .subscribe({
-        next: (result) => {
-          this.messageInfo.set({
-            type: 'info',
-            message: `${result}`,
-          });
-        },
-        error: (err) => {
-          this.messageInfo.set({
-            type: 'error',
-            message: `${err}`,
-          });
-
-          console.error(err);
-        },
+      await this.process?.(stateData);
+    } catch (err) {
+      this.messageInfo.set({
+        type: 'error',
+        message: `${err}`,
       });
+
+      console.error(err);
+    }
   }
 }

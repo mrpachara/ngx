@@ -1,8 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { ApplicationConfig, inject } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
-import { Observable } from 'rxjs';
-
 import {
   AccessTokenConfig,
   AccessTokenResponse,
@@ -27,7 +25,7 @@ import {
   withStateActionErrorHandler,
   withStateActionHandler,
 } from '@mrpachara/ngx-oauth2-access-token';
-
+import { Observable } from 'rxjs';
 import { routes } from './app.routes';
 
 const clientConfig: Oauth2ClientConfig = {

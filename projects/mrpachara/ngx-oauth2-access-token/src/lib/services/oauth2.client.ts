@@ -1,27 +1,63 @@
-import { HttpClient } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-import { configOauth2Client, takeUntilAbortignal } from '../helpers';
 import {
+  HttpClient,
+  HttpContext,
+  HttpErrorResponse,
+} from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import { catchError, firstValueFrom, throwError } from 'rxjs';
+import { Oauth2ClientResponseError } from '../errors';
+import { assignRequestData, takeUntilAbortignal } from '../helpers';
+import {
+  OAUTH2_CLIENT_CONFIG,
+  OAUTH2_CLIENT_ERROR_TRANSFORMER,
+  SKIP_ASSIGNING_ACCESS_TOKEN,
+} from '../tokens';
+import {
+  AccessTokenRequest,
   AccessTokenResponse,
-  Oauth2ClientConfig,
-  Oauth2ClientFullConfig,
-  StandardGrantsAccesTokenRequest,
+  AdditionalParams,
+  Oauth2ClientConfigWithId,
+  PickOptionalExcept,
 } from '../types';
 
-/**
- * OAuth 2.0 client.
- *
- * **Note:** provided by factory pattern.
- */
+const defaultOauth2ClientConfig: PickOptionalExcept<
+  Oauth2ClientConfigWithId,
+  'clientSecret'
+> = {
+  clientCredentialsInParams: false,
+} as const;
+
+const existingNameSet = new Set<string>();
+
+function configure(config: Oauth2ClientConfigWithId) {
+  if (typeof config.id.description === 'undefined') {
+    throw new Error(`oauth2 client id MUST has description`);
+  }
+
+  if (existingNameSet.has(config.id.description)) {
+    throw new Error(
+      `Non-unique oauth2 client id description '${config.id.description}'`,
+    );
+  }
+
+  existingNameSet.add(config.id.description);
+
+  return {
+    ...defaultOauth2ClientConfig,
+    ...config,
+  } as const;
+}
+
+@Injectable()
 export class Oauth2Client {
-  private readonly config: Oauth2ClientFullConfig;
+  private readonly config = configure(inject(OAUTH2_CLIENT_CONFIG));
+
+  private readonly errorTransformer = inject(OAUTH2_CLIENT_ERROR_TRANSFORMER);
 
   private readonly http = inject(HttpClient);
 
-  /** The name of Oauth2Client */
   get name() {
-    return this.config.name;
+    return this.config.id.description!;
   }
 
   /** The client id of Oauth2Cient */
@@ -29,23 +65,28 @@ export class Oauth2Client {
     return this.config.clientId;
   }
 
-  constructor(config: Oauth2ClientConfig) {
-    this.config = configOauth2Client(config);
-  }
+  private generateHeaderAndBody(
+    request: AccessTokenRequest,
+    { params = {} as AdditionalParams } = {},
+  ) {
+    const formData = new FormData();
 
-  private generateHeaderAndBody(request: StandardGrantsAccesTokenRequest) {
     if (this.config.clientCredentialsInParams) {
       return {
         headers: undefined,
-        body: {
-          ...request,
-          client_id: this.config.clientId,
-          ...(this.config.clientSecret
-            ? {
-                client_secret: this.config.clientSecret,
-              }
-            : {}),
-        },
+        body: assignRequestData(
+          formData,
+          {
+            ...request,
+            client_id: this.config.clientId,
+            ...(typeof this.config.clientSecret === 'undefined'
+              ? {}
+              : {
+                  client_secret: this.config.clientSecret,
+                }),
+          },
+          { params },
+        ),
       };
     } else {
       const authData = btoa(
@@ -56,7 +97,7 @@ export class Oauth2Client {
         headers: {
           Authorization: `Basic ${authData}` as const,
         },
-        body: { ...request },
+        body: assignRequestData(formData, request, { params }),
       };
     }
   }
@@ -69,17 +110,47 @@ export class Oauth2Client {
    * @returns The `Promise` of access token response
    */
   async fetchAccessToken<RES extends AccessTokenResponse = AccessTokenResponse>(
-    request: StandardGrantsAccesTokenRequest,
-    signal?: AbortSignal,
+    request: AccessTokenRequest,
+    {
+      params = {} as AdditionalParams,
+      signal = undefined as AbortSignal | undefined,
+    } = {},
   ): Promise<RES> {
-    const { headers, body } = this.generateHeaderAndBody(request);
+    const { headers, body } = this.generateHeaderAndBody(request, { params });
 
-    return firstValueFrom(
+    return await firstValueFrom(
       this.http
         .post<RES>(this.config.accessTokenUrl, body, {
           headers: headers,
+          context: new HttpContext().set(SKIP_ASSIGNING_ACCESS_TOKEN, true),
         })
-        .pipe(takeUntilAbortignal(signal)),
+        .pipe(
+          takeUntilAbortignal(signal),
+          catchError((err) =>
+            throwError(
+              () =>
+                new Oauth2ClientResponseError(
+                  this.name,
+                  err instanceof HttpErrorResponse
+                    ? this.errorTransformer(err)
+                    : err instanceof Error
+                      ? {
+                          error: err.name,
+                          error_description: err.message,
+                        }
+                      : {
+                          error: 'Unknown',
+                          error_description: `${
+                            typeof err === 'object' ? JSON.stringify(err) : err
+                          }`,
+                        },
+                  {
+                    cause: err,
+                  },
+                ),
+            ),
+          ),
+        ),
     );
   }
 }

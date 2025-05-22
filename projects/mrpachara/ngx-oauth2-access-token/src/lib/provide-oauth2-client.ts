@@ -11,10 +11,7 @@ import {
 
 import { configOauth2Client } from './helpers';
 import { Oauth2Client } from './services';
-import {
-  DEFAULT_OAUTH2_CLIENT_ERROR_TRANSFORMER,
-  OATUTH2_CLIENTS,
-} from './tokens';
+import { OATUTH2_CLIENTS, OAUTH2_CLIENT_ERROR_TRANSFORMER } from './tokens';
 import {
   Oauth2ClientConfig,
   Oauth2ClientErrorTransformer,
@@ -61,7 +58,7 @@ export function provideOauth2Client(
       `oauth2-client-error-transformer-${fullConfig.name}`,
       {
         providedIn: 'root',
-        factory: () => inject(DEFAULT_OAUTH2_CLIENT_ERROR_TRANSFORMER),
+        factory: () => inject(OAUTH2_CLIENT_ERROR_TRANSFORMER),
       },
     );
 

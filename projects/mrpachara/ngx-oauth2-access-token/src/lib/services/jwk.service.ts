@@ -1,6 +1,6 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { Observable, firstValueFrom } from 'rxjs';
+import { inject, Injectable } from '@angular/core';
+import { firstValueFrom, Observable } from 'rxjs';
 
 import {
   MatchedJwkNotFoundError,
@@ -8,41 +8,42 @@ import {
   SupportedJwkAlgNotFoundError,
 } from '../errors';
 import { findJwk, isProvidedSignature } from '../helpers';
-import { JWT_VERIFIERS, SKIP_ASSIGNING_ACCESS_TOKEN } from '../tokens';
-import { JwkFullConfig, JwkSet, JwtInfo, JwtVerifier } from '../types';
+import {
+  JWK_CONFIG,
+  JWT_VERIFIERS,
+  SKIP_ASSIGNING_ACCESS_TOKEN,
+} from '../tokens';
+import { JwkConfig, JwkSet, JwtInfo, PickOptional } from '../types';
+
+/** Default JWK configuration */
+const defaultJwkConfig: PickOptional<JwkConfig> = {} as const;
+
+/**
+ * Create the full JWK configuration.
+ *
+ * @param config The configuration
+ * @returns The full configuration
+ */
+function configure(config: JwkConfig) {
+  return {
+    ...defaultJwkConfig,
+    ...config,
+  } as const;
+}
 
 /** JWK service */
+@Injectable()
 export class JwkService {
-  private http = inject(HttpClient);
-  private parentVerifiers = inject(JWT_VERIFIERS, {
-    skipSelf: true,
-    optional: true,
-  });
-  private scopedVerifiers = inject(JWT_VERIFIERS, {
-    self: true,
-    optional: true,
-  });
+  private readonly config = configure(inject(JWK_CONFIG));
 
-  /** The service name */
-  get name() {
-    return this.config.name;
-  }
+  private readonly http = inject(HttpClient);
 
   /** The issuer for the service */
   get issuer() {
     return this.config.issuer;
   }
 
-  private readonly verifiers: JwtVerifier[];
-
-  constructor(private readonly config: JwkFullConfig) {
-    this.verifiers = [
-      ...new Set([
-        ...(this.scopedVerifiers ?? []),
-        ...(this.parentVerifiers ?? []),
-      ]),
-    ];
-  }
+  private readonly verifiers = inject(JWT_VERIFIERS);
 
   private fetchJwkSet(): Observable<JwkSet> {
     return this.http.get<JwkSet>(this.config.jwkSetUrl, {
