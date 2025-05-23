@@ -1,9 +1,16 @@
 export async function promisifyTransaction<T>(
-  transaction: IDBTransaction,
+  db: IDBDatabase,
+  storeNames: string | string[],
+  {
+    mode = undefined as IDBTransactionMode | undefined,
+    options = undefined as IDBTransactionOptions | undefined,
+  },
   process: (transaction: IDBTransaction) => Promise<T> | T,
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const ac = new AbortController();
+
+    const transaction = db.transaction(storeNames, mode, options);
 
     Object.entries({
       complete: async () => resolve(await result),

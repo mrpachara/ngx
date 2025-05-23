@@ -18,23 +18,30 @@ import {
   StoredAccessTokenMap,
   Uuid,
 } from '../../types';
+import {
+  accessTokenObjectStoreName,
+  lockerObjectStoreName,
+  refreshTokenObjectStoreName,
+} from './acces-token';
+import { AccessTokenIndexedDbConnection } from './access-token-indexed-db.connection';
 import { promisifyRequest } from './helpers';
-
-const storeName = 'accessToken';
-
-const lockerUuidKey = 'lock-uuid';
 
 /** `alive` interval in units of **miliseconds** */
 const aliveInterval = 3_000;
 
-/** `alive-ack` waiting time in units of **miliseconds** */
-// const aliveAckWaitingTime = 100;
+const keys = {
+  access: accessTokenObjectStoreName,
+  refresh: refreshTokenObjectStoreName,
+  locker: lockerObjectStoreName,
+} as const;
 
 Injectable();
 export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
-  readonly #uuid: Uuid = crypto.randomUUID();
+  readonly #connection = inject(AccessTokenIndexedDbConnection);
 
-  readonly #db$: Promise<IDBDatabase>;
+  readonly #name = inject(STORAGE_NAME);
+
+  readonly #uuid: Uuid = crypto.randomUUID();
 
   readonly #bc: BroadcastChannel;
 
@@ -55,55 +62,9 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
   }
 
   constructor() {
-    const name = inject(STORAGE_NAME);
+    const bcName = `${libPrefix}-access-token-storage:${this.#name}` as const;
 
-    const fullName = `${libPrefix}-${name}-access-token-storage` as const;
-
-    const dbOpenRequest = indexedDB.open(fullName, 1);
-
-    this.#db$ = new Promise<IDBDatabase>((resolve, reject) => {
-      const ac = new AbortController();
-
-      dbOpenRequest.addEventListener(
-        'upgradeneeded',
-        (ev) => {
-          const db = dbOpenRequest.result;
-
-          // NOTE: migration prcesses
-          switch (ev.oldVersion) {
-            case 0:
-              db.createObjectStore(storeName);
-          }
-        },
-        { signal: ac.signal },
-      );
-
-      dbOpenRequest.addEventListener(
-        'success',
-        () => {
-          ac.abort();
-
-          const db = dbOpenRequest.result;
-
-          db.addEventListener('versionchange', () => db.close());
-
-          resolve(db);
-        },
-        { signal: ac.signal },
-      );
-
-      dbOpenRequest.addEventListener(
-        'error',
-        () => {
-          ac.abort();
-
-          reject(dbOpenRequest.error);
-        },
-        { signal: ac.signal },
-      );
-    });
-
-    this.#bc = new BroadcastChannel(fullName);
+    this.#bc = new BroadcastChannel(bcName);
 
     const aliveAck$$ = new Subject<Uuid>();
     this.#aliveAck$ = aliveAck$$.asObservable();
@@ -163,25 +124,29 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
   }
 
   async lock(): Promise<void> {
-    const db = await this.#db$;
+    const db = await this.#connection.db$;
 
     let deadUuid: Uuid | null = null;
 
     while (true) {
-      const transaction = db.transaction(storeName, 'readwrite');
-      const objectStore = transaction.objectStore(storeName);
+      const transaction = db.transaction(keys['locker'], 'readwrite');
+      const objectStore = transaction.objectStore(keys['locker']);
 
       // NOTE: For preventing accidentally storing `null`, check with `null` value.
       const lockerUuid =
         (await promisifyRequest<Uuid | undefined>(
-          objectStore.get(lockerUuidKey),
+          objectStore.get(this.#name),
         )) ?? null;
 
       // NOTE: **MUST** check `lockerUuid === null` in the **rare** case of
       // dead happend before release.
-      if (lockerUuid === null || lockerUuid === deadUuid) {
+      if (
+        lockerUuid === null ||
+        lockerUuid === this.#uuid ||
+        lockerUuid === deadUuid
+      ) {
         return void (await promisifyRequest(
-          objectStore.put(this.#uuid, lockerUuidKey),
+          objectStore.put(this.#uuid, this.#name),
         ));
       }
 
@@ -192,18 +157,17 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
   }
 
   async release(): Promise<void> {
-    const db = await this.#db$;
+    const db = await this.#connection.db$;
 
-    const transaction = db.transaction(storeName, 'readwrite');
-    const objectStore = transaction.objectStore(storeName);
+    const transaction = db.transaction(keys['locker'], 'readwrite');
+    const objectStore = transaction.objectStore(keys['locker']);
 
     const lockerUuid =
-      (await promisifyRequest<Uuid | undefined>(
-        objectStore.get(lockerUuidKey),
-      )) ?? null;
+      (await promisifyRequest<Uuid | undefined>(objectStore.get(this.#name))) ??
+      null;
 
     if (lockerUuid === this.#uuid) {
-      await promisifyRequest(objectStore.delete(lockerUuidKey));
+      await promisifyRequest(objectStore.delete(this.#name));
 
       return void this.#post('release', Date.now());
     }
@@ -212,14 +176,14 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
   async load<const K extends keyof StoredAccessTokenMap>(
     key: K,
   ): Promise<StoredAccessTokenMap[K] | undefined> {
-    const db = await this.#db$;
+    const db = await this.#connection.db$;
 
     const objectStore = db
-      .transaction(storeName, 'readonly')
-      .objectStore(storeName);
+      .transaction(keys[key], 'readonly')
+      .objectStore(keys[key]);
 
     return await promisifyRequest<StoredAccessTokenMap[K] | undefined>(
-      objectStore.get(key),
+      objectStore.get(this.#name),
     );
   }
 
@@ -227,13 +191,13 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
     key: K,
     data: StoredAccessTokenMap[K],
   ): Promise<StoredAccessTokenMap[K]> {
-    const db = await this.#db$;
+    const db = await this.#connection.db$;
 
     const objectStore = db
-      .transaction(storeName, 'readwrite')
-      .objectStore(storeName);
+      .transaction(keys[key], 'readwrite')
+      .objectStore(keys[key]);
 
-    await promisifyRequest(objectStore.put(data, key));
+    await promisifyRequest(objectStore.put(data, this.#name));
 
     return data;
   }
@@ -241,30 +205,34 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
   async remove<const K extends keyof StoredAccessTokenMap>(
     key: K,
   ): Promise<StoredAccessTokenMap[K] | undefined> {
-    const db = await this.#db$;
+    const db = await this.#connection.db$;
 
     const objectStore = db
-      .transaction(storeName, 'readwrite')
-      .objectStore(storeName);
+      .transaction(keys[key], 'readwrite')
+      .objectStore(keys[key]);
 
     const data = await promisifyRequest<StoredAccessTokenMap[K] | undefined>(
-      objectStore.get(key),
+      objectStore.get(this.#name),
     );
 
-    if (data) {
-      await promisifyRequest(objectStore.delete(key));
+    if (typeof data !== 'undefined') {
+      await promisifyRequest(objectStore.delete(this.#name));
     }
 
     return data;
   }
 
   async clear(): Promise<void> {
-    const db = await this.#db$;
+    const db = await this.#connection.db$;
 
-    const objectStore = db
-      .transaction(storeName, 'readwrite')
-      .objectStore(storeName);
+    const transaction = db.transaction(Object.values(keys), 'readwrite');
 
-    return void (await promisifyRequest(objectStore.clear()));
+    return void (await Promise.all(
+      Array.from(transaction.objectStoreNames).map((objectStoreName) =>
+        promisifyRequest(
+          transaction.objectStore(objectStoreName).delete(this.#name),
+        ),
+      ),
+    ));
   }
 }

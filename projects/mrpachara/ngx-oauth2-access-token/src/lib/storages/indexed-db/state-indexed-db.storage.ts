@@ -1,77 +1,30 @@
 import { inject, Injectable } from '@angular/core';
-import { libPrefix } from '../../predefined';
 import { STORAGE_NAME } from '../../tokens';
 import { StateStorage, StoredStateData } from '../../types';
 import { promisifyRequest, promisifyTransaction } from './helpers';
-
-const storeName = 'states';
+import { IndexedStateData, stateObjectStoreName } from './state';
+import { StateIndexedDbConnection } from './state-indexed-db.connection';
 
 Injectable();
 export class StateIndexedDbStorage implements StateStorage {
-  readonly #db$: Promise<IDBDatabase>;
+  readonly #connection = inject(StateIndexedDbConnection);
 
-  constructor() {
-    const name = inject(STORAGE_NAME);
-
-    const fullName = `${libPrefix}-${name}-state-storage` as const;
-
-    const dbOpenRequest = indexedDB.open(fullName, 1);
-
-    this.#db$ = new Promise<IDBDatabase>((resolve, reject) => {
-      const ac = new AbortController();
-
-      dbOpenRequest.addEventListener(
-        'upgradeneeded',
-        (ev) => {
-          const db = dbOpenRequest.result;
-
-          // NOTE: migration prcesses
-          switch (ev.oldVersion) {
-            case 0: {
-              const objectStore = db.createObjectStore(storeName);
-              objectStore.createIndex('expiresAtIndex', 'expiresAt');
-            }
-          }
-        },
-        { signal: ac.signal },
-      );
-
-      dbOpenRequest.addEventListener(
-        'success',
-        () => {
-          ac.abort();
-
-          const db = dbOpenRequest.result;
-
-          db.addEventListener('versionchange', () => db.close());
-
-          resolve(db);
-        },
-        { signal: ac.signal },
-      );
-
-      dbOpenRequest.addEventListener(
-        'error',
-        () => {
-          ac.abort();
-
-          reject(dbOpenRequest.error);
-        },
-        { signal: ac.signal },
-      );
-    });
-  }
+  readonly #name = inject(STORAGE_NAME);
 
   async removeExpired(): Promise<void> {
-    const db = await this.#db$;
+    const db = await this.#connection.db$;
 
     return void (await promisifyTransaction(
-      db.transaction(storeName, 'readwrite'),
+      db,
+      stateObjectStoreName,
+      {},
       async (transaction) => {
-        const objectStore = transaction.objectStore(storeName);
-        const expiresAtIndex = objectStore.index('expiresAtIndex');
+        const objectStore = transaction.objectStore(stateObjectStoreName);
+        const expiresAtIndex = objectStore.index('expires_at');
         const keys = await promisifyRequest(
-          expiresAtIndex.getAllKeys(IDBKeyRange.upperBound(Date.now(), true)),
+          expiresAtIndex.getAllKeys(
+            IDBKeyRange.bound([this.#name], [this.#name, Date.now()]),
+          ),
         );
 
         // NOTE: Do not need to promisify here. Just let the transaction complete.
@@ -81,51 +34,61 @@ export class StateIndexedDbStorage implements StateStorage {
   }
 
   async load<T = unknown>(
-    key: string,
+    state: string,
   ): Promise<StoredStateData<T> | undefined> {
-    const db = await this.#db$;
+    const db = await this.#connection.db$;
 
     const objectStore = db
-      .transaction(storeName, 'readonly')
-      .objectStore(storeName);
+      .transaction(stateObjectStoreName, 'readonly')
+      .objectStore(stateObjectStoreName);
 
-    return await promisifyRequest<StoredStateData<T> | undefined>(
-      objectStore.get(key),
-    );
+    return (
+      await promisifyRequest<IndexedStateData<T> | undefined>(
+        objectStore.get([this.#name, state]),
+      )
+    )?.data;
   }
 
   async store<T = unknown>(
-    key: string,
+    state: string,
     data: StoredStateData<T>,
   ): Promise<StoredStateData<T>> {
-    const db = await this.#db$;
+    const db = await this.#connection.db$;
 
     const objectStore = db
-      .transaction(storeName, 'readwrite')
-      .objectStore(storeName);
+      .transaction(stateObjectStoreName, 'readwrite')
+      .objectStore(stateObjectStoreName);
 
-    await promisifyRequest(objectStore.put(data, key));
+    await promisifyRequest(
+      objectStore.put({
+        name: this.#name,
+        state,
+        data,
+      } satisfies IndexedStateData<T>),
+    );
 
     return data;
   }
 
   async remove<T = unknown>(
-    key: string,
+    state: string,
   ): Promise<StoredStateData<T> | undefined> {
-    const db = await this.#db$;
+    const db = await this.#connection.db$;
 
     const objectStore = db
-      .transaction(storeName, 'readwrite')
-      .objectStore(storeName);
+      .transaction(stateObjectStoreName, 'readwrite')
+      .objectStore(stateObjectStoreName);
 
-    const data = await promisifyRequest<StoredStateData<T> | undefined>(
-      objectStore.get(key),
+    const indexedData = await promisifyRequest<IndexedStateData<T> | undefined>(
+      objectStore.get([this.#name, state]),
     );
 
-    if (data) {
-      await promisifyRequest(objectStore.delete(key));
+    if (typeof indexedData !== 'undefined') {
+      await promisifyRequest(
+        objectStore.delete([indexedData.name, indexedData.state]),
+      );
     }
 
-    return data;
+    return indexedData?.data;
   }
 }

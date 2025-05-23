@@ -5,11 +5,11 @@ export interface StoredStateData<T> extends StoredData<T> {
 }
 
 export interface StateStorage {
-  load<T = unknown>(key: string): Promise<StoredStateData<T> | undefined>;
+  load<T = unknown>(state: string): Promise<StoredStateData<T> | undefined>;
   store<T = unknown>(
-    key: string,
+    state: string,
     data: StoredStateData<T>,
   ): Promise<StoredStateData<T>>;
-  remove<T = unknown>(key: string): Promise<StoredStateData<T> | undefined>;
+  remove<T = unknown>(state: string): Promise<StoredStateData<T> | undefined>;
   removeExpired(): Promise<void>;
 }
