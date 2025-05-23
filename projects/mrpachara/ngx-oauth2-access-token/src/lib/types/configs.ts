@@ -3,4 +3,4 @@ export * from './configs/authorization-code';
 export * from './configs/commons';
 export * from './configs/id-token';
 export * from './configs/jwk';
-export * from './configs/oauth2-client';
+export * from './configs/oauth2.client';

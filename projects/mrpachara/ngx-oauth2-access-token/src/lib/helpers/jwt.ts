@@ -1,24 +1,25 @@
 import {
+  EncodedJsonWeb,
+  EncryptedJsonWebInfo,
   EncryptedPayload,
-  JwtBaseInfo,
+  JsonWebInfo,
   JwtClaims,
   JwtHeader,
   JwtInfo,
-  JwtToken,
-  JwtUnknownInfo,
-  Provided,
+  SignedJsonWebInfo,
+  UnknownJsonWebInfo,
 } from '../types';
 import { base64UrlDecode } from './crypto';
 
 /**
  * Extract an information from JWT token.
  *
- * @param token The JWT
- * @returns JWT information with unknown payload type
+ * @param token Encoded JSON Web
+ * @returns JSON Web information with unknown payload type
  */
-export function extractJwt<T extends JwtClaims = JwtClaims>(
-  token: JwtToken,
-): JwtUnknownInfo<T> {
+export function extractJsonWeb<P extends JwtClaims = JwtClaims>(
+  token: EncodedJsonWeb,
+): UnknownJsonWebInfo<P> {
   const [headerSegment, payloadSegment, signatureSegment] = token.split(
     '.',
   ) as [string, string, string | undefined];
@@ -30,19 +31,26 @@ export function extractJwt<T extends JwtClaims = JwtClaims>(
       )
     : undefined;
 
-  let payload: T | EncryptedPayload = base64UrlDecode(payloadSegment);
+  const payload = (() => {
+    const decodedPayload: EncryptedPayload = base64UrlDecode(payloadSegment);
 
-  if (header.typ === 'JWT' || !header.enc) {
-    try {
-      payload = JSON.parse(payload) as T;
-    } catch (err) {
-      console.warn(
-        new Error('Cannot decode the payload. The payload may be encrypted.', {
-          cause: err,
-        }),
-      );
+    if (header.typ === 'JWT' || !header.enc) {
+      try {
+        return JSON.parse(decodedPayload) as P;
+      } catch (err) {
+        console.warn(
+          new Error(
+            'Cannot decode the payload. The payload may be encrypted.',
+            {
+              cause: err,
+            },
+          ),
+        );
+      }
     }
-  }
+
+    return decodedPayload;
+  })();
 
   return {
     token,
@@ -50,41 +58,48 @@ export function extractJwt<T extends JwtClaims = JwtClaims>(
     header,
     payload,
     ...(signature ? { signature } : {}),
-  } as JwtUnknownInfo<T>;
+  } as UnknownJsonWebInfo<P>;
 }
 
 /**
  * Type guard for provided signature JWT.
  *
- * @param jwtInfo The JWT information with unknown paylod type
- * @returns `true` when `jwtInfo` is `Provided<JwtUnknownInfo<T>, 'signature'>`
+ * @param jsonWebInfo The JSON Web information with unknown paylod type
+ * @returns `true` when `jsonWebInfo` is `Provided<UnknownJsonWebInfo<T>,
+ *   'signature'>`
  */
-export function isProvidedSignature<T extends JwtClaims>(
-  jwtInfo: JwtUnknownInfo<T>,
-): jwtInfo is Provided<JwtUnknownInfo<T>, 'signature'> {
-  return typeof jwtInfo.signature !== 'undefined';
+export function isProvidedSignature<T extends JsonWebInfo>(
+  jsonWebInfo: T,
+): jsonWebInfo is SignedJsonWebInfo<T> {
+  return typeof jsonWebInfo.signature !== 'undefined';
 }
 
 /**
  * Type guard for encrypted payload JWT.
  *
- * @param jwtInfo The JWT information with unknown paylod type
- * @returns `true` when `jwtInfo` is `JwtBaseInfo<EncryptedPayload>`
+ * @param jsonWebInfo The JSON Web information with unknown paylod type
+ * @returns `true` when `jsonWebInfo` is `EncryptedJsonWebInfo`
  */
-export function isJwtEncryptedPayload<T extends JwtClaims>(
-  jwtInfo: JwtUnknownInfo<T>,
-): jwtInfo is JwtBaseInfo<EncryptedPayload> {
-  return typeof jwtInfo.payload === 'string';
+export function isEncryptedJsonWeb(
+  jsonWebInfo: JsonWebInfo,
+): jsonWebInfo is EncryptedJsonWebInfo {
+  return typeof jsonWebInfo.payload === 'string';
 }
 
 /**
  * Type guard for claims payload JWT.
  *
- * @param jwtInfo The JWT information with unknown paylod type
- * @returns `true` when `jwtInfo` is `JwtInfo<T>`
+ * @param jsonWebInfo The JSON Web information
+ * @returns `true` when `jsonWebInfo` is `JwtInfo<T>`
  */
-export function isJwtClaimsPayload<T extends JwtClaims>(
-  jwtInfo: JwtUnknownInfo<T>,
-): jwtInfo is JwtInfo<T> {
-  return typeof jwtInfo.payload !== 'string';
+export function isJwt<T extends JwtInfo>(
+  jsonWebInfo: T,
+): jsonWebInfo is Extract<T, JwtInfo>;
+
+export function isJwt(jsonWebInfo: JsonWebInfo): jsonWebInfo is JwtInfo;
+
+export function isJwt(jsonWebInfo: JsonWebInfo) {
+  return (
+    isProvidedSignature(jsonWebInfo) && typeof jsonWebInfo.payload !== 'string'
+  );
 }

@@ -4,6 +4,7 @@ import {
   Component,
   InjectionToken,
   OnInit,
+  Provider,
   computed,
   inject,
   input,
@@ -18,14 +19,20 @@ export interface AuthorizationCodeCallbackData<T = unknown> {
   readonly processFactory?: () => (stateData: T) => Promise<void> | void;
 }
 
-export const AUTHORIZATION_CODE_CALLBACK_DATA =
+const AUTHORIZATION_CODE_CALLBACK_DATA =
   new InjectionToken<AuthorizationCodeCallbackData>(
     'authorization-code-callback-data',
   );
 
+export function provideAuthorizationCodeCallbackData<T>(
+  factory: () => AuthorizationCodeCallbackData<T>,
+): Provider[] {
+  return [{ provide: AUTHORIZATION_CODE_CALLBACK_DATA, useFactory: factory }];
+}
+
 interface MessageInfo {
-  type: 'info' | 'error' | null;
-  message: string | null;
+  type: 'info' | 'error';
+  message: string;
 }
 
 /**
@@ -60,13 +67,10 @@ export class AuthorizationCodeCallbackComponent<T> implements OnInit {
 
   readonly errro_description = input<string>();
 
-  protected readonly messageInfo = signal<MessageInfo>({
-    type: null,
-    message: null,
-  });
+  protected readonly messageInfo = signal<MessageInfo | undefined>(undefined);
 
   protected readonly messageClass = computed(
-    () => `oat-cl-${this.messageInfo().type}` as const,
+    () => `oat-cl-${this.messageInfo()?.type ?? 'none'}` as const,
   );
 
   async ngOnInit(): Promise<void> {

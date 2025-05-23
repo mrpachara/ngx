@@ -1,10 +1,6 @@
 import { inject, InjectionToken, Injector, isDevMode } from '@angular/core';
 import { AccessTokenService } from '../services';
-import {
-  AccessTokenConfigWithId,
-  AccessTokenStorage,
-  FetchNewAccessToken,
-} from '../types';
+import { AccessTokenConfigWithId, AccessTokenStorage } from '../types';
 
 /** The injection token for access-token service config */
 export const ACCESS_TOKEN_CONFIG = new InjectionToken<AccessTokenConfigWithId>(
@@ -14,11 +10,6 @@ export const ACCESS_TOKEN_CONFIG = new InjectionToken<AccessTokenConfigWithId>(
 /** The injection token for access-token storage */
 export const ACCESS_TOKEN_STORAGE = new InjectionToken<AccessTokenStorage>(
   'access-token-storage',
-);
-
-/** The injection token for fetching new access-token function */
-export const FETCH_NEW_ACCESS_TOKEN = new InjectionToken<FetchNewAccessToken>(
-  'fetch-new-access-token',
 );
 
 /** The injection token for access token services */

@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, defer, pipe, switchMap } from 'rxjs';
 
-import { RefreshTokenExpiredError } from '../errors';
+import { RefreshTokenExpiredError } from '../../errors';
 import {
   AccessTokenResponse,
   AccessTokenResponseExtractor,
@@ -10,7 +10,7 @@ import {
   DeepReadonly,
   ExtractorPipeReturn,
   RefreshTokenFullConfig,
-} from '../types';
+} from '../../types';
 
 const latencyTime = 2 * 5 * 1000;
 

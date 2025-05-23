@@ -52,8 +52,8 @@ import {
   Scopes,
   StandardGrantsParams,
 } from '../../types';
-import { RefreshTokenService } from '../refresh-token.service';
 import { Oauth2Client } from './oauth2.client';
+import { RefreshTokenService } from './refresh-token.service';
 
 const latencyTime = 2 * 5 * 1_000;
 

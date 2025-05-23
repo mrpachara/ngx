@@ -1,4 +1,8 @@
-import { StoredStateData } from '../state';
+import { StoredData } from './commons';
+
+export interface StoredStateData<T> extends StoredData<T> {
+  readonly codeVerifier?: string;
+}
 
 export interface StateStorage {
   load<T = unknown>(key: string): Promise<StoredStateData<T> | undefined>;

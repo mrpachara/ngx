@@ -12,4 +12,11 @@ export interface AccessTokenMessage
   readonly ready: boolean;
 }
 
-export type FetchNewAccessToken = (signal: AbortSignal) => Promise<void>;
+/** Access token information */
+export interface AccessTokenInfo {
+  /** The type for using access token */
+  readonly type: string;
+
+  /** The access token */
+  readonly token: string;
+}

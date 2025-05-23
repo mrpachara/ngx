@@ -1,89 +1,8 @@
-import { defer, from, Observable, of, switchMap, throwError } from 'rxjs';
 import {
   BadResponseCallbackError,
   ErrorResponseCallbackError,
 } from '../errors';
 import { AuthorizationCodeService } from '../services';
-
-/**
- * The processes of authorization code callback URL.
- *
- * 1. Get authorization code and other inforamtion
- * 2. Verify state data
- * 3. Exchange authorization code for access token
- * 4. Handle state action to perform access token response task
- *
- * @param state The state
- * @param code The authorization code
- * @param error The error from authorization code server
- * @param error_description The error description from authorization code server
- * @param authorizationCodeService The authorization code service
- * @returns The `Observable` of the returned value from the handler
- * @throws `ErrorResponseCallbackError` when authorization code server return
- *   error
- * @throws `BadResponseCallbackError` when authorization code server return
- *   invalid information
- */
-export function oauth2Callbackx(
-  state: string | undefined,
-  code: string | undefined,
-  error: string | undefined,
-  error_description: string | undefined,
-  authorizationCodeService: AuthorizationCodeService,
-): Observable<unknown> {
-  return defer(() => {
-    // NOTE: In the case of error, server may return without stateId. So check it first.
-    if (typeof error !== 'undefined') {
-      return from(
-        state
-          ? authorizationCodeService.clearState(state)
-          : Promise.resolve(undefined),
-      ).pipe(
-        switchMap((stateData) =>
-          throwError(() => {
-            return new ErrorResponseCallbackError({
-              error,
-              ...(error_description ? { error_description } : {}),
-              ...(stateData ? { stateData } : {}),
-            });
-          }),
-        ),
-      );
-    }
-
-    if (typeof state === 'undefined') {
-      return throwError(
-        () =>
-          new BadResponseCallbackError(
-            `The 'state' is required for callback. The oauth2 server must reply with 'state' query string.`,
-          ),
-      );
-    }
-
-    if (typeof code === 'undefined') {
-      return from(authorizationCodeService.clearState(state)).pipe(
-        switchMap((stateData) => {
-          return throwError(
-            () =>
-              new BadResponseCallbackError(
-                `The 'code' is required for callback. No 'code' was replied from oauth server in query string.`,
-                stateData ?? undefined,
-              ),
-          );
-        }),
-      );
-    }
-
-    return of({
-      state,
-      code,
-    });
-  }).pipe(
-    switchMap(({ state, code }) => {
-      return authorizationCodeService.exchangeCode(state, code);
-    }),
-  );
-}
 
 /**
  * The processes of authorization code callback URL.

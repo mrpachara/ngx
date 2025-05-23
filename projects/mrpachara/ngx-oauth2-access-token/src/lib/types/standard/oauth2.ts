@@ -1,4 +1,5 @@
 import { MakeNever } from '../utils';
+import { EncodedJsonWeb } from './jwt';
 
 /** Base Grant */
 export interface AccessTokenRequest {
@@ -141,6 +142,7 @@ export type ExtensionGrantAccessTokenRequest<
     ? ExtensionWithDataGrantAccessTokenRequest<EG>
     : never;
 
+/** Standard grants for requesting access-token */
 export type StandardGrantsAccesTokenRequest =
   | AuthorizationCodeGrantAccessTokenRequest
   | PasswordGrantAccessTokenRequest
@@ -148,6 +150,7 @@ export type StandardGrantsAccesTokenRequest =
   | ExtensionGrantAccessTokenRequest
   | RefreshTokenGrantAccessTokenRequest;
 
+/** Challenge method for PKCE reqeust */
 export type CodeChallengeMethod = 'S256' | 'plain';
 
 /** Authorization Code Request */
@@ -244,6 +247,11 @@ export interface AccessTokenResponse {
   readonly refresh_token?: string;
 }
 
+export interface IdTokenResponse {
+  readonly id_token: EncodedJsonWeb;
+}
+
+/** Standard grant type */
 export type StandardGrantType = StandardGrantsAccesTokenRequest['grant_type'];
 
 /** OAuth 2.0 Error Response */

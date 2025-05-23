@@ -1,14 +1,13 @@
 import {
   isJwkEcdsa,
   JwkBase,
-  JwtInfo,
-  JwtVerifier,
-  Provided,
+  SignedJsonWebInfo,
+  SignedJsonWebVerifier,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { toJsonWebKey } from './helpers';
 
 export default (async (
-  jwtInfo: Provided<JwtInfo, 'signature'>,
+  signedJsonWebInfo: SignedJsonWebInfo,
   jwks: JwkBase[],
 ): Promise<boolean | undefined> => {
   for (const jwk of jwks) {
@@ -35,8 +34,8 @@ export default (async (
             },
           },
           key,
-          jwtInfo.signature,
-          encoder.encode(jwtInfo.content),
+          signedJsonWebInfo.signature,
+          encoder.encode(signedJsonWebInfo.content),
         );
       } catch (err) {
         console.warn(err);
@@ -47,4 +46,4 @@ export default (async (
   }
 
   return undefined;
-}) as JwtVerifier;
+}) as SignedJsonWebVerifier;

@@ -1,19 +1,17 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom, Observable } from 'rxjs';
-
 import {
   MatchedJwkNotFoundError,
-  SignatureNotFoundError,
   SupportedJwkAlgNotFoundError,
 } from '../errors';
-import { findJwk, isProvidedSignature } from '../helpers';
+import { findJwk } from '../helpers';
 import {
   JWK_CONFIG,
-  JWT_VERIFIERS,
+  SIGNED_JSON_WEB_VERIFIERS,
   SKIP_ASSIGNING_ACCESS_TOKEN,
 } from '../tokens';
-import { JwkConfig, JwkSet, JwtInfo, PickOptional } from '../types';
+import { JwkConfig, JwkSet, PickOptional, SignedJsonWebInfo } from '../types';
 
 /** Default JWK configuration */
 const defaultJwkConfig: PickOptional<JwkConfig> = {} as const;
@@ -43,7 +41,7 @@ export class JwkService {
     return this.config.issuer;
   }
 
-  private readonly verifiers = inject(JWT_VERIFIERS);
+  private readonly verifiers = inject(SIGNED_JSON_WEB_VERIFIERS);
 
   private fetchJwkSet(): Observable<JwkSet> {
     return this.http.get<JwkSet>(this.config.jwkSetUrl, {
@@ -52,31 +50,26 @@ export class JwkService {
   }
 
   /**
-   * Verify the given JWT information.
+   * Verify the given JSON Web information.
    *
-   * @param jwtInfo The JWT information
+   * @param signedJsonWebInfo The signed JSON Web information
    * @returns The `Promise` of `boolean`. It will be `true` for approved and
    *   `false` for refuted
-   * @throws `SignatureNotFoundError` when `jwtInfo` is not provided `signature`
    * @throws `MatchedJwkNotFoundError` when matched JWKs from the loaded JWK Set
    *   are not found
    * @throws `SupportedJwkAlgNotFoundError` when supported algorithm is not
    *   found
    */
-  async verify(jwtInfo: JwtInfo): Promise<boolean> {
-    if (!isProvidedSignature(jwtInfo)) {
-      throw new SignatureNotFoundError(jwtInfo.token, jwtInfo);
-    }
-
+  async verify(signedJsonWebInfo: SignedJsonWebInfo): Promise<boolean> {
     const jwkSet = await firstValueFrom(this.fetchJwkSet());
-    const jwks = findJwk(jwtInfo.header, jwkSet.keys);
+    const jwks = findJwk(signedJsonWebInfo.header, jwkSet.keys);
 
     if (jwks.length === 0) {
-      throw new MatchedJwkNotFoundError(jwtInfo.header);
+      throw new MatchedJwkNotFoundError(signedJsonWebInfo.header);
     }
 
     for (const verify of this.verifiers) {
-      const result = await verify(jwtInfo, jwks);
+      const result = await verify(signedJsonWebInfo, jwks);
 
       if (typeof result === 'undefined') {
         continue;

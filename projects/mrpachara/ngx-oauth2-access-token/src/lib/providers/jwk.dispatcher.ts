@@ -6,8 +6,8 @@ import {
 } from '@angular/core';
 import { libPrefix } from '../predefined';
 import { JwkDispatcher, JwkService } from '../services';
-import { JWK_CONFIG, JWK_SERVICES, JWT_VERIFIERS } from '../tokens';
-import { JwkConfigs, JwtVerifier } from '../types';
+import { JWK_CONFIG, JWK_SERVICES, SIGNED_JSON_WEB_VERIFIERS } from '../tokens';
+import { JwkConfigs, SignedJsonWebVerifier } from '../types';
 
 /**
  * Provide JWK dispatcher.
@@ -18,7 +18,7 @@ import { JwkConfigs, JwtVerifier } from '../types';
  */
 export function provideJwkDispatcher(
   configs: JwkConfigs,
-  jwtVerifiers: [JwtVerifier, ...JwtVerifier[]],
+  jwtVerifiers: [SignedJsonWebVerifier, ...SignedJsonWebVerifier[]],
 ): EnvironmentProviders {
   return makeEnvironmentProviders([
     Object.entries(configs).map(([issuer, config]) => ({
@@ -42,7 +42,7 @@ export function provideJwkDispatcher(
     })),
 
     jwtVerifiers.map((jwtVerifier) => ({
-      provide: JWT_VERIFIERS,
+      provide: SIGNED_JSON_WEB_VERIFIERS,
       multi: true,
       useValue: jwtVerifier,
     })),

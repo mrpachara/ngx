@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { isJwtClaimsPayload } from '../helpers';
+import { isJwt } from '../helpers';
 import { JWK_SERVICES } from '../tokens';
-import { JwtInfo, JwtUnknownInfo } from '../types';
+import { JwtInfo, SignedJsonWebInfo } from '../types';
 import { JwkService } from './jwk.service';
 
 /** JWK Dispatcher */
@@ -29,21 +29,19 @@ export class JwkDispatcher {
    * Find the matched JWK service for the given `jwtUnknownInfo` by using
    * `issuer` of service then verify.
    *
-   * @param jwtUnknownInfo The JWT to be verified
+   * @param signedJsonWebInfo The signed JSON Web to be verified
    * @returns The `Promise` of `boolean`. It will be `true` for approved and
    *   `false` for refuted
    * @throws `Error` when cannot find the matched JWK service
    * @throws An error from `JwkService.verify()`
    */
-  async verify(jwtUnknownInfo: JwtUnknownInfo): Promise<boolean> {
+  async verify(signedJsonWebInfo: SignedJsonWebInfo): Promise<boolean> {
     const issuer =
-      jwtUnknownInfo.header.iss ??
-      (isJwtClaimsPayload(jwtUnknownInfo)
-        ? jwtUnknownInfo.payload.iss
-        : undefined);
+      signedJsonWebInfo.header.iss ??
+      (isJwt(signedJsonWebInfo) ? signedJsonWebInfo.payload.iss : undefined);
 
     if (typeof issuer !== 'undefined') {
-      const jwtInfo = jwtUnknownInfo as JwtInfo;
+      const jwtInfo = signedJsonWebInfo as JwtInfo;
       const jwkService = this.findByIssuer(issuer);
 
       if (jwkService !== null) {
@@ -51,8 +49,8 @@ export class JwkDispatcher {
       }
     }
 
-    throw new Error(`Cannot find JwkService for ${jwtUnknownInfo.token}`, {
-      cause: jwtUnknownInfo,
+    throw new Error(`Cannot find JwkService for ${signedJsonWebInfo.token}`, {
+      cause: { jsonWeb: signedJsonWebInfo },
     });
   }
 }

@@ -21,7 +21,7 @@ import {
   PickOptional,
   RefreshTokenGrantAccessTokenRequest,
   Scopes,
-  StandardGrantsAccesTokenRequest,
+  StandardGrantType,
 } from '../types';
 import { Oauth2Client } from './oauth2.client';
 
@@ -264,7 +264,7 @@ export class AccessTokenService {
   ): Promise<void>;
 
   async fetch<EG extends ExtensionWithoutDataGrant | ExtensionWithDataGrant>(
-    type: StandardGrantsAccesTokenRequest['grant_type'],
+    type: StandardGrantType,
     ...args: unknown[]
   ): Promise<void> {
     const { request, params } = await (async () => {

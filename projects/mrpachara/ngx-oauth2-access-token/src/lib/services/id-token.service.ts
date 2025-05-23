@@ -2,19 +2,19 @@ import { Injectable, inject } from '@angular/core';
 import { catchError, pipe, switchMap } from 'rxjs';
 
 import { IdTokenEncryptedError, IdTokenExpiredError } from '../errors';
-import { extractJwt, isJwtEncryptedPayload } from '../helpers';
+import { extractJsonWeb, isEncryptedJsonWeb } from '../helpers';
 import { IdTokenStorage } from '../storages';
 import {
   AccessTokenResponseExtractor,
   AccessTokenResponseInfo,
   AccessTokenServiceInfo,
   DeepReadonly,
+  EncodedJsonWeb,
   ExtractorPipeReturn,
   IdTokenClaims,
   IdTokenFullConfig,
   IdTokenInfo,
   IdTokenResponse,
-  JwtToken,
 } from '../types';
 
 /** ID token service */
@@ -33,7 +33,7 @@ export class IdTokenService
 
   private readonly storeIdToken = (
     serviceInfo: AccessTokenServiceInfo<IdTokenFullConfig>,
-    token: JwtToken,
+    token: EncodedJsonWeb,
   ) => this.storage.storeIdToken(serviceInfo.storage, token);
 
   private readonly loadIdTokenInfo = async (
@@ -53,11 +53,11 @@ export class IdTokenService
 
   private extractAndValidateIdToken(
     serviceName: string,
-    token: JwtToken,
+    token: EncodedJsonWeb,
   ): DeepReadonly<IdTokenInfo> {
-    const idTokenInfo = extractJwt<IdTokenClaims>(token);
+    const idTokenInfo = extractJsonWeb<IdTokenClaims>(token);
 
-    if (isJwtEncryptedPayload(idTokenInfo)) {
+    if (isEncryptedJsonWeb(idTokenInfo)) {
       throw new IdTokenEncryptedError(serviceName);
     }
 
@@ -75,7 +75,7 @@ export class IdTokenService
     >,
   ): Promise<void> {
     const token = serviceInfo.config.providedInAccessToken
-      ? (accessTokenResponseInfo.response.access_token as JwtToken)
+      ? (accessTokenResponseInfo.response.access_token as EncodedJsonWeb)
       : accessTokenResponseInfo.response.id_token;
 
     if (token) {
