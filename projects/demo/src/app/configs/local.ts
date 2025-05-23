@@ -5,14 +5,20 @@ import {
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
+  AdditionalParams,
   provideAccessToken,
   provideAuthorizationCode,
   provideJwkDispatcher,
+  Scopes,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { verifyEddsa } from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
-import { routes } from './app.routes';
+import { routes } from '../app.routes';
 
-export const myOauth = Symbol('my');
+export const demoOauth = Symbol('my');
+
+export const scopes: Scopes = ['basic'];
+
+export const params: AdditionalParams = {};
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -23,12 +29,12 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch()),
 
     // NOTE: The ngx-oauth2-access-token provide functions
-    provideAccessToken(myOauth, {
+    provideAccessToken(demoOauth, {
       clientId: 'web-app',
       accessTokenUrl: 'http://localhost:8080/v2/token',
     }),
 
-    provideAuthorizationCode(myOauth, {
+    provideAuthorizationCode(demoOauth, {
       authorizationCodeUrl: 'http://localhost:8080/account/authorize/consent',
       redirectUri: 'http://localhost:4200/google/authorization',
       pkce: 'S256',

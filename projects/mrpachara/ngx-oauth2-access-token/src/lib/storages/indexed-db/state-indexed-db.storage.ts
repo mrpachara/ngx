@@ -17,7 +17,7 @@ export class StateIndexedDbStorage implements StateStorage {
     return void (await promisifyTransaction(
       db,
       stateObjectStoreName,
-      {},
+      { mode: 'readwrite' },
       async (transaction) => {
         const objectStore = transaction.objectStore(stateObjectStoreName);
         const expiresAtIndex = objectStore.index('expires_at');

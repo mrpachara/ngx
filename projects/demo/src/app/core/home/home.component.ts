@@ -14,7 +14,7 @@ import {
   injectAuthorizationCodeService,
   JwkDispatcher,
 } from '@mrpachara/ngx-oauth2-access-token';
-import { myOauth } from '../../app.config.new';
+import { demoOauth, params, scopes } from '../../app.config';
 
 @Component({
   selector: 'app-home',
@@ -24,9 +24,9 @@ import { myOauth } from '../../app.config.new';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent {
-  private readonly accessTokenService = injectAccessTokenService(myOauth);
+  private readonly accessTokenService = injectAccessTokenService(demoOauth);
   private readonly authorizationCodeService =
-    injectAuthorizationCodeService(myOauth);
+    injectAuthorizationCodeService(demoOauth);
 
   // private readonly idTokenService = inject(IdTokenService);
   private readonly jwkDispatcher = inject(JwkDispatcher);
@@ -121,9 +121,13 @@ export class HomeComponent {
   private readonly router = inject(Router);
 
   protected async authorization(): Promise<void> {
-    const url = await this.authorizationCodeService.generateUrl(['basic'], {
-      intendedUrl: this.router.url,
-    });
+    const url = await this.authorizationCodeService.generateUrl(
+      scopes,
+      {
+        intendedUrl: this.router.url,
+      },
+      { params },
+    );
 
     location.href = url.toString();
   }
