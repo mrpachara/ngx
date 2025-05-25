@@ -1,3 +1,4 @@
+import { JoseDeserializationError } from '../errors';
 import {
   JoseHeader,
   JoseInfo,
@@ -10,7 +11,9 @@ import {
 } from '../types';
 import { base64UrlDecode } from './crypto';
 
-function tryCatch<RC>(projector: () => RC): RC | undefined;
+const errorSymbol = Symbol('error');
+
+function tryCatch<RC>(projector: () => RC): RC | { [errorSymbol]: unknown };
 function tryCatch<RC, RE>(projector: () => RC, errorValue: () => RE): RC | RE;
 function tryCatch<RC, RE>(projector: () => RC, errorValue?: () => RE) {
   try {
@@ -18,7 +21,9 @@ function tryCatch<RC, RE>(projector: () => RC, errorValue?: () => RE) {
   } catch (err) {
     console.warn(err);
 
-    return errorValue?.();
+    return typeof errorValue !== 'undefined'
+      ? errorValue()
+      : { [errorSymbol]: err };
   }
 }
 
@@ -33,12 +38,12 @@ export function toUint8ArrayFromUtf8(value: string): Uint8Array {
 }
 
 /**
- * Extract a JOSE information from serial.
+ * Deseiralze a JOSE information from the given serial.
  *
  * @param serial Serialized content
  * @returns JSON Web information with unknown payload type
  */
-export function extractJose<
+export function deserializeJose<
   P = unknown,
   H extends JoseHeader = JoseHeader,
   const S extends string = string,
@@ -47,8 +52,8 @@ export function extractJose<
 
   const header = tryCatch(() => JSON.parse(base64UrlDecode(headerSegment)));
 
-  if (typeof header === 'undefined') {
-    throw new Error('not JOSE');
+  if (typeof header[errorSymbol] !== 'undefined') {
+    throw new JoseDeserializationError(serial, header[errorSymbol]);
   }
 
   if (segments.length === 0) {
@@ -151,7 +156,7 @@ export function isJwe(joseInfo: JoseInfo): joseInfo is JweInfo {
  * Type guard for JWT.
  *
  * @param joseInfo The JOSE information
- * @param type The required JWT or JWE, if undefined allow both
+ * @param type The required JWS or JWE, if undefined allow both
  * @returns `true` when `joseInfo` is `JwtInfo`
  */
 export function isJwt(

@@ -47,8 +47,8 @@ export const appConfig: ApplicationConfig = {
 
     provideJwkDispatcher(
       {
-        'http://localhost:8080': {
-          jwkSetUrl: 'http://localhost:8080/.well-known/jwk-set.json',
+        'https://accounts.google.com': {
+          jwkSetUrl: 'https://www.googleapis.com/oauth2/v3/certs',
         },
       },
       [verifyEddsa],
