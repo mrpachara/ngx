@@ -1,7 +1,7 @@
 import { ObservableInput } from 'rxjs';
 
 import { StateData } from './oauth2-services.types';
-import { AccessTokenResponse } from './standard';
+import { AccessTokenResponse } from './standards';
 import { RequiredOnly } from './utils';
 
 /** The state action information */

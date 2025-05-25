@@ -3,15 +3,15 @@ import { UserInfoClaims } from './user-info.claims';
 
 export interface IdTokenClaims extends JwtClaims, UserInfoClaims {
   /**
-   * REQUIRED. Issuer Identifier for the Issuer of the response. The `iss` value
-   * is a case sensitive URL using the `https` scheme that contains scheme,
-   * host, and optionally, port number and path components and no query or
-   * fragment components.
+   * **REQUIRED**. Issuer Identifier for the Issuer of the response. The `iss`
+   * value is a case sensitive URL using the `https` scheme that contains
+   * scheme, host, and optionally, port number and path components and no query
+   * or fragment components.
    */
   readonly iss: string;
 
   /**
-   * REQUIRED. Subject Identifier. A locally unique and never reassigned
+   * **REQUIRED**. Subject Identifier. A locally unique and never reassigned
    * identifier within the Issuer for the End-User, which is intended to be
    * consumed by the Client, e.g., `24400320` or
    * `AItOawmwtWwcT0k51BayewNvutrJUqsvl6qs7A4`. It **MUST NOT** exceed 255 ASCII
@@ -20,7 +20,7 @@ export interface IdTokenClaims extends JwtClaims, UserInfoClaims {
   readonly sub: string;
 
   /**
-   * REQUIRED. Audience(s) that this ID Token is intended for. It **MUST**
+   * **REQUIRED**. Audience(s) that this ID Token is intended for. It **MUST**
    * contain the OAuth 2.0 `client_id` of the Relying Party as an audience
    * value. It **MAY** also contain identifiers for other audiences. In the
    * general case, the `aud` value is an array of case sensitive strings. In the
@@ -30,20 +30,20 @@ export interface IdTokenClaims extends JwtClaims, UserInfoClaims {
   readonly aud: readonly string[] | string;
 
   /**
-   * REQUIRED. Expiration time on or after which the ID Token **MUST NOT** be
-   * accepted for processing. The processing of this parameter requires that the
-   * current date/time **MUST** be before the expiration date/time listed in the
-   * value. Implementers **MAY** provide for some small leeway, usually no more
-   * than a few minutes, to account for clock skew. Its value is a JSON number
-   * representing the number of seconds from `1970-01-01T0:0:0Z` as measured in
-   * UTC until the date/time. See [RFC
+   * **REQUIRED**. Expiration time on or after which the ID Token **MUST NOT**
+   * be accepted for processing. The processing of this parameter requires that
+   * the current date/time **MUST** be before the expiration date/time listed in
+   * the value. Implementers **MAY** provide for some small leeway, usually no
+   * more than a few minutes, to account for clock skew. Its value is a JSON
+   * number representing the number of seconds from `1970-01-01T0:0:0Z` as
+   * measured in UTC until the date/time. See [RFC
    * 3339](https://www.rfc-editor.org/rfc/rfc3339.html) for details regarding
    * date/times in general and UTC in particular.
    */
   readonly exp: number;
 
   /**
-   * REQUIRED. Time at which the JWT was issued. Its value is a JSON number
+   * **REQUIRED**. Time at which the JWT was issued. Its value is a JSON number
    * representing the number of seconds from `1970-01-01T0:0:0Z` as measured in
    * UTC until the date/time.
    */

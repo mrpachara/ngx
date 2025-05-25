@@ -42,6 +42,9 @@ export type UndefinedOnly<T, K extends keyof T> = T & Record<K, undefined>;
 /** Alias of `RequiredOnly` for more clear meaning */
 export type Provided<T, K extends keyof T> = RequiredOnly<T, K>;
 
+/** Alias of `NeverOnly` for more clear meaning */
+export type Nonprovided<T, K extends keyof T> = UndefinedOnly<T, K>;
+
 /** Mak all properties and nested properties of T readonly */
 export type DeepReadonly<T> = T extends Primitive
   ? Readonly<T>

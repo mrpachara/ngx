@@ -1,7 +1,7 @@
-import { JwkAsymmetricKeyBase } from './jwk-asymmetric-key.base';
+import { JwkAsymmetricKey } from './jwk-asymmetric-key.base';
 
 /** OKP Key - Octet Key Pair */
-export interface JwkOkpBase extends JwkAsymmetricKeyBase {
+export interface JwkOkp extends JwkAsymmetricKey {
   readonly kty: 'OKP';
 
   /**

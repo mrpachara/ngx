@@ -1,5 +1,5 @@
-import { JwtInfo } from './jwt';
-import { IdTokenClaims } from './standard';
+import { JwtInfo } from './jose-info';
+import { IdTokenClaims } from './standards';
 
 // /** The type of state data */
 // type StateData = object;

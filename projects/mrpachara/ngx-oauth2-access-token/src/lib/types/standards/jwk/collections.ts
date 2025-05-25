@@ -1,4 +1,4 @@
-import { JwkBase } from './bases/jwk.base';
+import { Jwk } from './bases/jwk.base';
 
 /** JWK Set */
 export interface JwkSet {
@@ -8,5 +8,5 @@ export interface JwkSet {
    * preference among them, although applications of JWK Sets can choose to
    * assign a meaning to the order for their purposes, if desired.
    */
-  readonly keys: readonly JwkBase[];
+  readonly keys: readonly Jwk[];
 }

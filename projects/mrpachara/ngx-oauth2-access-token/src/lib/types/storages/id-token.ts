@@ -1,5 +1,5 @@
-import { JwtInfo } from '../jwt';
-import { IdTokenClaims } from '../standard';
+import { JwtInfo } from '../jose-info';
+import { IdTokenClaims } from '../standards';
 
 export type StoredIdToken<T extends IdTokenClaims = IdTokenClaims> = JwtInfo<T>;
 

@@ -1,5 +1,5 @@
 import { MakeNever } from '../utils';
-import { EncodedJsonWeb } from './jwt';
+import { CompactJws } from './jws';
 
 /** Base Grant */
 export interface AccessTokenRequest {
@@ -248,7 +248,7 @@ export interface AccessTokenResponse {
 }
 
 export interface IdTokenResponse {
-  readonly id_token: EncodedJsonWeb;
+  readonly id_token: CompactJws;
 }
 
 /** Standard grant type */

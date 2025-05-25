@@ -7,7 +7,7 @@ import { KeyOpsType } from '../commons';
  *
  * The X.509 parts are **not** included in this type.
  */
-export interface JwkBase {
+export interface Jwk {
   /**
    * The `"kty"` (key type) parameter identifies the cryptographic algorithm
    * family used with the key, such as `"RSA"` or `"EC"`. `"kty"` values should

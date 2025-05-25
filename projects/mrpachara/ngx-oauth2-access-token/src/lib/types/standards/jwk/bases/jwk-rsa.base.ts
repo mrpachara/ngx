@@ -1,7 +1,7 @@
-import { JwkAsymmetricKeyBase } from './jwk-asymmetric-key.base';
+import { JwkAsymmetricKey } from './jwk-asymmetric-key.base';
 
 /** RSA Key */
-export interface JwkRsaBase extends JwkAsymmetricKeyBase {
+export interface JwkRsa extends JwkAsymmetricKey {
   readonly kty: 'RSA';
 
   /**

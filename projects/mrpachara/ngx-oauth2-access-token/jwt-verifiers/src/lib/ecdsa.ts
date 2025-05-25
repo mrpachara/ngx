@@ -1,14 +1,15 @@
 import {
   isJwkEcdsa,
-  JwkBase,
-  SignedJsonWebInfo,
-  SignedJsonWebVerifier,
+  Jwk,
+  JwsInfo,
+  JwtInfo,
+  JwtVerifier,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { toJsonWebKey } from './helpers';
 
 export default (async (
-  signedJsonWebInfo: SignedJsonWebInfo,
-  jwks: JwkBase[],
+  jwtOverJwsInfo: Extract<JwtInfo, JwsInfo>,
+  jwks: Jwk[],
 ): Promise<boolean | undefined> => {
   for (const jwk of jwks) {
     if (isJwkEcdsa(jwk)) {
@@ -23,7 +24,7 @@ export default (async (
           true,
           ['verify'],
         );
-        const encoder = new TextEncoder();
+
         const hash = `SHA-${jwk.crv.slice(2)}`;
 
         return await crypto.subtle.verify(
@@ -34,8 +35,8 @@ export default (async (
             },
           },
           key,
-          signedJsonWebInfo.signature,
-          encoder.encode(signedJsonWebInfo.content),
+          jwtOverJwsInfo.signature,
+          jwtOverJwsInfo.protectedContent,
         );
       } catch (err) {
         console.warn(err);
@@ -46,4 +47,4 @@ export default (async (
   }
 
   return undefined;
-}) as SignedJsonWebVerifier;
+}) as JwtVerifier;

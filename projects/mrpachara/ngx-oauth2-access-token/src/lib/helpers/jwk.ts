@@ -1,13 +1,13 @@
 import {
-  JwkBase,
-  JwkEcBase,
+  Jwk,
+  JwkEc,
   JwkEcdsa,
   JwkEddsa,
   JwkHmac,
-  JwkOkpBase,
-  JwkRsaBase,
+  JwkOkp,
+  JwkRsa,
   JwkRsassa,
-  JwkSymmetricKeyBase,
+  JwkSymmetricKey,
   JwtHeader,
 } from '../types';
 
@@ -18,10 +18,7 @@ import {
  * @param jwks The array JWKs to be finded
  * @returns The array of possible JWKs
  */
-export function findJwk(
-  jwtHeader: JwtHeader,
-  jwks: readonly JwkBase[],
-): JwkBase[] {
+export function findJwk(jwtHeader: JwtHeader, jwks: readonly Jwk[]): Jwk[] {
   return jwks
     .filter(
       (jwk) =>
@@ -37,9 +34,9 @@ export function findJwk(
  * Type guard for JWK symmetric key.
  *
  * @param jwk The given JWK
- * @returns `true` when `jwk` is `JwkSymmetricKeyBase`
+ * @returns `true` when `jwk` is `JwkSymmetricKey`
  */
-export function isJwkSymmetricKey(jwk: JwkBase): jwk is JwkSymmetricKeyBase {
+export function isJwkSymmetricKey(jwk: Jwk): jwk is JwkSymmetricKey {
   return jwk.kty === 'oct';
 }
 
@@ -49,7 +46,7 @@ export function isJwkSymmetricKey(jwk: JwkBase): jwk is JwkSymmetricKeyBase {
  * @param jwk The given JWK
  * @returns `true` when `jwk` is `JwkHmac`
  */
-export function isJwkHmac(jwk: JwkBase): jwk is JwkHmac {
+export function isJwkHmac(jwk: Jwk): jwk is JwkHmac {
   return (
     isJwkSymmetricKey(jwk) &&
     (jwk.alg === 'HS256' || jwk.alg === 'HS384' || jwk.alg === 'HS512')
@@ -60,9 +57,9 @@ export function isJwkHmac(jwk: JwkBase): jwk is JwkHmac {
  * Type guard for JWK RSA key.
  *
  * @param jwk The given JWK
- * @returns `true` when `jwk` is `JwkRsaBase`
+ * @returns `true` when `jwk` is `JwkRsa`
  */
-export function isJwkRsaKey(jwk: JwkBase): jwk is JwkRsaBase {
+export function isJwkRsaKey(jwk: Jwk): jwk is JwkRsa {
   return jwk.kty === 'RSA';
 }
 
@@ -72,7 +69,7 @@ export function isJwkRsaKey(jwk: JwkBase): jwk is JwkRsaBase {
  * @param jwk The given JWK
  * @returns `true` when `jwk` is `JwkRsassa`
  */
-export function isJwkRsassa(jwk: JwkBase): jwk is JwkRsassa {
+export function isJwkRsassa(jwk: Jwk): jwk is JwkRsassa {
   return (
     isJwkRsaKey(jwk) &&
     (jwk.alg === 'RS256' || jwk.alg === 'RS384' || jwk.alg === 'RS512')
@@ -83,9 +80,9 @@ export function isJwkRsassa(jwk: JwkBase): jwk is JwkRsassa {
  * Type guard for JWK EC key.
  *
  * @param jwk The given JWK
- * @returns `true` when `jwk` is `JwkEcBase`
+ * @returns `true` when `jwk` is `JwkEc`
  */
-export function isJwkEcKey(jwk: JwkBase): jwk is JwkEcBase {
+export function isJwkEcKey(jwk: Jwk): jwk is JwkEc {
   return jwk.kty === 'EC';
 }
 
@@ -95,7 +92,7 @@ export function isJwkEcKey(jwk: JwkBase): jwk is JwkEcBase {
  * @param jwk The given JWK
  * @returns `true` when `jwk` is `JwkEcdsa`
  */
-export function isJwkEcdsa(jwk: JwkBase): jwk is JwkEcdsa {
+export function isJwkEcdsa(jwk: Jwk): jwk is JwkEcdsa {
   return (
     isJwkEcKey(jwk) &&
     (jwk.crv === 'P-256' || jwk.crv === 'P-384' || jwk.crv === 'P-512')
@@ -106,9 +103,9 @@ export function isJwkEcdsa(jwk: JwkBase): jwk is JwkEcdsa {
  * Type guard for JWK OKP key.
  *
  * @param jwk The given JWK
- * @returns `true` when `jwk` is `JwkOkpBase`
+ * @returns `true` when `jwk` is `JwkOkp`
  */
-export function isJwkOkpKey(jwk: JwkBase): jwk is JwkOkpBase {
+export function isJwkOkpKey(jwk: Jwk): jwk is JwkOkp {
   return jwk.kty === 'OKP';
 }
 
@@ -118,6 +115,6 @@ export function isJwkOkpKey(jwk: JwkBase): jwk is JwkOkpBase {
  * @param jwk The given JWK
  * @returns `true` when `jwk` is `JwkEddsa`
  */
-export function isJwkEddsa(jwk: JwkBase): jwk is JwkEddsa {
+export function isJwkEddsa(jwk: Jwk): jwk is JwkEddsa {
   return isJwkOkpKey(jwk) && (jwk.crv === 'Ed25519' || jwk.crv === 'Ed448');
 }

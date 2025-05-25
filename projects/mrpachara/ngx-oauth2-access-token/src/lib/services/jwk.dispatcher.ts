@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
-import { isJwt } from '../helpers';
+import { MatchedIssuerNotFoundError, NonprovidedIssuerError } from '../errors';
 import { JWK_SERVICES } from '../tokens';
-import { JwtInfo, SignedJsonWebInfo } from '../types';
+import { JwsInfo, JwtInfo } from '../types';
 import { JwkService } from './jwk.service';
 
 /** JWK Dispatcher */
@@ -26,31 +26,28 @@ export class JwkDispatcher {
   }
 
   /**
-   * Find the matched JWK service for the given `jwtUnknownInfo` by using
-   * `issuer` of service then verify.
+   * Find the matched JWK service for the given `jwtInfo` by using `issuer` of
+   * service then verify.
    *
-   * @param signedJsonWebInfo The signed JSON Web to be verified
+   * @param jwtOverJwsInfo The JWT over JWS to be verified
    * @returns The `Promise` of `boolean`. It will be `true` for approved and
    *   `false` for refuted
-   * @throws `Error` when cannot find the matched JWK service
-   * @throws An error from `JwkService.verify()`
+   * @throws NonprovidedIssuerError | MatchedIssuerNotFoundError
+   * @throws From JwKService
    */
-  async verify(signedJsonWebInfo: SignedJsonWebInfo): Promise<boolean> {
-    const issuer =
-      signedJsonWebInfo.header.iss ??
-      (isJwt(signedJsonWebInfo) ? signedJsonWebInfo.payload.iss : undefined);
+  async verify(jwtOverJwsInfo: Extract<JwtInfo, JwsInfo>): Promise<boolean> {
+    const issuer = jwtOverJwsInfo.header.iss ?? jwtOverJwsInfo.payload.iss;
 
-    if (typeof issuer !== 'undefined') {
-      const jwtInfo = signedJsonWebInfo as JwtInfo;
-      const jwkService = this.findByIssuer(issuer);
-
-      if (jwkService !== null) {
-        return await jwkService.verify(jwtInfo);
-      }
+    if (typeof issuer === 'undefined') {
+      throw new NonprovidedIssuerError(jwtOverJwsInfo);
     }
 
-    throw new Error(`Cannot find JwkService for ${signedJsonWebInfo.token}`, {
-      cause: { jsonWeb: signedJsonWebInfo },
-    });
+    const jwkService = this.findByIssuer(issuer);
+
+    if (jwkService !== null) {
+      return await jwkService.verify(jwtOverJwsInfo);
+    }
+
+    throw new MatchedIssuerNotFoundError(issuer);
   }
 }

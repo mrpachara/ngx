@@ -1,8 +1,8 @@
-import { SignedJsonWebInfo } from '../jwt';
-import { JwkBase } from '../standard';
+import { JwsInfo, JwtInfo } from '../jose-info';
+import { Jwk } from '../standards';
 
-/** Signed JSON Web verifier */
-export type SignedJsonWebVerifier = (
-  signedJsonWebInfo: SignedJsonWebInfo,
-  jwks: JwkBase[],
+/** JWT over JWS verifier */
+export type JwtVerifier = (
+  jwtOverJwsInfo: Extract<JwtInfo, JwsInfo>,
+  jwks: Jwk[],
 ) => Promise<boolean | undefined>;

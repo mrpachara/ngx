@@ -1,105 +1,183 @@
 import {
-  EncodedJsonWeb,
-  EncryptedJsonWebInfo,
-  EncryptedPayload,
-  JsonWebInfo,
-  JwtClaims,
-  JwtHeader,
+  JoseHeader,
+  JoseInfo,
+  JosePayloadableInfo,
+  JweHeader,
+  JweInfo,
+  JwsHeader,
+  JwsInfo,
   JwtInfo,
-  SignedJsonWebInfo,
-  UnknownJsonWebInfo,
 } from '../types';
 import { base64UrlDecode } from './crypto';
 
+function tryCatch<RC>(projector: () => RC): RC | undefined;
+function tryCatch<RC, RE>(projector: () => RC, errorValue: () => RE): RC | RE;
+function tryCatch<RC, RE>(projector: () => RC, errorValue?: () => RE) {
+  try {
+    return projector();
+  } catch (err) {
+    console.warn(err);
+
+    return errorValue?.();
+  }
+}
+
+export function toUint8ArrayFromBinary(value: string): Uint8Array {
+  return Uint8Array.from(value, (ch) => ch.charCodeAt(0));
+}
+
+const utf8TextEncoder = new TextEncoder();
+
+export function toUint8ArrayFromUtf8(value: string): Uint8Array {
+  return utf8TextEncoder.encode(value);
+}
+
 /**
- * Extract an information from JWT token.
+ * Extract a JOSE information from serial.
  *
- * @param token Encoded JSON Web
+ * @param serial Serialized content
  * @returns JSON Web information with unknown payload type
  */
-export function extractJsonWeb<P extends JwtClaims = JwtClaims>(
-  token: EncodedJsonWeb,
-): UnknownJsonWebInfo<P> {
-  const [headerSegment, payloadSegment, signatureSegment] = token.split(
-    '.',
-  ) as [string, string, string | undefined];
+export function extractJose<
+  P = unknown,
+  H extends JoseHeader = JoseHeader,
+  const S extends string = string,
+>(serial: S) {
+  const [headerSegment, ...segments] = serial.split('.', 5);
 
-  const header: JwtHeader = JSON.parse(base64UrlDecode(headerSegment));
-  const signature = signatureSegment
-    ? Uint8Array.from(base64UrlDecode(signatureSegment), (ch) =>
-        ch.charCodeAt(0),
-      )
-    : undefined;
+  const header = tryCatch(() => JSON.parse(base64UrlDecode(headerSegment)));
 
-  const payload = (() => {
-    const decodedPayload: EncryptedPayload = base64UrlDecode(payloadSegment);
+  if (typeof header === 'undefined') {
+    throw new Error('not JOSE');
+  }
 
-    if (header.typ === 'JWT' || !header.enc) {
-      try {
-        return JSON.parse(decodedPayload) as P;
-      } catch (err) {
-        console.warn(
-          new Error(
-            'Cannot decode the payload. The payload may be encrypted.',
-            {
-              cause: err,
-            },
-          ),
-        );
-      }
+  if (segments.length === 0) {
+    return {
+      serial,
+      header,
+    } as JoseInfo<H, S>;
+  }
+
+  if (segments.length <= 2) {
+    const payloadSegment = segments[0];
+
+    const decodedPayload = base64UrlDecode(payloadSegment);
+
+    const payload = tryCatch(
+      () => JSON.parse(decodedPayload),
+      () => decodedPayload,
+    );
+
+    if (segments.length === 1) {
+      return {
+        serial,
+        header,
+        payload,
+      } as JosePayloadableInfo<P, H, S> | JosePayloadableInfo<string, H, S>;
     }
 
-    return decodedPayload;
-  })();
+    const decodedSignature = base64UrlDecode(segments[1]);
+
+    const signature = toUint8ArrayFromBinary(decodedSignature);
+
+    const protectedContent = toUint8ArrayFromUtf8(
+      `${headerSegment}.${payloadSegment}`,
+    );
+
+    return {
+      serial,
+      header,
+      payload,
+      signature,
+      protectedContent,
+    } as JwsInfo<P, H & JwsHeader> | JwsInfo<string, H & JwsHeader>;
+  }
+  if (segments.length === 4) {
+    const [encryptedKey, initializationVector, ciphertext, authenticationTag] =
+      segments.map((segment) =>
+        toUint8ArrayFromBinary(base64UrlDecode(segment)),
+      );
+
+    return {
+      serial,
+      header,
+      encryptedKey,
+      initializationVector,
+      ciphertext,
+      authenticationTag,
+    } as JweInfo<H & JweHeader>;
+  }
 
   return {
-    token,
-    content: `${headerSegment}.${payloadSegment}`,
+    serial,
     header,
-    payload,
-    ...(signature ? { signature } : {}),
-  } as UnknownJsonWebInfo<P>;
+    payload: segments.join('.'),
+  } as JosePayloadableInfo<string, H, S>;
 }
 
 /**
- * Type guard for provided signature JWT.
+ * Type guard for JWS.
  *
- * @param jsonWebInfo The JSON Web information with unknown paylod type
- * @returns `true` when `jsonWebInfo` is `Provided<UnknownJsonWebInfo<T>,
- *   'signature'>`
+ * @param joseInfo The JOSE information
+ * @returns `true` when `joseInfo` is `JwsInfo`
  */
-export function isProvidedSignature<T extends JsonWebInfo>(
-  jsonWebInfo: T,
-): jsonWebInfo is SignedJsonWebInfo<T> {
-  return typeof jsonWebInfo.signature !== 'undefined';
-}
+export function isJws(joseInfo: JoseInfo): joseInfo is JwsInfo {
+  const partialJwsInfo = joseInfo as JoseInfo & Partial<JwsInfo>;
 
-/**
- * Type guard for encrypted payload JWT.
- *
- * @param jsonWebInfo The JSON Web information with unknown paylod type
- * @returns `true` when `jsonWebInfo` is `EncryptedJsonWebInfo`
- */
-export function isEncryptedJsonWeb(
-  jsonWebInfo: JsonWebInfo,
-): jsonWebInfo is EncryptedJsonWebInfo {
-  return typeof jsonWebInfo.payload === 'string';
-}
-
-/**
- * Type guard for claims payload JWT.
- *
- * @param jsonWebInfo The JSON Web information
- * @returns `true` when `jsonWebInfo` is `JwtInfo<T>`
- */
-export function isJwt<T extends JwtInfo>(
-  jsonWebInfo: T,
-): jsonWebInfo is Extract<T, JwtInfo>;
-
-export function isJwt(jsonWebInfo: JsonWebInfo): jsonWebInfo is JwtInfo;
-
-export function isJwt(jsonWebInfo: JsonWebInfo) {
   return (
-    isProvidedSignature(jsonWebInfo) && typeof jsonWebInfo.payload !== 'string'
+    partialJwsInfo.protectedContent instanceof Uint8Array &&
+    partialJwsInfo.signature instanceof Uint8Array
   );
+}
+
+/**
+ * Type guard for JWE.
+ *
+ * @param joseInfo The JOSE information
+ * @returns `true` when `joseInfo` is `JweInfo`
+ */
+export function isJwe(joseInfo: JoseInfo): joseInfo is JweInfo {
+  const partialJweInfo = joseInfo as JoseInfo & Partial<JweInfo>;
+
+  return (
+    partialJweInfo.encryptedKey instanceof Uint8Array &&
+    partialJweInfo.initializationVector instanceof Uint8Array &&
+    partialJweInfo.ciphertext instanceof Uint8Array &&
+    partialJweInfo.authenticationTag instanceof Uint8Array
+  );
+}
+
+/**
+ * Type guard for JWT.
+ *
+ * @param joseInfo The JOSE information
+ * @param type The required JWT or JWE, if undefined allow both
+ * @returns `true` when `joseInfo` is `JwtInfo`
+ */
+export function isJwt(
+  joseInfo: JoseInfo,
+  type: 'JWS',
+): joseInfo is Extract<JwtInfo, JwsInfo>;
+
+export function isJwt(
+  joseInfo: JoseInfo,
+  type: 'JWE',
+): joseInfo is Extract<JwtInfo, JweInfo>;
+
+export function isJwt(joseInfo: JoseInfo): joseInfo is JwtInfo;
+
+export function isJwt(joseInfo: JoseInfo, type?: 'JWS' | 'JWE') {
+  if ((typeof type === 'undefined' || type === 'JWS') && isJws(joseInfo)) {
+    return (
+      joseInfo.header.typ === 'JWT' ||
+      (!!joseInfo.payload && typeof joseInfo.payload === 'object')
+    );
+  } else if (
+    (typeof type === 'undefined' || type === 'JWE') &&
+    isJwe(joseInfo)
+  ) {
+    return joseInfo.header.typ === 'JWT';
+  }
+
+  return false;
 }

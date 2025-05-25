@@ -8,10 +8,10 @@ import {
 import { findJwk } from '../helpers';
 import {
   JWK_CONFIG,
-  SIGNED_JSON_WEB_VERIFIERS,
+  JWT_VERIFIERS,
   SKIP_ASSIGNING_ACCESS_TOKEN,
 } from '../tokens';
-import { JwkConfig, JwkSet, PickOptional, SignedJsonWebInfo } from '../types';
+import { JwkConfig, JwkSet, JwsInfo, JwtInfo, PickOptional } from '../types';
 
 /** Default JWK configuration */
 const defaultJwkConfig: PickOptional<JwkConfig> = {} as const;
@@ -41,7 +41,7 @@ export class JwkService {
     return this.config.issuer;
   }
 
-  private readonly verifiers = inject(SIGNED_JSON_WEB_VERIFIERS);
+  private readonly verifiers = inject(JWT_VERIFIERS);
 
   private fetchJwkSet(): Observable<JwkSet> {
     return this.http.get<JwkSet>(this.config.jwkSetUrl, {
@@ -50,9 +50,9 @@ export class JwkService {
   }
 
   /**
-   * Verify the given JSON Web information.
+   * Verify the given JWT over JWS information.
    *
-   * @param signedJsonWebInfo The signed JSON Web information
+   * @param jwtOverJwsInfo The JWT over JWS information
    * @returns The `Promise` of `boolean`. It will be `true` for approved and
    *   `false` for refuted
    * @throws `MatchedJwkNotFoundError` when matched JWKs from the loaded JWK Set
@@ -60,16 +60,16 @@ export class JwkService {
    * @throws `SupportedJwkAlgNotFoundError` when supported algorithm is not
    *   found
    */
-  async verify(signedJsonWebInfo: SignedJsonWebInfo): Promise<boolean> {
+  async verify(jwtOverJwsInfo: Extract<JwtInfo, JwsInfo>): Promise<boolean> {
     const jwkSet = await firstValueFrom(this.fetchJwkSet());
-    const jwks = findJwk(signedJsonWebInfo.header, jwkSet.keys);
+    const jwks = findJwk(jwtOverJwsInfo.header, jwkSet.keys);
 
     if (jwks.length === 0) {
-      throw new MatchedJwkNotFoundError(signedJsonWebInfo.header);
+      throw new MatchedJwkNotFoundError(jwtOverJwsInfo);
     }
 
     for (const verify of this.verifiers) {
-      const result = await verify(signedJsonWebInfo, jwks);
+      const result = await verify(jwtOverJwsInfo, jwks);
 
       if (typeof result === 'undefined') {
         continue;

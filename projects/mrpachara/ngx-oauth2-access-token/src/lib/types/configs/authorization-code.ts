@@ -1,4 +1,4 @@
-import { CodeChallengeMethod } from '../standard';
+import { CodeChallengeMethod } from '../standards';
 import { IdableConfig } from './commons';
 
 /** Authorization code configuration. */

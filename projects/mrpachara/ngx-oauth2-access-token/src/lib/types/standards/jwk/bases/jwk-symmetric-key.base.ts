@@ -1,7 +1,7 @@
-import { JwkBase } from './jwk.base';
+import { Jwk } from './jwk.base';
 
 /** Symmetric Key */
-export interface JwkSymmetricKeyBase extends JwkBase {
+export interface JwkSymmetricKey extends Jwk {
   readonly kty: 'oct';
 
   /**

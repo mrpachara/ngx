@@ -1,11 +1,12 @@
-import { JwkBase } from '@mrpachara/ngx-oauth2-access-token';
+import { Jwk } from '@mrpachara/ngx-oauth2-access-token';
 
-export function toJsonWebKey<JWK extends JwkBase>(jwk: JWK): JsonWebKey {
+export function toJsonWebKey(jwk: Jwk): JsonWebKey {
+  const { key_ops, ...rest } = jwk;
   return {
-    ...jwk,
-    ...(jwk.key_ops
+    ...rest,
+    ...(key_ops
       ? {
-          key_ops: [...jwk.key_ops],
+          key_ops: [...key_ops],
         }
       : {}),
   };
