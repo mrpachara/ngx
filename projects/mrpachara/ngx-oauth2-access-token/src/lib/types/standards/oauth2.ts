@@ -142,8 +142,8 @@ export type ExtensionGrantAccessTokenRequest<
     ? ExtensionWithDataGrantAccessTokenRequest<EG>
     : never;
 
-/** Standard grants for requesting access-token */
-export type StandardGrantsAccesTokenRequest =
+/** Standard grant for requesting access-token */
+export type StandardGrantAccesTokenRequest =
   | AuthorizationCodeGrantAccessTokenRequest
   | PasswordGrantAccessTokenRequest
   | ClientGrantAccessTokenRequest
@@ -252,7 +252,7 @@ export interface IdTokenResponse {
 }
 
 /** Standard grant type */
-export type StandardGrantType = StandardGrantsAccesTokenRequest['grant_type'];
+export type StandardGrantType = StandardGrantAccesTokenRequest['grant_type'];
 
 /** OAuth 2.0 Error Response */
 export interface Oauth2ErrorResponse {

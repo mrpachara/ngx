@@ -1,6 +1,7 @@
 ### References
 - [JSON Web Token (JWT)](https://www.rfc-editor.org/rfc/rfc7519.html)
 - [JSON Web Signature (JWS)](https://www.rfc-editor.org/rfc/rfc7515.html)
+- [[JSON Web Encryption (JWE)](https://datatracker.ietf.org/doc/html/rfc7516)]
 - [JSON Web Key (JWK)](https://www.rfc-editor.org/rfc/rfc7517.html)
 - [JSON Web Algorithms (JWA)](https://www.rfc-editor.org/rfc/rfc7518.html)
 - [CFRG Elliptic Curve Diffie-Hellman (ECDH) and Signatures in JSON Object Signing and Encryption (JOSE)](https://www.rfc-editor.org/rfc/rfc8037)
