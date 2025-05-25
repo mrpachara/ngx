@@ -39,7 +39,7 @@ export interface AuthorizationCodeGrantAccessTokenRequest
 
   /**
    * REQUIRED, if authorization request as
-   * [PKCE](https://datatracker.ietf.org/doc/html/rfc7636). Code verifier
+   * [PKCE](https://www.rfc-editor.org/rfc/rfc7636.html). Code verifier
    */
   readonly code_verifier?: string;
 
@@ -193,7 +193,7 @@ export interface AuthorizationCodeBasicRequest {
 export interface WithCodeChallengeRequest {
   /**
    * REQUIRED, if authorization request as
-   * [PKCE](https://datatracker.ietf.org/doc/html/rfc7636). Code challenge.
+   * [PKCE](https://www.rfc-editor.org/rfc/rfc7636.html). Code challenge.
    */
   readonly code_challenge: string;
 

@@ -4,7 +4,7 @@ export interface JweHeader extends JoseHeader {
   /**
    * This parameter has the same meaning, syntax, and processing rules as the
    * `"alg"` Header Parameter defined in Section 4.1.1 of
-   * [[JWS](https://datatracker.ietf.org/doc/html/rfc7515)], except that the
+   * [[JWS](https://www.rfc-editor.org/rfc/rfc7515.html)], except that the
    * Header Parameter identifies the cryptographic algorithm used to encrypt or
    * determine the value of the CEK. The encrypted content is not usable if the
    * `"alg"` value does not represent a supported algorithm, or if the recipient
@@ -12,9 +12,9 @@ export interface JweHeader extends JoseHeader {
    *
    * A list of defined `"alg"` values for this use can be found in the IANA
    * "JSON Web Signature and Encryption Algorithms" registry established by
-   * [[JWA](https://datatracker.ietf.org/doc/html/rfc7518)]; the initial
-   * contents of this registry are the values defined in Section 4.1 of
-   * [[JWA](https://datatracker.ietf.org/doc/html/rfc7518)].
+   * [[JWA](https://www.rfc-editor.org/rfc/rfc7518.html)]; the initial contents
+   * of this registry are the values defined in Section 4.1 of
+   * [[JWA](https://www.rfc-editor.org/rfc/rfc7518.html)].
    */
   readonly alg: NonNullable<JoseHeader['alg']>;
 
@@ -26,16 +26,16 @@ export interface JweHeader extends JoseHeader {
    * encrypted content is not usable if the `"enc"` value does not represent a
    * supported algorithm. `"enc"` values should either be registered in the IANA
    * "JSON Web Signature and Encryption Algorithms" registry established by
-   * [[JWA](https://datatracker.ietf.org/doc/html/rfc7518)] or be a value that
+   * [[JWA](https://www.rfc-editor.org/rfc/rfc7518.html)] or be a value that
    * contains a Collision-Resistant Name. The `"enc"` value is a case-sensitive
    * ASCII string containing a StringOrURI value. This Header Parameter MUST be
    * present and MUST be understood and processed by implementations.
    *
    * A list of defined `"enc"` values for this use can be found in the IANA
    * "JSON Web Signature and Encryption Algorithms" registry established by
-   * [[JWA](https://datatracker.ietf.org/doc/html/rfc7518)]; the initial
-   * contents of this registry are the values defined in Section 5.1 of
-   * [[JWA](https://datatracker.ietf.org/doc/html/rfc7518)].
+   * [[JWA](https://www.rfc-editor.org/rfc/rfc7518.html)]; the initial contents
+   * of this registry are the values defined in Section 5.1 of
+   * [[JWA](https://www.rfc-editor.org/rfc/rfc7518.html)].
    */
   readonly enc: string;
 }

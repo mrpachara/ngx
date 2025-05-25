@@ -36,7 +36,7 @@ export interface JwtHeader extends JoseHeader {
    * that a Nested JWT is carried in this JWT. While media type names are not
    * case sensitive, it is **RECOMMENDED** that "JWT" always be spelled using
    * uppercase characters for compatibility with legacy implementations. See
-   * [Appendix A.2](https://datatracker.ietf.org/doc/html/rfc7519#appendix-A.2)
+   * [Appendix A.2](https://www.rfc-editor.org/rfc/rfc7519.html#appendix-A.2)
    * for an example of a Nested JWT.
    */
   readonly cty?: 'JWT';
@@ -47,7 +47,7 @@ export interface JwtHeader extends JoseHeader {
    * value is a **_case-sensitive_** string containing a StringOrURI value. Use
    * of this claim is OPTIONAL.
    *
-   * @see {@link https://datatracker.ietf.org/doc/html/rfc7519#section-5.3|5.3.  Replicating Claims as Header Parameters}
+   * @see {@link https://www.rfc-editor.org/rfc/rfc7519.html#section-5.3|5.3.  Replicating Claims as Header Parameters}
    */
   readonly iss?: JwtClaims['iss'];
 
@@ -59,7 +59,7 @@ export interface JwtHeader extends JoseHeader {
    * generally application specific. The `"sub"` value is a **_case-sensitive_**
    * string containing a StringOrURI value. Use of this claim is OPTIONAL.
    *
-   * @see {@link https://datatracker.ietf.org/doc/html/rfc7519#section-5.3|5.3.  Replicating Claims as Header Parameters}
+   * @see {@link https://www.rfc-editor.org/rfc/rfc7519.html#section-5.3|5.3.  Replicating Claims as Header Parameters}
    */
   readonly sub?: JwtClaims['sub'];
 
@@ -75,7 +75,7 @@ export interface JwtHeader extends JoseHeader {
    * containing a StringOrURI value. The interpretation of audience values is
    * generally application specific. Use of this claim is OPTIONAL.
    *
-   * @see {@link https://datatracker.ietf.org/doc/html/rfc7519#section-5.3|5.3.  Replicating Claims as Header Parameters}
+   * @see {@link https://www.rfc-editor.org/rfc/rfc7519.html#section-5.3|5.3.  Replicating Claims as Header Parameters}
    */
   readonly aud?: JwtClaims['aud'];
 }

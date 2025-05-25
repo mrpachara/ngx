@@ -18,19 +18,18 @@ export interface JoseHeader {
 
   /**
    * The `"jku"` (JWK Set URL) Header Parameter is a URI
-   * [[RFC3986](https://datatracker.ietf.org/doc/html/rfc3986)] that refers to a
+   * [[RFC3986](https://www.rfc-editor.org/rfc/rfc3986.html)] that refers to a
    * resource for a set of JSON-encoded public keys, one of which corresponds to
    * the key used to digitally sign the JWS. The keys **MUST** be encoded as a
-   * JWK Set [[JWK](https://datatracker.ietf.org/doc/html/rfc7517)]. The
-   * protocol used to acquire the resource **MUST** provide integrity
-   * protection; an HTTP GET request to retrieve the JWK Set **MUST** use
-   * Transport Layer Security (TLS)
-   * [[RFC2818](https://datatracker.ietf.org/doc/html/rfc2818)]
-   * [[RFC5246](https://datatracker.ietf.org/doc/html/rfc5246)]; and the
-   * identity of the server **MUST** be validated, as per [Section 6 of RFC
-   * 6125](https://datatracker.ietf.org/doc/html/rfc6125#section-6)
-   * [[RFC6125](https://datatracker.ietf.org/doc/html/rfc6125)]. Also, see
-   * [Section 8](https://datatracker.ietf.org/doc/html/rfc7515#section-8) on TLS
+   * JWK Set [[JWK](https://www.rfc-editor.org/rfc/rfc7517.html)]. The protocol
+   * used to acquire the resource **MUST** provide integrity protection; an HTTP
+   * GET request to retrieve the JWK Set **MUST** use Transport Layer Security
+   * (TLS) [[RFC2818](https://www.rfc-editor.org/rfc/rfc2818.html)]
+   * [[RFC5246](https://www.rfc-editor.org/rfc/rfc5246.html)]; and the identity
+   * of the server **MUST** be validated, as per [Section 6 of RFC
+   * 6125](https://www.rfc-editor.org/rfc/rfc6125.html#section-6)
+   * [[RFC6125](https://www.rfc-editor.org/rfc/rfc6125.html)]. Also, see
+   * [Section 8](https://www.rfc-editor.org/rfc/rfc7515.html#section-8) on TLS
    * requirements. Use of this Header Parameter is OPTIONAL.
    */
   readonly jku?: string;
@@ -39,7 +38,7 @@ export interface JoseHeader {
    * The `"jwk"` (JSON Web Key) Header Parameter is the public key that
    * corresponds to the key used to digitally sign the JWS. This key is
    * represented as a JSON Web Key
-   * [[JWK](https://datatracker.ietf.org/doc/html/rfc7517)]. Use of this Header
+   * [[JWK](https://www.rfc-editor.org/rfc/rfc7517.html)]. Use of this Header
    * Parameter is OPTIONAL.
    */
   readonly jwk?: Jwk;
@@ -58,28 +57,28 @@ export interface JoseHeader {
 
   /**
    * The `"x5u"` (X.509 URL) Header Parameter is a URI
-   * [[RFC3986](https://datatracker.ietf.org/doc/html/rfc3986)] that refers to a
+   * [[RFC3986](https://www.rfc-editor.org/rfc/rfc3986.html)] that refers to a
    * resource for the X.509 public key certificate or certificate chain
-   * [[RFC5280](https://datatracker.ietf.org/doc/html/rfc5280)] corresponding to
+   * [[RFC5280](https://www.rfc-editor.org/rfc/rfc5280.html)] corresponding to
    * the key used to digitally sign the JWS. The identified resource **MUST**
    * provide a representation of the certificate or certificate chain that
-   * conforms to [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280)
-   * [[RFC5280](https://datatracker.ietf.org/doc/html/rfc5280)] in PEM-encoded
+   * conforms to [RFC 5280](https://www.rfc-editor.org/rfc/rfc5280.html)
+   * [[RFC5280](https://www.rfc-editor.org/rfc/rfc5280.html)] in PEM-encoded
    * form, with each certificate delimited as specified in [Section 6.1 of RFC
-   * 4945](https://datatracker.ietf.org/doc/html/rfc4945#section-6.1)
-   * [[RFC4945](https://datatracker.ietf.org/doc/html/rfc4945)]. The certificate
+   * 4945](https://www.rfc-editor.org/rfc/rfc4945.html#section-6.1)
+   * [[RFC4945](https://www.rfc-editor.org/rfc/rfc4945.html)]. The certificate
    * containing the public key corresponding to the key used to digitally sign
    * the JWS **MUST** be the first certificate. This **MAY** be followed by
    * additional certificates, with each subsequent certificate being the one
    * used to certify the previous one. The protocol used to acquire the resource
    * **MUST** provide integrity protection; an HTTP GET request to retrieve the
    * certificate **MUST** use TLS
-   * [[RFC2818](https://datatracker.ietf.org/doc/html/rfc2818)]
-   * [[RFC5246](https://datatracker.ietf.org/doc/html/rfc5246)]; and the
-   * identity of the server **MUST** be validated, as per [Section 6 of RFC
-   * 6125](https://datatracker.ietf.org/doc/html/rfc6125#section-6)
-   * [[RFC6125](https://datatracker.ietf.org/doc/html/rfc6125)]. Also, see
-   * [Section 8](https://datatracker.ietf.org/doc/html/rfc7515#section-8) on TLS
+   * [[RFC2818](https://www.rfc-editor.org/rfc/rfc2818.html)]
+   * [[RFC5246](https://www.rfc-editor.org/rfc/rfc5246.html)]; and the identity
+   * of the server **MUST** be validated, as per [Section 6 of RFC
+   * 6125](https://www.rfc-editor.org/rfc/rfc6125.html#section-6)
+   * [[RFC6125](https://www.rfc-editor.org/rfc/rfc6125.html)]. Also, see
+   * [Section 8](https://www.rfc-editor.org/rfc/rfc7515.html#section-8) on TLS
    * requirements. Use of this Header Parameter is OPTIONAL.
    */
   readonly x5u?: string;
@@ -87,24 +86,24 @@ export interface JoseHeader {
   /**
    * The `"x5c"` (X.509 certificate chain) Header Parameter contains the X.509
    * public key certificate or certificate chain
-   * [[RFC5280](https://datatracker.ietf.org/doc/html/rfc5280)] corresponding to
+   * [[RFC5280](https://www.rfc-editor.org/rfc/rfc5280.html)] corresponding to
    * the key used to digitally sign the JWS. The certificate or certificate
    * chain is represented as a JSON array of certificate value strings. Each
    * string in the array is a base64-encoded ([Section 4 of
-   * [RFC4648]](https://datatracker.ietf.org/doc/html/rfc4648#section-4) -- not
+   * [RFC4648]](https://www.rfc-editor.org/rfc/rfc4648.html#section-4) -- not
    * base64url-encoded) DER
-   * [[ITU.X690.2008](https://datatracker.ietf.org/doc/html/rfc7515#ref-ITU.X690.2008)]
+   * [[ITU.X690.2008](https://www.rfc-editor.org/rfc/rfc7515.html#ref-ITU.X690.2008)]
    * PKIX certificate value. The certificate containing the public key
    * corresponding to the key used to digitally sign the JWS **MUST** be the
    * first certificate. This **MAY** be followed by additional certificates,
    * with each subsequent certificate being the one used to certify the previous
    * one. The recipient **MUST** validate the certificate chain according to
-   * [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) [[RFC
-   * 5280](https://datatracker.ietf.org/doc/html/rfc5280)] and consider the
+   * [RFC 5280](https://www.rfc-editor.org/rfc/rfc5280.html) [[RFC
+   * 5280](https://www.rfc-editor.org/rfc/rfc5280.html)] and consider the
    * certificate or certificate chain to be invalid if any validation failure
    * occurs. Use of this Header Parameter is OPTIONAL.
    *
-   * See [Appendix B](https://datatracker.ietf.org/doc/html/rfc7515#appendix-B)
+   * See [Appendix B](https://www.rfc-editor.org/rfc/rfc7515.html#appendix-B)
    * for an example `"x5c"` value.
    */
   readonly x5c?: readonly string[];
@@ -113,7 +112,7 @@ export interface JoseHeader {
    * The `"x5t"` (X.509 certificate SHA-1 thumbprint) Header Parameter is a
    * base64url-encoded SHA-1 thumbprint (a.k.a. digest) of the DER encoding of
    * the X.509 certificate
-   * [[RFC5280](https://datatracker.ietf.org/doc/html/rfc5280)] corresponding to
+   * [[RFC5280](https://www.rfc-editor.org/rfc/rfc5280.html)] corresponding to
    * the key used to digitally sign the JWS. Note that certificate thumbprints
    * are also sometimes known as certificate fingerprints. Use of this Header
    * Parameter is OPTIONAL.
@@ -124,7 +123,7 @@ export interface JoseHeader {
    * The `"x5t#S256"` (X.509 certificate SHA-256 thumbprint) Header Parameter is
    * a base64url-encoded SHA-256 thumbprint (a.k.a. digest) of the DER encoding
    * of the X.509 certificate
-   * [[RFC5280](https://datatracker.ietf.org/doc/html/rfc5280)] corresponding to
+   * [[RFC5280](https://www.rfc-editor.org/rfc/rfc5280.html)] corresponding to
    * the key used to digitally sign the JWS. Note that certificate thumbprints
    * are also sometimes known as certificate fingerprints. Use of this Header
    * Parameter is OPTIONAL.
@@ -144,8 +143,8 @@ export interface JoseHeader {
    * this parameter is performed by the JWS application. Use of this Header
    * Parameter is OPTIONAL.
    *
-   * Per [RFC 2045](https://datatracker.ietf.org/doc/html/rfc2045)
-   * [[RFC2045](https://datatracker.ietf.org/doc/html/rfc2045)], all media type
+   * Per [RFC 2045](https://www.rfc-editor.org/rfc/rfc2045.html)
+   * [[RFC2045](https://www.rfc-editor.org/rfc/rfc2045.html)], all media type
    * values, subtype values, and parameter names are _case-insensitive_.
    * However, parameter values are **_case-sensitive_** unless otherwise
    * specified for the specific parameter. To keep messages compact in common
@@ -180,8 +179,8 @@ export interface JoseHeader {
    * parameter is performed by the JWS application. Use of this Header Parameter
    * is OPTIONAL.
    *
-   * Per [RFC 2045](https://datatracker.ietf.org/doc/html/rfc2045)
-   * [[RFC2045](https://datatracker.ietf.org/doc/html/rfc2045)], all media type
+   * Per [RFC 2045](https://www.rfc-editor.org/rfc/rfc2045.html)
+   * [[RFC2045](https://www.rfc-editor.org/rfc/rfc2045.html)], all media type
    * values, subtype values, and parameter names are _case-insensitive_.
    * However, parameter values are **_case-sensitive_** unless otherwise
    * specified for the specific parameter.
@@ -200,20 +199,20 @@ export interface JoseHeader {
 
   /**
    * The `"crit"` (critical) Header Parameter indicates that extensions to this
-   * specification and/or [[JWA](https://datatracker.ietf.org/doc/html/rfc7518)]
+   * specification and/or [[JWA](https://www.rfc-editor.org/rfc/rfc7518.html)]
    * are being used that **MUST** be understood and processed. Its value is an
    * array listing the Header Parameter names present in the JOSE Header that
    * use those extensions. If any of the listed extension Header Parameters are
    * not understood and supported by the recipient, then the JWS is invalid.
    * Producers **MUST NOT** include Header Parameter names defined by this
-   * specification or [[JWA](https://datatracker.ietf.org/doc/html/rfc7518)] for
+   * specification or [[JWA](https://www.rfc-editor.org/rfc/rfc7518.html)] for
    * use with JWS, duplicate names, or names that do not occur as Header
    * Parameter names within the JOSE Header in the `"crit"` list. Producers
    * **MUST NOT** use the empty list `"[]"` as the `"crit"` value. Recipients
    * **MAY** consider the JWS to be invalid if the critical list contains any
    * Header Parameter names defined by this specification or
-   * [[JWA](https://datatracker.ietf.org/doc/html/rfc7518)] for use with JWS or
-   * if any other constraints on its use are violated. When used, this Header
+   * [[JWA](https://www.rfc-editor.org/rfc/rfc7518.html)] for use with JWS or if
+   * any other constraints on its use are violated. When used, this Header
    * Parameter **MUST** be integrity protected; therefore, it **MUST** occur
    * only within the JWS Protected Header. Use of this Header Parameter is
    * OPTIONAL. This Header Parameter **MUST** be understood and processed by
