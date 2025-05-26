@@ -1,5 +1,3 @@
-import { Uuid } from '../../types';
-
 /** General stored data */
 export interface StoredData<T> {
   /** The time that token will expire (unix timestamp) */
@@ -26,17 +24,3 @@ export interface KeyableDataStorage<M extends object> extends Lockable {
   remove<const K extends keyof M>(key: K): Promise<M[K] | undefined>;
   clear(): Promise<void>;
 }
-
-export interface StorageMessageType<T extends string> {
-  readonly type: T;
-  readonly timestamp: number;
-  readonly from: Uuid;
-  readonly to?: Uuid;
-}
-
-export const lockAnswerWaitingTime = 100;
-
-export type StorageMessage =
-  | StorageMessageType<'alive'>
-  | StorageMessageType<'alive-ack'>
-  | StorageMessageType<'release'>;

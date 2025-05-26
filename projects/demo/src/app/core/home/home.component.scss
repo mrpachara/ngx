@@ -2,18 +2,18 @@ h2 {
   color: blue;
 }
 
+details {
+  & > summary {
+    cursor: pointer;
+  }
+}
+
 .-cl-warn {
   color: red;
 }
 
-.-cmp-expandable-list {
-  padding-left: 2ch;
-
-  & > details {
-    & > summary {
-      cursor: pointer;
-    }
-  }
+.-cl-sub-container {
+  margin-left: 4ch;
 }
 
 dl.-cmp-details-list {

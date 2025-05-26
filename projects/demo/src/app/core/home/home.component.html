@@ -1,75 +1,79 @@
 <h2>Access Token</h2>
-@switch (ready()) {
-  @case (undefined) {
-    <div>loading...</div>
-  }
 
-  @case (false) {
-    <div>
-      <button type="button" (click)="authorization()">Authorization</button>
-    </div>
-  }
-
-  @default {
-    <div>
-      <button type="button" (click)="renewAccessToken()">
-        Renew Access Token
-      </button>
-      <button type="button" (click)="clearAccessToken()">
-        Clear Access Token
-      </button>
-    </div>
-
-    @if (accessTokenResource.value(); as accessToken) {
-      <pre>{{ accessToken | json }}</pre>
+<div class="-cl-sub-container">
+  @switch (ready()) {
+    @case (undefined) {
+      <div>loading...</div>
     }
 
-    @if (accessTokenJoseResource.value(); as accessTokenJose) {
+    @case (false) {
+      <div>
+        <button type="button" (click)="authorization()">Authorization</button>
+      </div>
+    }
+
+    @default {
+      <div>
+        <button type="button" (click)="renewAccessToken()">
+          Renew Access Token
+        </button>
+        <button type="button" (click)="clearAccessToken()">
+          Clear Access Token
+        </button>
+      </div>
+
+      @if (accessTokenResource.value(); as accessToken) {
+        <pre>{{ accessToken | json }}</pre>
+      }
+
       <h3>Acccess Token JOSE</h3>
-      <div class="-cmp-expandable-list">
-        @for (item of accessTokenJose | keyvalue: null; track item.key) {
-          <details>
-            <summary>
-              <code>{{ item.key }}</code>
-            </summary>
-            <pre>{{ item.value | json }}</pre>
-          </details>
+
+      <div class="-cl-sub-container">
+        @if (accessTokenJoseResource.value(); as accessTokenJose) {
+          @for (item of accessTokenJose | keyvalue: null; track item.key) {
+            <details>
+              <summary>
+                <code>{{ item.key }}</code>
+              </summary>
+              <pre>{{ item.value | json }}</pre>
+            </details>
+          }
+
+          <dl class="-cmp-details-list">
+            <dt>Verification:</dt>
+            @switch (accessTokenJoseVerificationResource.value()) {
+              @case (true) {
+                <dd>Pass</dd>
+              }
+
+              @case (false) {
+                <dd class="-cl-warn">Fail</dd>
+              }
+
+              @default {
+                <dd>Cannot Verify</dd>
+              }
+            }
+          </dl>
         }
 
-        <dl class="-cmp-details-list">
-          <dt>Verification:</dt>
-          @switch (accessTokenJoseVerificationResource.value()) {
-            @case (true) {
-              <dd>Pass</dd>
-            }
-
-            @case (false) {
-              <dd class="-cl-warn">Fail</dd>
-            }
-
-            @default {
-              <dd>Cannot Verify</dd>
-            }
-          }
-        </dl>
-      </div>
-    }
-
-    @if (errorAccessTokenJoseMessage(); as errorMessage) {
-      <div>
-        <b class="-cl-warn">AccessTokenJose: </b>
-        <code>{{ errorMessage }}</code>
+        @if (errorAccessTokenJoseMessage(); as errorMessage) {
+          <div>
+            <b class="-cl-warn">AccessTokenJose: </b>
+            <code>{{ errorMessage }}</code>
+          </div>
+        }
       </div>
     }
   }
-}
 
-@if (errorAccessTokenMessage(); as errorMessage) {
-  <div>
-    <b class="-cl-warn">AccessToken: </b>
-    <code>{{ errorMessage }}</code>
-  </div>
-}
+  @if (errorAccessTokenMessage(); as errorMessage) {
+    <div>
+      <b class="-cl-warn">AccessToken: </b>
+      <code>{{ errorMessage }}</code>
+    </div>
+  }
+</div>
 
 <!-- <h2>ID Token</h2>
 <ng-container *ngIf="idToken() as idToken; else loading">

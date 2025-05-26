@@ -1,20 +1,10 @@
 import { inject, Injectable } from '@angular/core';
-import {
-  defer,
-  firstValueFrom,
-  map,
-  Observable,
-  race,
-  skipWhile,
-  Subject,
-  tap,
-  timer,
-} from 'rxjs';
+import { filter, firstValueFrom, Observable, race, Subject, timer } from 'rxjs';
 import { libPrefix } from '../../predefined';
 import { STORAGE_NAME } from '../../tokens';
 import {
   AccessTokenStorage,
-  StorageMessage,
+  AccessTokenStorageMessage,
   StoredAccessTokenMap,
   Uuid,
 } from '../../types';
@@ -26,14 +16,19 @@ import {
 import { AccessTokenIndexedDbConnection } from './access-token-indexed-db.connection';
 import { promisifyRequest } from './helpers';
 
-/** `alive` interval in units of **miliseconds** */
-const aliveInterval = 3_000;
+/** Lock timeout in units of **miliseconds** */
+const lockTimeout = 3_000;
 
 const keys = {
   access: accessTokenObjectStoreName,
   refresh: refreshTokenObjectStoreName,
   locker: lockerObjectStoreName,
 } as const;
+
+interface Locker {
+  readonly uuid: Uuid;
+  timestamp: number;
+}
 
 Injectable();
 export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
@@ -45,20 +40,19 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
 
   readonly #bc: BroadcastChannel;
 
-  readonly #aliveAck$: Observable<Uuid>;
   readonly #release$: Observable<Uuid>;
 
   #post(
-    type: StorageMessage['type'],
+    type: AccessTokenStorageMessage['type'],
     timestamp: number,
-    to?: StorageMessage['to'],
+    to?: AccessTokenStorageMessage['to'],
   ): void {
     this.#bc.postMessage({
       type,
       timestamp: timestamp,
       from: this.#uuid,
       ...(to ? { to } : {}),
-    } satisfies StorageMessage);
+    } satisfies AccessTokenStorageMessage);
   }
 
   constructor() {
@@ -66,15 +60,12 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
 
     this.#bc = new BroadcastChannel(bcName);
 
-    const aliveAck$$ = new Subject<Uuid>();
-    this.#aliveAck$ = aliveAck$$.asObservable();
-
     const release$$ = new Subject<Uuid>();
     this.#release$ = release$$.asObservable();
 
     this.#bc.addEventListener(
       'message',
-      async (ev: MessageEvent<StorageMessage>) => {
+      async (ev: MessageEvent<AccessTokenStorageMessage>) => {
         const message = ev.data;
 
         if (typeof message.to !== 'undefined' && message.to !== this.#uuid) {
@@ -82,77 +73,60 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
         }
 
         switch (message.type) {
-          case 'alive':
-            this.#post('alive-ack', Date.now());
-
-            return;
-          case 'alive-ack':
-            aliveAck$$.next(message.from);
-
-            return;
           case 'release':
             release$$.next(message.from);
 
             return;
           default:
-            ((message: never) =>
+            ((type: never) =>
               console.warn(
-                `Broadcast '${this.#bc.name}' does not implement '${(message as { type: string }).type}.'`,
-              ))(message);
+                `Broadcast '${this.#bc.name}' does not implement '${type}.'`,
+              ))(message.type);
         }
       },
     );
   }
 
-  async #waitForRelease(lockerUuid: Uuid): Promise<Uuid | null> {
-    let deadUuid: Uuid | null = lockerUuid;
-
-    return await firstValueFrom(
+  async #waitForRelease(locker: Locker): Promise<void> {
+    return void (await firstValueFrom(
       race(
-        this.#release$.pipe(map(() => null)),
-        timer(aliveInterval).pipe(map(() => deadUuid)),
-        defer(() => {
-          this.#post('alive', Date.now(), lockerUuid);
-
-          return this.#aliveAck$.pipe(
-            tap(() => (deadUuid = null)),
-            skipWhile(() => true),
-          );
-        }),
+        this.#release$.pipe(
+          filter((releaseUuid) => releaseUuid === locker.uuid),
+        ),
+        timer(Date.now() - locker.timestamp),
       ),
-    );
+    ));
   }
 
   async lock(): Promise<void> {
     const db = await this.#connection.db$;
-
-    let deadUuid: Uuid | null = null;
 
     while (true) {
       const transaction = db.transaction(keys['locker'], 'readwrite');
       const objectStore = transaction.objectStore(keys['locker']);
 
       // NOTE: For preventing accidentally storing `null`, check with `null` value.
-      const lockerUuid =
-        (await promisifyRequest<Uuid | undefined>(
+      const locker =
+        (await promisifyRequest<Locker | undefined>(
           objectStore.get(this.#name),
         )) ?? null;
 
-      // NOTE: **MUST** check `lockerUuid === null` in the **rare** case of
-      // dead happend before release.
       if (
-        lockerUuid === null ||
-        lockerUuid === this.#uuid ||
-        lockerUuid === deadUuid
+        locker === null ||
+        locker.uuid === this.#uuid ||
+        Date.now() - locker.timestamp >= lockTimeout
       ) {
         return void (await promisifyRequest(
-          objectStore.put(this.#uuid, this.#name),
+          objectStore.put(
+            { uuid: this.#uuid, timestamp: Date.now() } satisfies Locker,
+            this.#name,
+          ),
         ));
       }
 
       transaction.commit();
 
-      deadUuid = await this.#waitForRelease(lockerUuid);
+      await this.#waitForRelease(locker);
     }
   }
 
