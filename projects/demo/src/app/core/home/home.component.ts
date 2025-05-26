@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+import { JsonPipe, KeyValuePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -10,15 +10,17 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import {
+  deserializeJose,
   injectAccessTokenService,
   injectAuthorizationCodeService,
+  isJwt,
   JwkDispatcher,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { demoOauth, params, scopes } from '../../app.config';
 
 @Component({
   selector: 'app-home',
-  imports: [CommonModule],
+  imports: [JsonPipe, KeyValuePipe],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -32,12 +34,32 @@ export class HomeComponent {
   private readonly jwkDispatcher = inject(JwkDispatcher);
 
   protected readonly errorAccessTokenMessage = signal<string | null>(null);
+  protected readonly errorAccessTokenJoseMessage = signal<string | null>(null);
   protected readonly errorIdTokenMessage = signal<string | null>(null);
 
   protected readonly ready = computed(() => this.accessTokenService.ready());
 
+  // AccessToken
   protected readonly accessTokenResource = resource({
     loader: async () => await this.accessTokenService.loadAccessToken(),
+  });
+
+  protected readonly accessTokenJoseResource = resource({
+    request: this.accessTokenResource.value,
+    loader: async ({ request }) =>
+      typeof request === 'undefined'
+        ? undefined
+        : deserializeJose(request.token),
+  });
+
+  protected readonly accessTokenJoseVerificationResource = resource({
+    request: this.accessTokenJoseResource.value,
+    loader: async ({ request }) =>
+      typeof request === 'undefined'
+        ? undefined
+        : isJwt(request, 'JWS')
+          ? await this.jwkDispatcher.verify(request)
+          : undefined,
   });
 
   // protected readonly accessToken = toSignal(
@@ -63,6 +85,8 @@ export class HomeComponent {
         | undefined;
 
       if (err) {
+        console.error(err);
+
         if (typeof err.stack === 'string') {
           const [message] = err.stack.split('\n', 1);
           this.errorAccessTokenMessage.set(message);
@@ -71,6 +95,25 @@ export class HomeComponent {
         }
       } else {
         this.errorAccessTokenMessage.set(null);
+      }
+    });
+
+    effect(() => {
+      const err = this.accessTokenJoseResource.error() as
+        | { stack?: string }
+        | undefined;
+
+      if (err) {
+        console.error(err);
+
+        if (typeof err.stack === 'string') {
+          const [message] = err.stack.split('\n', 1);
+          this.errorAccessTokenJoseMessage.set(message);
+        } else {
+          this.errorAccessTokenJoseMessage.set(`${err}`);
+        }
+      } else {
+        this.errorAccessTokenJoseMessage.set(null);
       }
     });
 

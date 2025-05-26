@@ -11,30 +11,32 @@ import {
 } from '../types';
 import { base64UrlDecode } from './crypto';
 
-const errorSymbol = Symbol('error');
-
-function tryCatch<RC>(projector: () => RC): RC | { [errorSymbol]: unknown };
-function tryCatch<RC, RE>(projector: () => RC, errorValue: () => RE): RC | RE;
-function tryCatch<RC, RE>(projector: () => RC, errorValue?: () => RE) {
+function tryCatch<RC>(projector: () => RC): RC | undefined;
+function tryCatch<RC, RE>(
+  projector: () => RC,
+  errorValue: (err: unknown) => RE,
+): RC | RE;
+function tryCatch<RC, RE>(
+  projector: () => RC,
+  errorValue?: (err: unknown) => RE,
+) {
   try {
     return projector();
   } catch (err) {
+    const result = errorValue?.(err);
+
     console.warn(err);
 
-    return typeof errorValue !== 'undefined'
-      ? errorValue()
-      : { [errorSymbol]: err };
+    return result;
   }
-}
-
-export function toUint8ArrayFromBinary(value: string): Uint8Array {
-  return Uint8Array.from(value, (ch) => ch.charCodeAt(0));
 }
 
 const utf8TextEncoder = new TextEncoder();
 
-export function toUint8ArrayFromUtf8(value: string): Uint8Array {
-  return utf8TextEncoder.encode(value);
+export function toUint8Array(value: string, utf8 = false): Uint8Array {
+  return !utf8
+    ? Uint8Array.from(value, (ch) => ch.charCodeAt(0))
+    : utf8TextEncoder.encode(value);
 }
 
 /**
@@ -50,11 +52,12 @@ export function deserializeJose<
 >(serial: S) {
   const [headerSegment, ...segments] = serial.split('.', 5);
 
-  const header = tryCatch(() => JSON.parse(base64UrlDecode(headerSegment)));
-
-  if (typeof header[errorSymbol] !== 'undefined') {
-    throw new JoseDeserializationError(serial, header[errorSymbol]);
-  }
+  const header = tryCatch(
+    () => JSON.parse(base64UrlDecode(headerSegment)),
+    (err) => {
+      throw new JoseDeserializationError(serial, err);
+    },
+  );
 
   if (segments.length === 0) {
     return {
@@ -83,10 +86,11 @@ export function deserializeJose<
 
     const decodedSignature = base64UrlDecode(segments[1]);
 
-    const signature = toUint8ArrayFromBinary(decodedSignature);
+    const signature = toUint8Array(decodedSignature);
 
-    const protectedContent = toUint8ArrayFromUtf8(
+    const protectedContent = toUint8Array(
       `${headerSegment}.${payloadSegment}`,
+      true,
     );
 
     return {
@@ -99,9 +103,7 @@ export function deserializeJose<
   }
   if (segments.length === 4) {
     const [encryptedKey, initializationVector, ciphertext, authenticationTag] =
-      segments.map((segment) =>
-        toUint8ArrayFromBinary(base64UrlDecode(segment)),
-      );
+      segments.map((segment) => toUint8Array(base64UrlDecode(segment)));
 
     return {
       serial,

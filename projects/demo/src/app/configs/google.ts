@@ -11,7 +11,11 @@ import {
   provideJwkDispatcher,
   Scopes,
 } from '@mrpachara/ngx-oauth2-access-token';
-import { verifyEddsa } from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
+import {
+  verifyEcdsa,
+  verifyEddsa,
+  verifyRsassa,
+} from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
 import { clientId, clientSecret } from '../../secrets/oauth-client';
 import { routes } from '../app.routes';
 
@@ -51,7 +55,7 @@ export const appConfig: ApplicationConfig = {
           jwkSetUrl: 'https://www.googleapis.com/oauth2/v3/certs',
         },
       },
-      [verifyEddsa],
+      [verifyRsassa, verifyEcdsa, verifyEddsa],
     ),
   ],
 };

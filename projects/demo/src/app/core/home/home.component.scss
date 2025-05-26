@@ -5,3 +5,29 @@ h2 {
 .-cl-warn {
   color: red;
 }
+
+.-cmp-expandable-list {
+  padding-left: 2ch;
+
+  & > details {
+    & > summary {
+      cursor: pointer;
+    }
+  }
+}
+
+dl.-cmp-details-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+
+  margin-top: 1em;
+  margin-bottom: 1em;
+
+  & > dt {
+    font-weight: bold;
+  }
+
+  & > dd {
+    margin-left: 1ch;
+  }
+}

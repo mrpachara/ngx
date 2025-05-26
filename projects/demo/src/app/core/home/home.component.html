@@ -23,12 +23,50 @@
     @if (accessTokenResource.value(); as accessToken) {
       <pre>{{ accessToken | json }}</pre>
     }
+
+    @if (accessTokenJoseResource.value(); as accessTokenJose) {
+      <h3>Acccess Token JOSE</h3>
+      <div class="-cmp-expandable-list">
+        @for (item of accessTokenJose | keyvalue: null; track item.key) {
+          <details>
+            <summary>
+              <code>{{ item.key }}</code>
+            </summary>
+            <pre>{{ item.value | json }}</pre>
+          </details>
+        }
+
+        <dl class="-cmp-details-list">
+          <dt>Verification:</dt>
+          @switch (accessTokenJoseVerificationResource.value()) {
+            @case (true) {
+              <dd>Pass</dd>
+            }
+
+            @case (false) {
+              <dd class="-cl-warn">Fail</dd>
+            }
+
+            @default {
+              <dd>Cannot Verify</dd>
+            }
+          }
+        </dl>
+      </div>
+    }
+
+    @if (errorAccessTokenJoseMessage(); as errorMessage) {
+      <div>
+        <b class="-cl-warn">AccessTokenJose: </b>
+        <code>{{ errorMessage }}</code>
+      </div>
+    }
   }
 }
 
 @if (errorAccessTokenMessage(); as errorMessage) {
   <div>
-    <b class="-cl-warn">AccessToken:</b>
+    <b class="-cl-warn">AccessToken: </b>
     <code>{{ errorMessage }}</code>
   </div>
 }

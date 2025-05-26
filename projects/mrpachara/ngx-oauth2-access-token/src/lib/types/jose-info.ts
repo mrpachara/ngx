@@ -35,22 +35,22 @@ export interface JwsInfo<P = unknown, H extends JwsHeader = JwsHeader>
   readonly payload: P;
 
   /** The JWS signature */
-  readonly signature: Uint8Array;
+  readonly signature: Readonly<Uint8Array>;
 
   /** The protected, to be signed, part of JWS */
-  readonly protectedContent: Uint8Array;
+  readonly protectedContent: Readonly<Uint8Array>;
 }
 
 /** The JWE information */
 export interface JweInfo<H extends JweHeader = JweHeader>
   extends JoseInfo<H, CompactJws> {
-  readonly encryptedKey: Uint8Array;
+  readonly encryptedKey: Readonly<Uint8Array>;
 
-  readonly initializationVector: Uint8Array;
+  readonly initializationVector: Readonly<Uint8Array>;
 
-  readonly ciphertext: Uint8Array;
+  readonly ciphertext: Readonly<Uint8Array>;
 
-  readonly authenticationTag: Uint8Array;
+  readonly authenticationTag: Readonly<Uint8Array>;
 }
 
 /** JWT information */
