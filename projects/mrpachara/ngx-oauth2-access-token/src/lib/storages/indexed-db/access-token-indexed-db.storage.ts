@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { APP_ID, inject, Injectable } from '@angular/core';
 import { filter, firstValueFrom, Observable, race, Subject, timer } from 'rxjs';
 import { libPrefix } from '../../predefined';
 import { STORAGE_NAME } from '../../tokens';
@@ -17,7 +17,7 @@ import { AccessTokenIndexedDbConnection } from './access-token-indexed-db.connec
 import { promisifyRequest } from './helpers';
 
 /** Lock timeout in units of **miliseconds** */
-const lockTimeout = 3_000;
+const lockTimeout = 10_000;
 
 const keys = {
   access: accessTokenObjectStoreName,
@@ -56,7 +56,8 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
   }
 
   constructor() {
-    const bcName = `${libPrefix}-access-token-storage:${this.#name}` as const;
+    const bcName =
+      `${inject(APP_ID)}-${libPrefix}-access-token-storage:${this.#name}` as const;
 
     this.#bc = new BroadcastChannel(bcName);
 
@@ -93,7 +94,7 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
         this.#release$.pipe(
           filter((releaseUuid) => releaseUuid === locker.uuid),
         ),
-        timer(Date.now() - locker.timestamp),
+        timer(locker.timestamp + lockTimeout - Date.now()),
       ),
     ));
   }
@@ -136,11 +137,12 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
     const transaction = db.transaction(keys['locker'], 'readwrite');
     const objectStore = transaction.objectStore(keys['locker']);
 
-    const lockerUuid =
-      (await promisifyRequest<Uuid | undefined>(objectStore.get(this.#name))) ??
-      null;
+    const locker =
+      (await promisifyRequest<Locker | undefined>(
+        objectStore.get(this.#name),
+      )) ?? null;
 
-    if (lockerUuid === this.#uuid) {
+    if (locker?.uuid === this.#uuid) {
       await promisifyRequest(objectStore.delete(this.#name));
 
       return void this.#post('release', Date.now());

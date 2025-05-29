@@ -1,7 +1,6 @@
 export * from './types/commons';
 export * from './types/configs';
 export * from './types/jose-info';
-export * from './types/oauth2-services.types';
 export * from './types/services';
 export * from './types/standards';
 export * from './types/storages';

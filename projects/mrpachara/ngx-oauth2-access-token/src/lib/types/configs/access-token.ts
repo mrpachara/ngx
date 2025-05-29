@@ -1,5 +1,3 @@
-import { IdableConfig } from './commons';
-
 /** Access token configuration */
 export interface AccessTokenConfig {
   /**
@@ -11,7 +9,3 @@ export interface AccessTokenConfig {
   /** The _life-time_ of refresh token. */
   readonly refreshTokenTtl?: number;
 }
-
-export interface AccessTokenConfigWithId
-  extends IdableConfig,
-    AccessTokenConfig {}

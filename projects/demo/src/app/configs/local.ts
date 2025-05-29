@@ -7,9 +7,9 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
   AdditionalParams,
   provideAccessToken,
-  provideAuthorizationCode,
   provideJwkDispatcher,
   Scopes,
+  withAuthorizationCode,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { verifyEddsa } from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
 import { routes } from '../app.routes';
@@ -29,16 +29,18 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch()),
 
     // NOTE: The ngx-oauth2-access-token provide functions
-    provideAccessToken(demoOauth, {
-      clientId: 'web-app',
-      accessTokenUrl: 'http://localhost:8080/v2/token',
-    }),
-
-    provideAuthorizationCode(demoOauth, {
-      authorizationCodeUrl: 'http://localhost:8080/account/authorize/consent',
-      redirectUri: 'http://localhost:4200/google/authorization',
-      pkce: 'S256',
-    }),
+    provideAccessToken(
+      {
+        id: demoOauth,
+        clientId: 'web-app',
+        accessTokenUrl: 'http://localhost:8080/v2/token',
+      },
+      withAuthorizationCode({
+        authorizationCodeUrl: 'http://localhost:8080/account/authorize/consent',
+        redirectUri: 'http://localhost:4200/google/authorization',
+        pkce: 'S256',
+      }),
+    ),
 
     provideJwkDispatcher(
       {

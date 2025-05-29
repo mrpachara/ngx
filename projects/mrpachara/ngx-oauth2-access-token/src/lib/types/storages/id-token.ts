@@ -1,17 +1,16 @@
-import { JwtInfo } from '../jose-info';
+import { IdTokenInfo } from '../jose-info';
 import { IdTokenClaims } from '../standards';
+import { KeyableDataStorage } from './commons';
 
-export type StoredIdToken<T extends IdTokenClaims = IdTokenClaims> = JwtInfo<T>;
+/** Stored ID Token Info */
+export type StoredIdTokenInfo = IdTokenInfo;
 
-export interface IdTokenStorage {
-  load<T extends IdTokenClaims = IdTokenClaims>(
-    key: string,
-  ): Promise<StoredIdToken<T> | undefined>;
-  store<T extends IdTokenClaims = IdTokenClaims>(
-    key: string,
-    data: StoredIdToken<T>,
-  ): Promise<StoredIdToken<T>>;
-  remove<T extends IdTokenClaims = IdTokenClaims>(
-    key: string,
-  ): Promise<StoredIdToken<T> | undefined>;
+/** Stored access token */
+export type StoredIdTokenClaims = IdTokenClaims;
+
+export interface StoredIdTokenInfoMap {
+  readonly info: StoredIdTokenInfo;
+  readonly claims: StoredIdTokenClaims;
 }
+
+export type IdTokenStorage = KeyableDataStorage<StoredIdTokenInfoMap>;

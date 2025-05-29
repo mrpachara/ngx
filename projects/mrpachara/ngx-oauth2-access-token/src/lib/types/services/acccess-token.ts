@@ -1,4 +1,5 @@
 import { Uuid } from '../commons';
+import { AccessTokenResponse } from '../standards';
 
 interface AccessTokenMessageType<T extends string> {
   readonly type: T;
@@ -19,4 +20,9 @@ export interface AccessTokenInfo {
 
   /** The access token */
   readonly token: string;
+}
+
+export interface AccessTokenNotificationData {
+  readonly id: symbol;
+  readonly accessTokenResponse: AccessTokenResponse | null;
 }

@@ -1,17 +1,27 @@
 import {
   EnvironmentProviders,
+  ExistingProvider,
   inject,
+  InjectionToken,
   Injector,
   makeEnvironmentProviders,
   Provider,
 } from '@angular/core';
 import { libPrefix } from '../predefined';
-import { AccessTokenService, Oauth2Client } from '../services';
+import {
+  AccessTokenService,
+  AuthorizationCodeService,
+  Oauth2Client,
+} from '../services';
+import { StateIndexedDbStorage } from '../storages';
 import { AccessTokenIndexedDbStorage } from '../storages/indexed-db/access-token-indexed-db.storage';
 import {
   ACCESS_TOKEN_CONFIG,
   ACCESS_TOKEN_SERVICES,
   ACCESS_TOKEN_STORAGE,
+  AUTHORIZATION_CODE_CONFIG,
+  AUTHORIZATION_CODE_SERVICES,
+  AUTHORIZATION_CODE_STORAGE,
   OAUTH2_CLIENT_CONFIG,
   OAUTH2_CLIENT_ERROR_TRANSFORMER,
   STORAGE_NAME,
@@ -19,8 +29,10 @@ import {
 import {
   AccessTokenConfig,
   AccessTokenStorage,
+  AuthorizationCodeConfig,
   Oauth2ClientConfig,
   Oauth2ClientErrorTransformer,
+  RequiredOnly,
 } from '../types';
 
 /**
@@ -32,29 +44,30 @@ import {
  * @returns
  */
 export function provideAccessToken(
-  id: symbol,
   config: Oauth2ClientConfig & AccessTokenConfig,
-  ...features: readonly (Oauth2ClientFeature | AccessTokenFeature)[]
+  ...features: readonly AccessTokenFeature[]
 ): EnvironmentProviders {
-  if (typeof id.description === 'undefined') {
-    throw new Error(`'id' MUST be assigned 'description'`);
+  const { description: name } = config.id;
+
+  if (typeof name === 'undefined' || name.trim() === '') {
+    throw new Error(`'id' MUST be assigned non-empty 'description'`);
   }
+
+  const selfToken = new InjectionToken<AccessTokenService>(
+    `${libPrefix}-${name}-access-token-self-injector`,
+  );
 
   return makeEnvironmentProviders([
     {
-      provide: ACCESS_TOKEN_SERVICES,
-      multi: true,
+      provide: selfToken,
       useFactory: () =>
         Injector.create({
-          name: `${libPrefix}-${id.description}-access-token-internal-injector`,
+          name: `${libPrefix}-${name}-access-token-internal-injector`,
           parent: inject(Injector),
           providers: [
             {
               provide: OAUTH2_CLIENT_CONFIG,
-              useValue: {
-                ...config,
-                id,
-              },
+              useValue: config,
             },
             {
               provide: ACCESS_TOKEN_CONFIG,
@@ -62,69 +75,89 @@ export function provideAccessToken(
             },
             {
               provide: STORAGE_NAME,
-              useValue: id.description,
+              useFactory: () => inject(Oauth2Client).name,
             },
-            features.map((feature) => {
-              switch (feature.kind) {
-                default: {
-                  return [...feature.providers];
+            {
+              provide: ACCESS_TOKEN_STORAGE,
+              useClass: AccessTokenIndexedDbStorage,
+            },
+            features
+              .filter(({ scoped }) => scoped)
+              .map((feature) => {
+                switch (feature.kind) {
+                  default: {
+                    return [...feature.providers];
+                  }
                 }
-              }
-            }),
-            features.some(
-              (feature) =>
-                feature.kind ===
-                AccessTokenFeatureKind.AccessTokenStorageFeature,
-            )
-              ? []
-              : ([
-                  {
-                    provide: ACCESS_TOKEN_STORAGE,
-                    useClass: AccessTokenIndexedDbStorage,
-                  },
-                ] satisfies Provider[]),
+              }),
             Oauth2Client,
             AccessTokenService,
           ],
         }).get(AccessTokenService),
     },
+    {
+      provide: ACCESS_TOKEN_SERVICES,
+      multi: true,
+      useExisting: selfToken,
+    },
+    features
+      .map(({ token }) => token)
+      .filter((token) => typeof token !== 'undefined')
+      .map(
+        (token) =>
+          ({
+            provide: token,
+            useExisting: selfToken,
+          }) satisfies ExistingProvider,
+      ),
+    features.filter(({ scoped }) => !scoped).map(({ providers }) => providers),
   ]);
 }
 
 // ------------- Avaliable Features -----------------
-export type Oauth2ClientFeature = Oauth2ClientErrorTransformerFeature;
-
-export type AccessTokenFeature = AccessTokenStorageFeature;
+export type AccessTokenFeature =
+  | Oauth2ClientErrorTransformerFeature
+  | AccessTokenStorageFeature
+  | AuthorizationCodeFeature;
 
 // ------------- Enum -----------------
-enum Oauth2ClientFeatureKind {
-  Oauth2ClientErrorTransformerFeature = 'OAUTH2_CLIENT:OAUTH2_CLIENT_ERROR_TRANSFORMER_FEATURE',
-}
-
 enum AccessTokenFeatureKind {
+  Oauth2ClientErrorTransformerFeature = 'OAUTH2_CLIENT:OAUTH2_CLIENT_ERROR_TRANSFORMER_FEATURE',
   AccessTokenStorageFeature = 'ACCESS_TOKEN:ACCESS_TOKE_STORAGE_FEATURE',
+  AuthorizationCodeFeature = 'ACCESS_TOKEN:AUTHORIZATION_CODE_FEATURE',
 }
 
 // ------------- Type -----------------
-interface Oauth2ClientFeatureType<K extends Oauth2ClientFeatureKind> {
+interface AccessTokenFeatureType<
+  K extends AccessTokenFeatureKind,
+  E extends boolean,
+> {
   readonly kind: K;
+  readonly scoped: E;
+  readonly token?: E extends true ? never : InjectionToken<AccessTokenService>;
   readonly providers: readonly Provider[];
 }
 
-interface AccessTokenFeatureType<K extends AccessTokenFeatureKind> {
-  readonly kind: K;
-  readonly providers: readonly Provider[];
-}
+// ------------- Features -----------------
+export type Oauth2ClientErrorTransformerFeature = AccessTokenFeatureType<
+  AccessTokenFeatureKind.Oauth2ClientErrorTransformerFeature,
+  true
+>;
 
-// ------------- Oauth2Client: Features -----------------
-export type Oauth2ClientErrorTransformerFeature =
-  Oauth2ClientFeatureType<Oauth2ClientFeatureKind.Oauth2ClientErrorTransformerFeature>;
+export type AccessTokenStorageFeature = AccessTokenFeatureType<
+  AccessTokenFeatureKind.AccessTokenStorageFeature,
+  true
+>;
 
-// ------------- AccessToken: Features -----------------
-export type AccessTokenStorageFeature =
-  AccessTokenFeatureType<AccessTokenFeatureKind.AccessTokenStorageFeature>;
+export type AuthorizationCodeFeature = RequiredOnly<
+  AccessTokenFeatureType<
+    AccessTokenFeatureKind.AuthorizationCodeFeature,
+    false
+  >,
+  'token'
+>;
 
-// ------------- Oauth2Client: Feature Functions -----------------
+// ------------- Feature Functions -----------------
 /**
  * Provide Oauth2 client error transformer.
  *
@@ -135,7 +168,8 @@ export function withOauth2ClientErrorTransformer(
   factory: () => Oauth2ClientErrorTransformer,
 ): Oauth2ClientErrorTransformerFeature {
   return {
-    kind: Oauth2ClientFeatureKind.Oauth2ClientErrorTransformerFeature,
+    kind: AccessTokenFeatureKind.Oauth2ClientErrorTransformerFeature,
+    scoped: true,
     providers: [
       {
         provide: OAUTH2_CLIENT_ERROR_TRANSFORMER,
@@ -145,7 +179,6 @@ export function withOauth2ClientErrorTransformer(
   };
 }
 
-// ------------- AccessToken: Feature Functions -----------------
 /**
  * Provide access-token storage.
  *
@@ -157,10 +190,61 @@ export function withAccessTokenStorage(
 ): AccessTokenStorageFeature {
   return {
     kind: AccessTokenFeatureKind.AccessTokenStorageFeature,
+    scoped: true,
     providers: [
       {
         provide: ACCESS_TOKEN_STORAGE,
         useFactory: factory,
+      },
+    ],
+  };
+}
+
+/**
+ * Provide access-token storage.
+ *
+ * @param factory
+ * @returns
+ */
+export function withAuthorizationCode(
+  config: AuthorizationCodeConfig,
+): AuthorizationCodeFeature {
+  const token = new InjectionToken<AccessTokenService>(
+    `${libPrefix}-${AccessTokenFeatureKind.AuthorizationCodeFeature}-access-token-self-injector`,
+  );
+
+  return {
+    kind: AccessTokenFeatureKind.AuthorizationCodeFeature,
+    scoped: false,
+    token,
+    providers: [
+      {
+        provide: AUTHORIZATION_CODE_SERVICES,
+        multi: true,
+        useFactory: () =>
+          Injector.create({
+            name: `${libPrefix}-${AccessTokenFeatureKind.AuthorizationCodeFeature}-internal-injector`,
+            parent: inject(Injector),
+            providers: [
+              {
+                provide: AUTHORIZATION_CODE_CONFIG,
+                useValue: config,
+              },
+              {
+                provide: STORAGE_NAME,
+                useFactory: () => inject(token).name,
+              },
+              {
+                provide: AUTHORIZATION_CODE_STORAGE,
+                useClass: StateIndexedDbStorage,
+              },
+              {
+                provide: AccessTokenService,
+                useFactory: () => inject(token),
+              },
+              AuthorizationCodeService,
+            ],
+          }).get(AuthorizationCodeService),
       },
     ],
   };

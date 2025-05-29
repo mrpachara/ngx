@@ -54,6 +54,10 @@ export function provideAuthorizationCode(
               provide: STORAGE_NAME,
               useValue: id.description,
             },
+            {
+              provide: AUTHORIZATION_CODE_STORAGE,
+              useClass: StateIndexedDbStorage,
+            },
             features.map((feature) => {
               switch (feature.kind) {
                 default: {
@@ -61,18 +65,6 @@ export function provideAuthorizationCode(
                 }
               }
             }),
-            features.some(
-              (feature) =>
-                feature.kind ===
-                AuthorizationCodeFeatureKind.AuthorizationCodeStorageFeature,
-            )
-              ? []
-              : ([
-                  {
-                    provide: AUTHORIZATION_CODE_STORAGE,
-                    useClass: StateIndexedDbStorage,
-                  },
-                ] satisfies Provider[]),
             {
               provide: AccessTokenService,
               useFactory: () => injectAccessTokenService(id),

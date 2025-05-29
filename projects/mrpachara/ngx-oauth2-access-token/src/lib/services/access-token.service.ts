@@ -1,4 +1,4 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { APP_ID, inject, Injectable, signal } from '@angular/core';
 import {
   AccessTokenNotFoundError,
   RefreshTokenExpiredError,
@@ -6,11 +6,16 @@ import {
 } from '../errors';
 import { validateAndTransformScopes } from '../helpers';
 import { libPrefix } from '../predefined';
-import { ACCESS_TOKEN_CONFIG, ACCESS_TOKEN_STORAGE } from '../tokens';
 import {
-  AccessTokenConfigWithId,
+  ACCESS_TOKEN_CONFIG,
+  ACCESS_TOKEN_NOTIFICATION,
+  ACCESS_TOKEN_STORAGE,
+} from '../tokens';
+import {
+  AccessTokenConfig,
   AccessTokenInfo,
   AccessTokenMessage,
+  AccessTokenResponse,
   AdditionalParams,
   AuthorizationCodeGrantAccessTokenRequest,
   ClientGrantAccessTokenRequest,
@@ -26,7 +31,7 @@ import {
 import { Oauth2Client } from './oauth2.client';
 
 /** Default access token configuration */
-const defaultAccessTokenConfig: PickOptional<AccessTokenConfigWithId> = {
+const defaultAccessTokenConfig: PickOptional<AccessTokenConfig> = {
   /** `600_000` miliseconds (10 minutes) */
   accessTokenTtl: 600_000,
 
@@ -34,21 +39,7 @@ const defaultAccessTokenConfig: PickOptional<AccessTokenConfigWithId> = {
   refreshTokenTtl: 2_592_000_000,
 } as const;
 
-const existingNameSet = new Set<string>();
-
-function configure(config: AccessTokenConfigWithId) {
-  if (typeof config.id.description === 'undefined') {
-    throw new Error(`access-token service id MUST has description`);
-  }
-
-  if (existingNameSet.has(config.id.description)) {
-    throw new Error(
-      `Non-unique access-token service id description '${config.id.description}'`,
-    );
-  }
-
-  existingNameSet.add(config.id.description);
-
+function configure(config: AccessTokenConfig) {
   return {
     ...defaultAccessTokenConfig,
     ...config,
@@ -66,12 +57,14 @@ export class AccessTokenService {
 
   private readonly storage = inject(ACCESS_TOKEN_STORAGE);
 
+  private readonly notification = inject(ACCESS_TOKEN_NOTIFICATION);
+
   get id() {
-    return this.config.id;
+    return this.client.id;
   }
 
   get name() {
-    return this.config.id.description!;
+    return this.client.name;
   }
 
   get clientId() {
@@ -103,10 +96,10 @@ export class AccessTokenService {
     } satisfies AccessTokenMessage);
   }
 
-  private readonly extractors?: readonly unknown[];
-
   constructor() {
-    this.#bc = new BroadcastChannel(`${libPrefix}-access-token-${this.name}`);
+    this.#bc = new BroadcastChannel(
+      `${inject(APP_ID)}-${libPrefix}-access-token:${this.name}`,
+    );
 
     this.#bc.addEventListener(
       'message',
@@ -166,12 +159,9 @@ export class AccessTokenService {
    * 2. If failed then try to get from `fetchNewAccessToken`.
    * 3. If failed then throw `AccessTokenNotFoundError`.
    *
-   * **NOTE:** If want to wait for a `externalStoring` forever, put the logic in
-   * `fetchNewAccessToken`.
-   *
    * @throws AccessTokenNotFoundError
    */
-  async loadAccessToken(): Promise<AccessTokenInfo> {
+  async loadAccessTokenInfo(): Promise<AccessTokenInfo> {
     return await this.#tryLoad(async () => {
       while (true) {
         const storedAccessToken = await this.storage.load('access');
@@ -200,11 +190,26 @@ export class AccessTokenService {
     });
   }
 
-  #changeReadyByStorage(ready: boolean): void {
+  #changeReadyByStorage(
+    ready: true,
+    accessTokenResponse: AccessTokenResponse,
+  ): void;
+
+  #changeReadyByStorage(ready: false): void;
+
+  #changeReadyByStorage(
+    ready: boolean,
+    accessTokenResponse: AccessTokenResponse | null = null,
+  ): void {
     const now = Date.now();
 
     this.#ready.set(ready);
     this.#lastUpdated.set(now);
+
+    this.notification.next({
+      id: this.id,
+      accessTokenResponse: accessTokenResponse,
+    } as const);
 
     this.#post('external-storing', now, ready);
   }
@@ -376,13 +381,15 @@ export class AccessTokenService {
       }
     })();
 
-    const accessToken = await this.client.fetchAccessToken(request, { params });
+    const accessTokenResponse = await this.client.fetchAccessToken(request, {
+      params,
+    });
 
     const now = Date.now();
-    if (accessToken.refresh_token) {
+    if (accessTokenResponse.refresh_token) {
       await this.storage.store('refresh', {
         expiresAt: now + this.config.refreshTokenTtl - networkLatencyTime,
-        data: accessToken.refresh_token,
+        data: accessTokenResponse.refresh_token,
       });
     } else {
       const storedRefreshToken = await this.storage.load('refresh');
@@ -398,15 +405,15 @@ export class AccessTokenService {
     await this.storage.store('access', {
       expiresAt:
         now +
-        (typeof accessToken.expires_in === 'undefined' ||
-        accessToken.expires_in === null
+        (typeof accessTokenResponse.expires_in === 'undefined' ||
+        accessTokenResponse.expires_in === null
           ? this.config.accessTokenTtl
-          : accessToken.expires_in * 1_000) -
+          : accessTokenResponse.expires_in * 1_000) -
         networkLatencyTime,
-      data: accessToken,
+      data: accessTokenResponse,
     });
 
-    return this.#changeReadyByStorage(true);
+    return this.#changeReadyByStorage(true, accessTokenResponse);
   }
 
   /**

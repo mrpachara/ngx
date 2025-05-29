@@ -1,12 +1,10 @@
 import { inject, InjectionToken, Injector, isDevMode } from '@angular/core';
 import { AuthorizationCodeService } from '../services';
-import { AuthorizationCodeConfigWithId, StateStorage } from '../types';
+import { AuthorizationCodeConfig, StateStorage } from '../types';
 
 /** The injection token for authorization-code service config */
 export const AUTHORIZATION_CODE_CONFIG =
-  new InjectionToken<AuthorizationCodeConfigWithId>(
-    'authorization-code-config',
-  );
+  new InjectionToken<AuthorizationCodeConfig>('authorization-code-config');
 
 /** The injection token for authorization-code storage */
 export const AUTHORIZATION_CODE_STORAGE = new InjectionToken<StateStorage>(

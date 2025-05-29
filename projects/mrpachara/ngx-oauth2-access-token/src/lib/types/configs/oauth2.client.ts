@@ -1,7 +1,7 @@
 import { IdableConfig } from './commons';
 
 /** OAuth 2.0 client configuration */
-export interface Oauth2ClientConfig {
+export interface Oauth2ClientConfig extends IdableConfig {
   /** OAuth client ID, it is REQUIRED. */
   readonly clientId: string;
 
@@ -18,7 +18,3 @@ export interface Oauth2ClientConfig {
    */
   readonly clientCredentialsInParams?: boolean;
 }
-
-export interface Oauth2ClientConfigWithId
-  extends IdableConfig,
-    Oauth2ClientConfig {}

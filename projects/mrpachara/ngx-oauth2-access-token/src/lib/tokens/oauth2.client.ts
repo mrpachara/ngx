@@ -1,13 +1,11 @@
 import { HttpContextToken, HttpErrorResponse } from '@angular/common/http';
 import { InjectionToken } from '@angular/core';
-import {
-  Oauth2ClientConfigWithId,
-  Oauth2ClientErrorTransformer,
-} from '../types';
+import { Oauth2ClientConfig, Oauth2ClientErrorTransformer } from '../types';
 
 /** The injection token for Oauth2 client config */
-export const OAUTH2_CLIENT_CONFIG =
-  new InjectionToken<Oauth2ClientConfigWithId>('oath2-client-config');
+export const OAUTH2_CLIENT_CONFIG = new InjectionToken<Oauth2ClientConfig>(
+  'oath2-client-config',
+);
 
 /**
  * The token for `HttpClient` indicates that **DO NOT** assign access token for

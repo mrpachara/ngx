@@ -7,9 +7,9 @@ import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
   AdditionalParams,
   provideAccessToken,
-  provideAuthorizationCode,
   provideJwkDispatcher,
   Scopes,
+  withAuthorizationCode,
 } from '@mrpachara/ngx-oauth2-access-token';
 import {
   verifyEcdsa,
@@ -37,17 +37,19 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch()),
 
     // NOTE: The ngx-oauth2-access-token provide functions
-    provideAccessToken(demoOauth, {
-      clientId: clientId,
-      clientSecret: clientSecret,
-      accessTokenUrl: 'https://oauth2.googleapis.com/token',
-    }),
-
-    provideAuthorizationCode(demoOauth, {
-      authorizationCodeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
-      redirectUri: 'http://localhost:4200/google/authorization',
-      pkce: 'S256',
-    }),
+    provideAccessToken(
+      {
+        id: demoOauth,
+        clientId: clientId,
+        clientSecret: clientSecret,
+        accessTokenUrl: 'https://oauth2.googleapis.com/token',
+      },
+      withAuthorizationCode({
+        authorizationCodeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+        redirectUri: 'http://localhost:4200/google/authorization',
+        pkce: 'S256',
+      }),
+    ),
 
     provideJwkDispatcher(
       {

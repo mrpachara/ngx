@@ -16,12 +16,12 @@ import {
   AccessTokenRequest,
   AccessTokenResponse,
   AdditionalParams,
-  Oauth2ClientConfigWithId,
+  Oauth2ClientConfig,
   PickOptionalExcept,
 } from '../types';
 
 const defaultOauth2ClientConfig: PickOptionalExcept<
-  Oauth2ClientConfigWithId,
+  Oauth2ClientConfig,
   'clientSecret'
 > = {
   clientCredentialsInParams: false,
@@ -29,7 +29,7 @@ const defaultOauth2ClientConfig: PickOptionalExcept<
 
 const existingNameSet = new Set<string>();
 
-function configure(config: Oauth2ClientConfigWithId) {
+function configure(config: Oauth2ClientConfig) {
   if (typeof config.id.description === 'undefined') {
     throw new Error(`oauth2 client id MUST has description`);
   }
@@ -55,6 +55,10 @@ export class Oauth2Client {
   private readonly errorTransformer = inject(OAUTH2_CLIENT_ERROR_TRANSFORMER);
 
   private readonly http = inject(HttpClient);
+
+  get id() {
+    return this.config.id;
+  }
 
   get name() {
     return this.config.id.description!;

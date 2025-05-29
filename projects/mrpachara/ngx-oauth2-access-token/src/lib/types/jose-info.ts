@@ -1,5 +1,6 @@
 import {
   CompactJws,
+  IdTokenClaims,
   JoseHeader,
   JweHeader,
   JwsHeader,
@@ -57,3 +58,9 @@ export interface JweInfo<H extends JweHeader = JweHeader>
 export type JwtInfo<P extends JwtClaims = JwtClaims> =
   | JwsInfo<P, JwsHeader & JwtHeader>
   | JweInfo<JweHeader & JwtHeader>;
+
+/** ID Token information */
+export type IdTokenInfo<P extends IdTokenClaims = IdTokenClaims> = Extract<
+  JwtInfo<P>,
+  JwsInfo
+>;

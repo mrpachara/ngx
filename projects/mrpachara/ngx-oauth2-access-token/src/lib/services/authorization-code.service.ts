@@ -13,7 +13,7 @@ import {
 } from '../tokens';
 import {
   AdditionalParams,
-  AuthorizationCodeConfigWithId,
+  AuthorizationCodeConfig,
   AuthorizationCodeRequest,
   PickOptionalExcept,
   Scopes,
@@ -23,7 +23,7 @@ import { AccessTokenService } from './access-token.service';
 
 /** Default authorization code configuration */
 const defaultAuthorizationCodeConfig: PickOptionalExcept<
-  AuthorizationCodeConfigWithId,
+  AuthorizationCodeConfig,
   'pkce'
 > = {
   stateLength: 32,
@@ -31,21 +31,7 @@ const defaultAuthorizationCodeConfig: PickOptionalExcept<
   codeVerifierLength: 56,
 } as const;
 
-const existingNameSet = new Set<string>();
-
-function configure(config: AuthorizationCodeConfigWithId) {
-  if (typeof config.id.description === 'undefined') {
-    throw new Error(`authorization-code service id MUST has description`);
-  }
-
-  if (existingNameSet.has(config.id.description)) {
-    throw new Error(
-      `Non-unique authorization-code service id description '${config.id.description}'`,
-    );
-  }
-
-  existingNameSet.add(config.id.description);
-
+function configure(config: AuthorizationCodeConfig) {
   return {
     ...defaultAuthorizationCodeConfig,
     ...config,
@@ -61,11 +47,11 @@ export class AuthorizationCodeService {
   private readonly storage = inject(AUTHORIZATION_CODE_STORAGE);
 
   get id() {
-    return this.config.id;
+    return this.accessTokenService.id;
   }
 
   get name() {
-    return this.config.id.description!;
+    return this.accessTokenService.name;
   }
 
   readonly #init$: Promise<void>;

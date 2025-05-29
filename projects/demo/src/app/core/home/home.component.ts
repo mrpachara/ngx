@@ -41,7 +41,7 @@ export class HomeComponent {
 
   // AccessToken
   protected readonly accessTokenResource = resource({
-    loader: async () => await this.accessTokenService.loadAccessToken(),
+    loader: async () => await this.accessTokenService.loadAccessTokenInfo(),
   });
 
   protected readonly accessTokenJoseResource = resource({

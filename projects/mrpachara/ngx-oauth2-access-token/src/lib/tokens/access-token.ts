@@ -1,9 +1,14 @@
 import { inject, InjectionToken, Injector, isDevMode } from '@angular/core';
+import { ReplaySubject, Subject } from 'rxjs';
 import { AccessTokenService } from '../services';
-import { AccessTokenConfigWithId, AccessTokenStorage } from '../types';
+import {
+  AccessTokenConfig,
+  AccessTokenNotificationData,
+  AccessTokenStorage,
+} from '../types';
 
 /** The injection token for access-token service config */
-export const ACCESS_TOKEN_CONFIG = new InjectionToken<AccessTokenConfigWithId>(
+export const ACCESS_TOKEN_CONFIG = new InjectionToken<AccessTokenConfig>(
   'access-token-config',
 );
 
@@ -50,3 +55,12 @@ export function injectAccessTokenService(
 
   return service;
 }
+
+export const ACCESS_TOKEN_NOTIFICATION = new InjectionToken<
+  Subject<AccessTokenNotificationData>
+>('access-token-notification-data', {
+  providedIn: 'root',
+  factory() {
+    return new ReplaySubject<AccessTokenNotificationData>();
+  },
+});

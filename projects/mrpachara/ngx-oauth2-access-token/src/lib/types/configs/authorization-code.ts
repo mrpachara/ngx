@@ -1,5 +1,4 @@
 import { CodeChallengeMethod } from '../standards';
-import { IdableConfig } from './commons';
 
 /** Authorization code configuration. */
 export interface AuthorizationCodeConfig {
@@ -27,7 +26,3 @@ export interface AuthorizationCodeConfig {
   /** The state length, the default value is `32`. */
   readonly stateLength?: number;
 }
-
-export interface AuthorizationCodeConfigWithId
-  extends IdableConfig,
-    AuthorizationCodeConfig {}
