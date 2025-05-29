@@ -1,6 +1,5 @@
 import {
   EnvironmentProviders,
-  ExistingProvider,
   inject,
   InjectionToken,
   Injector,
@@ -32,7 +31,6 @@ import {
   AuthorizationCodeConfig,
   Oauth2ClientConfig,
   Oauth2ClientErrorTransformer,
-  RequiredOnly,
 } from '../types';
 
 /**
@@ -53,13 +51,13 @@ export function provideAccessToken(
     throw new Error(`'id' MUST be assigned non-empty 'description'`);
   }
 
-  const selfToken = new InjectionToken<AccessTokenService>(
+  const token = new InjectionToken<AccessTokenService>(
     `${libPrefix}-${name}-access-token-self-injector`,
   );
 
   return makeEnvironmentProviders([
     {
-      provide: selfToken,
+      provide: token,
       useFactory: () =>
         Injector.create({
           name: `${libPrefix}-${name}-access-token-internal-injector`,
@@ -82,7 +80,7 @@ export function provideAccessToken(
               useClass: AccessTokenIndexedDbStorage,
             },
             features
-              .filter(({ scoped }) => scoped)
+              .filter((feature) => feature.internal)
               .map((feature) => {
                 switch (feature.kind) {
                   default: {
@@ -98,19 +96,11 @@ export function provideAccessToken(
     {
       provide: ACCESS_TOKEN_SERVICES,
       multi: true,
-      useExisting: selfToken,
+      useExisting: token,
     },
     features
-      .map(({ token }) => token)
-      .filter((token) => typeof token !== 'undefined')
-      .map(
-        (token) =>
-          ({
-            provide: token,
-            useExisting: selfToken,
-          }) satisfies ExistingProvider,
-      ),
-    features.filter(({ scoped }) => !scoped).map(({ providers }) => providers),
+      .filter((feature) => !feature.internal)
+      .map(({ providers }) => providers(token)),
   ]);
 }
 
@@ -133,9 +123,10 @@ interface AccessTokenFeatureType<
   E extends boolean,
 > {
   readonly kind: K;
-  readonly scoped: E;
-  readonly token?: E extends true ? never : InjectionToken<AccessTokenService>;
-  readonly providers: readonly Provider[];
+  readonly internal: E;
+  readonly providers: E extends true
+    ? readonly Provider[]
+    : (token: InjectionToken<AccessTokenService>) => readonly Provider[];
 }
 
 // ------------- Features -----------------
@@ -149,12 +140,9 @@ export type AccessTokenStorageFeature = AccessTokenFeatureType<
   true
 >;
 
-export type AuthorizationCodeFeature = RequiredOnly<
-  AccessTokenFeatureType<
-    AccessTokenFeatureKind.AuthorizationCodeFeature,
-    false
-  >,
-  'token'
+export type AuthorizationCodeFeature = AccessTokenFeatureType<
+  AccessTokenFeatureKind.AuthorizationCodeFeature,
+  false
 >;
 
 // ------------- Feature Functions -----------------
@@ -169,7 +157,7 @@ export function withOauth2ClientErrorTransformer(
 ): Oauth2ClientErrorTransformerFeature {
   return {
     kind: AccessTokenFeatureKind.Oauth2ClientErrorTransformerFeature,
-    scoped: true,
+    internal: true,
     providers: [
       {
         provide: OAUTH2_CLIENT_ERROR_TRANSFORMER,
@@ -190,7 +178,7 @@ export function withAccessTokenStorage(
 ): AccessTokenStorageFeature {
   return {
     kind: AccessTokenFeatureKind.AccessTokenStorageFeature,
-    scoped: true,
+    internal: true,
     providers: [
       {
         provide: ACCESS_TOKEN_STORAGE,
@@ -209,15 +197,10 @@ export function withAccessTokenStorage(
 export function withAuthorizationCode(
   config: AuthorizationCodeConfig,
 ): AuthorizationCodeFeature {
-  const token = new InjectionToken<AccessTokenService>(
-    `${libPrefix}-${AccessTokenFeatureKind.AuthorizationCodeFeature}-access-token-self-injector`,
-  );
-
   return {
     kind: AccessTokenFeatureKind.AuthorizationCodeFeature,
-    scoped: false,
-    token,
-    providers: [
+    internal: false,
+    providers: (token) => [
       {
         provide: AUTHORIZATION_CODE_SERVICES,
         multi: true,
@@ -240,7 +223,7 @@ export function withAuthorizationCode(
               },
               {
                 provide: AccessTokenService,
-                useFactory: () => inject(token),
+                useExisting: token,
               },
               AuthorizationCodeService,
             ],
