@@ -1,4 +1,5 @@
 import { APP_ID, inject, Injectable, signal } from '@angular/core';
+import { ReplaySubject } from 'rxjs';
 import {
   AccessTokenNotFoundError,
   RefreshTokenExpiredError,
@@ -6,11 +7,7 @@ import {
 } from '../errors';
 import { validateAndTransformScopes } from '../helpers';
 import { libPrefix } from '../predefined';
-import {
-  ACCESS_TOKEN_CONFIG,
-  ACCESS_TOKEN_NOTIFICATION,
-  ACCESS_TOKEN_STORAGE,
-} from '../tokens';
+import { ACCESS_TOKEN_CONFIG, ACCESS_TOKEN_STORAGE } from '../tokens';
 import {
   AccessTokenConfig,
   AccessTokenInfo,
@@ -57,8 +54,6 @@ export class AccessTokenService {
 
   private readonly storage = inject(ACCESS_TOKEN_STORAGE);
 
-  private readonly notification = inject(ACCESS_TOKEN_NOTIFICATION);
-
   get id() {
     return this.client.id;
   }
@@ -76,6 +71,11 @@ export class AccessTokenService {
 
   readonly #lastUpdated = signal<number | undefined>(undefined);
   readonly lastUpdated = this.#lastUpdated.asReadonly();
+
+  readonly #accessTokenResponse = new ReplaySubject<AccessTokenResponse | null>(
+    1,
+  );
+  readonly accessTokenResponse = this.#accessTokenResponse.asObservable();
 
   readonly #uuid = crypto.randomUUID();
 
@@ -206,10 +206,7 @@ export class AccessTokenService {
     this.#ready.set(ready);
     this.#lastUpdated.set(now);
 
-    this.notification.next({
-      id: this.id,
-      accessTokenResponse: accessTokenResponse,
-    } as const);
+    this.#accessTokenResponse.next(accessTokenResponse);
 
     this.#post('external-storing', now, ready);
   }

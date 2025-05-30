@@ -8,7 +8,7 @@ import {
 @Injectable({
   providedIn: 'root',
 })
-export class IdTokenConnection {
+export class IdTokenIndexedDbConnection {
   readonly #db$: Promise<IDBDatabase>;
 
   get db$() {

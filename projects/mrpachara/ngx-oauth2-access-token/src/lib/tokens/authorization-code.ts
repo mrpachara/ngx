@@ -20,10 +20,10 @@ export const AUTHORIZATION_CODE_SERVICES = new InjectionToken<
 });
 
 /**
- * Inject AuthorizationCodeService from the given name.
+ * Inject AuthorizationCodeService from the given id.
  *
  * @param id AuthorizationCodeService id symbol.
- * @returns AuthorizationCodeService from the given name.
+ * @returns AuthorizationCodeService from the given id.
  * @throws If is not found.
  * @publicApi
  */

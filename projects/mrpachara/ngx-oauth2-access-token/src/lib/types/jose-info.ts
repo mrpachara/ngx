@@ -26,19 +26,17 @@ export interface JosePayloadableInfo<
   H extends JoseHeader = JoseHeader,
   S extends string = string,
 > extends JoseInfo<H, S> {
+  /** JOSE payload */
   readonly payload: P;
 }
 
 /** The JWS information */
 export interface JwsInfo<P = unknown, H extends JwsHeader = JwsHeader>
-  extends JoseInfo<H, CompactJws> {
-  /** The JWS payload */
-  readonly payload: P;
-
+  extends JosePayloadableInfo<P, H, CompactJws> {
   /** The JWS signature */
   readonly signature: Readonly<Uint8Array>;
 
-  /** The protected, to be signed, part of JWS */
+  /** The protected part, to be signed, of JWS */
   readonly protectedContent: Readonly<Uint8Array>;
 }
 

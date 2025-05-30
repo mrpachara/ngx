@@ -81,7 +81,7 @@ export function deserializeJose<
         serial,
         header,
         payload,
-      } as JosePayloadableInfo<P, H, S> | JosePayloadableInfo<string, H, S>;
+      } as JosePayloadableInfo<P, H, S>;
     }
 
     const decodedSignature = base64UrlDecode(segments[1]);
@@ -99,7 +99,7 @@ export function deserializeJose<
       payload,
       signature,
       protectedContent,
-    } as JwsInfo<P, H & JwsHeader> | JwsInfo<string, H & JwsHeader>;
+    } as JwsInfo<P, H & JwsHeader>;
   }
   if (segments.length === 4) {
     const [encryptedKey, initializationVector, ciphertext, authenticationTag] =
@@ -161,15 +161,15 @@ export function isJwe(joseInfo: JoseInfo): joseInfo is JweInfo {
  * @param type The required JWS or JWE, if undefined allow both
  * @returns `true` when `joseInfo` is `JwtInfo`
  */
-export function isJwt(
-  joseInfo: JoseInfo,
+export function isJwt<T extends JoseInfo>(
+  joseInfo: T,
   type: 'JWS',
-): joseInfo is Extract<JwtInfo, JwsInfo>;
+): joseInfo is Extract<T, JwsInfo>;
 
-export function isJwt(
-  joseInfo: JoseInfo,
+export function isJwt<T extends JoseInfo>(
+  joseInfo: T,
   type: 'JWE',
-): joseInfo is Extract<JwtInfo, JweInfo>;
+): joseInfo is Extract<T, JweInfo>;
 
 export function isJwt(joseInfo: JoseInfo): joseInfo is JwtInfo;
 

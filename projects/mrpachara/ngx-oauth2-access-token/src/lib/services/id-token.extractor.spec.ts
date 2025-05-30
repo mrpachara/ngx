@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
-import { RefreshTokenService } from './refresh-token.service';
+import { IdTokenExtractor } from './id-token.extractor';
 
-describe('RefreshTokenService', () => {
-  let service: RefreshTokenService;
+describe('IdTokenExtractor', () => {
+  let service: IdTokenExtractor;
 
   beforeEach(() => {
     TestBed.configureTestingModule({});
-    service = TestBed.inject(RefreshTokenService);
+    service = TestBed.inject(IdTokenExtractor);
   });
 
   it('should be created', () => {

@@ -1,10 +1,4 @@
-import {
-  EnvironmentProviders,
-  inject,
-  Injector,
-  makeEnvironmentProviders,
-  Provider,
-} from '@angular/core';
+import { inject, Injector, Provider } from '@angular/core';
 import { libPrefix } from '../predefined';
 import { AccessTokenService, AuthorizationCodeService } from '../services';
 import { StateIndexedDbStorage } from '../storages/indexed-db/state-indexed-db.storage';
@@ -12,80 +6,74 @@ import {
   AUTHORIZATION_CODE_CONFIG,
   AUTHORIZATION_CODE_SERVICES,
   AUTHORIZATION_CODE_STORAGE,
-  injectAccessTokenService,
   STORAGE_NAME,
 } from '../tokens';
 import { AuthorizationCodeConfig, StateStorage } from '../types';
+import {
+  AccessTokenExtensionFeature,
+  AccessTokenFeatureKind,
+} from './access-token';
 
 /**
- * Provide AuthorizationCode service.
+ * Provide authorization-code.
  *
- * @param id Symbol for service
- * @param config Authorization-code configuration
- * @param features
+ * @param config
+ * @param featrues
  * @returns
  */
-export function provideAuthorizationCode(
-  id: symbol,
+export function withAuthorizationCode(
   config: AuthorizationCodeConfig,
-  ...features: readonly AuthorizationCodeFeature[]
-): EnvironmentProviders {
-  if (typeof id.description === 'undefined') {
-    throw new Error(`'id' MUST be assigned 'description'`);
-  }
-
-  return makeEnvironmentProviders([
-    {
-      provide: AUTHORIZATION_CODE_SERVICES,
-      multi: true,
-      useFactory: () =>
-        Injector.create({
-          name: `${libPrefix}-${id.description}-authorization-code-internal-injector`,
-          parent: inject(Injector),
-          providers: [
-            {
-              provide: AUTHORIZATION_CODE_CONFIG,
-              useValue: {
-                ...config,
-                id,
+  ...features: AuthorizationCodeFeature[]
+): AccessTokenExtensionFeature {
+  return {
+    kind: AccessTokenFeatureKind.AccessTokenExtensionFeature,
+    internal: false,
+    providers: (token) => [
+      {
+        provide: AUTHORIZATION_CODE_SERVICES,
+        multi: true,
+        useFactory: () =>
+          Injector.create({
+            name: `${libPrefix}-authorization-code-internal-injector`,
+            parent: inject(Injector),
+            providers: [
+              {
+                provide: AUTHORIZATION_CODE_CONFIG,
+                useValue: config,
               },
-            },
-            {
-              provide: STORAGE_NAME,
-              useValue: id.description,
-            },
-            {
-              provide: AUTHORIZATION_CODE_STORAGE,
-              useClass: StateIndexedDbStorage,
-            },
-            features.map((feature) => {
-              switch (feature.kind) {
-                default: {
-                  return [...feature.providers];
-                }
-              }
-            }),
-            {
-              provide: AccessTokenService,
-              useFactory: () => injectAccessTokenService(id),
-            },
-            AuthorizationCodeService,
-          ],
-        }).get(AuthorizationCodeService),
-    },
-  ]);
+              {
+                provide: STORAGE_NAME,
+                useFactory: () => inject(token).name,
+              },
+              {
+                provide: AUTHORIZATION_CODE_STORAGE,
+                useClass: StateIndexedDbStorage,
+              },
+              {
+                provide: AccessTokenService,
+                useExisting: token,
+              },
+              features.map((feature) => feature.providers),
+              AuthorizationCodeService,
+            ],
+          }).get(AuthorizationCodeService),
+      },
+    ],
+  };
 }
 
 // ------------- Avaliable Features -----------------
 export type AuthorizationCodeFeature = AuthorizationCodeStorageFeature;
 
 // ------------- Enum -----------------
-enum AuthorizationCodeFeatureKind {
+export enum AuthorizationCodeFeatureKind {
   AuthorizationCodeStorageFeature = 'AUTHORIZATION_CODE:AUTHORIZATION_CODE_STORAGE_FEATURE',
 }
 
 // ------------- Type -----------------
-interface AuthorizationCodeFeatureType<K extends AuthorizationCodeFeatureKind> {
+export interface AuthorizationCodeFeatureType<
+  K extends AuthorizationCodeFeatureKind,
+> {
   readonly kind: K;
   readonly providers: readonly Provider[];
 }

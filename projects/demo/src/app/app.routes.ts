@@ -5,14 +5,12 @@ import {
   provideAuthorizationCodeCallbackData,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { demoOauth } from './app.config';
-import { HomeComponent } from './core/home/home.component';
+import { Home } from './core/home/home';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
 
-  // NOTE: HomeComponent should call AccessTokenService.fetchToken()
-  //       or AccessTokenService.extract(idTokenService).
-  { path: 'home', component: HomeComponent },
+  { path: 'home', component: Home },
 
   {
     path: 'google/authorization',
