@@ -1,0 +1,97 @@
+<h2>Access Token</h2>
+
+<div class="-cl-sub-container">
+  @switch (ready()) { @case (undefined) {
+  <div>loading...</div>
+  } @case (false) {
+  <div>
+    <button type="button" (click)="authorization()">Authorization</button>
+  </div>
+  } @default {
+  <div>
+    <button type="button" (click)="renewAccessToken()">
+      Renew Access Token
+    </button>
+    <button type="button" (click)="clearAccessToken()">
+      Clear Access Token
+    </button>
+  </div>
+
+  @if (accessTokenResource.value(); as accessToken) {
+  <pre>{{ accessToken | json }}</pre>
+  }
+
+  <h3>Acccess Token JOSE</h3>
+
+  <div class="-cl-sub-container">
+    @if (accessTokenJoseResource.hasValue()) { @for (item of
+    $any(accessTokenJoseResource.value()) | keyvalue: null; track item.key) {
+    <details>
+      <summary>
+        <code>{{ item.key }}</code>
+      </summary>
+      <pre>{{ item.value | json }}</pre>
+    </details>
+    } } @if (errorAccessTokenJoseMessage(); as errorMessage) {
+    <div>
+      <b class="-cl-warn">AccessTokenJose: </b>
+      <code>{{ errorMessage }}</code>
+    </div>
+    }
+
+    <dl class="-cmp-details-list">
+      <dt>Verification:</dt>
+      @if (accessTokenJoseVerificationResource.hasValue()) { @if
+      (accessTokenJoseVerificationResource.value()) {
+      <dd>Pass</dd>
+      } @else {
+      <dd class="-cl-warn">Fail</dd>
+      } } @else {
+      <dd>Cannot Verify</dd>
+      }
+    </dl>
+  </div>
+  } } @if (errorAccessTokenMessage(); as errorMessage) {
+  <div>
+    <b class="-cl-warn">AccessToken: </b>
+    <code>{{ errorMessage }}</code>
+  </div>
+  }
+</div>
+
+<h2>ID Token</h2>
+<div class="-cl-sub-container">
+  @switch (ready()) { @case (undefined) {
+  <div>loading...</div>
+  } @case (false) {
+  <div>
+    <p></p>
+  </div>
+  } @default { @if (idTokenJoseResource.hasValue()) { @for (item of
+  $any(idTokenJoseResource.value()) | keyvalue: null; track item.key) {
+  <details>
+    <summary>
+      <code>{{ item.key }}</code>
+    </summary>
+    <pre>{{ item.value | json }}</pre>
+  </details>
+  } } @if (errorIdTokenJoseMessage(); as errorMessage) {
+  <div>
+    <b class="-cl-warn">IdTokenJose: </b>
+    <code>{{ errorMessage }}</code>
+  </div>
+  }
+
+  <dl class="-cmp-details-list">
+    <dt>Verification:</dt>
+    @if (idTokenJoseVerificationResource.hasValue()) { @if
+    (idTokenJoseVerificationResource.value()) {
+    <dd>Pass</dd>
+    } @else {
+    <dd class="-cl-warn">Fail</dd>
+    } } @else {
+    <dd>Cannot Verify</dd>
+    }
+  </dl>
+  } }
+</div>

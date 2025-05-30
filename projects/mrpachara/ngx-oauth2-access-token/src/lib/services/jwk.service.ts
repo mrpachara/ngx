@@ -1,54 +1,47 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { Observable, firstValueFrom } from 'rxjs';
-
+import { inject, Injectable } from '@angular/core';
+import { firstValueFrom, Observable } from 'rxjs';
 import {
   MatchedJwkNotFoundError,
-  SignatureNotFoundError,
   SupportedJwkAlgNotFoundError,
 } from '../errors';
-import { findJwk, isProvidedSignature } from '../functions';
+import { findJwk } from '../helpers';
 import {
-  DEFAULT_JWT_VERIFIERS,
+  JWK_CONFIG,
   JWT_VERIFIERS,
   SKIP_ASSIGNING_ACCESS_TOKEN,
 } from '../tokens';
-import { JwkFullConfig, JwkSet, JwtInfo, JwtVerifier } from '../types';
+import { JwkConfig, JwkSet, JwsInfo, JwtInfo, PickOptional } from '../types';
+
+/** Default JWK configuration */
+const defaultJwkConfig: PickOptional<JwkConfig> = {} as const;
+
+/**
+ * Create the full JWK configuration.
+ *
+ * @param config The configuration
+ * @returns The full configuration
+ */
+function configure(config: JwkConfig) {
+  return {
+    ...defaultJwkConfig,
+    ...config,
+  } as const;
+}
 
 /** JWK service */
+@Injectable()
 export class JwkService {
-  private http = inject(HttpClient);
-  private defaultVerifiers = inject(DEFAULT_JWT_VERIFIERS);
-  private parentVerifiers = inject(JWT_VERIFIERS, {
-    skipSelf: true,
-    optional: true,
-  });
-  private scopedVerifiers = inject(JWT_VERIFIERS, {
-    self: true,
-    optional: true,
-  });
+  private readonly config = configure(inject(JWK_CONFIG));
 
-  /** The service name */
-  get name() {
-    return this.config.name;
-  }
+  private readonly http = inject(HttpClient);
 
   /** The issuer for the service */
   get issuer() {
     return this.config.issuer;
   }
 
-  private readonly verifiers: JwtVerifier[];
-
-  constructor(private readonly config: JwkFullConfig) {
-    this.verifiers = [
-      ...new Set([
-        ...(this.scopedVerifiers ?? []),
-        ...(this.parentVerifiers ?? []),
-        ...this.defaultVerifiers,
-      ]),
-    ];
-  }
+  private readonly verifiers = inject(JWT_VERIFIERS);
 
   private fetchJwkSet(): Observable<JwkSet> {
     return this.http.get<JwkSet>(this.config.jwkSetUrl, {
@@ -57,31 +50,26 @@ export class JwkService {
   }
 
   /**
-   * Verify the given JWT information.
+   * Verify the given JWT over JWS information.
    *
-   * @param jwtInfo The JWT information
+   * @param jwtOverJwsInfo The JWT over JWS information
    * @returns The `Promise` of `boolean`. It will be `true` for approved and
    *   `false` for refuted
-   * @throws `SignatureNotFoundError` when `jwtInfo` is not provided `signature`
    * @throws `MatchedJwkNotFoundError` when matched JWKs from the loaded JWK Set
    *   are not found
    * @throws `SupportedJwkAlgNotFoundError` when supported algorithm is not
    *   found
    */
-  async verify(jwtInfo: JwtInfo): Promise<boolean> {
-    if (!isProvidedSignature(jwtInfo)) {
-      throw new SignatureNotFoundError(jwtInfo.token, jwtInfo);
-    }
-
+  async verify(jwtOverJwsInfo: Extract<JwtInfo, JwsInfo>): Promise<boolean> {
     const jwkSet = await firstValueFrom(this.fetchJwkSet());
-    const jwks = findJwk(jwtInfo.header, jwkSet.keys);
+    const jwks = findJwk(jwtOverJwsInfo.header, jwkSet.keys);
 
     if (jwks.length === 0) {
-      throw new MatchedJwkNotFoundError(jwtInfo.header);
+      throw new MatchedJwkNotFoundError(jwtOverJwsInfo);
     }
 
-    for (const verifier of this.verifiers) {
-      const result = await verifier.verify(jwtInfo, jwks);
+    for (const verify of this.verifiers) {
+      const result = await verify(jwtOverJwsInfo, jwks);
 
       if (typeof result === 'undefined') {
         continue;

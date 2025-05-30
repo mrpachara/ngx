@@ -1,12 +1,8 @@
-export * from './errors/callback.errors';
-export * from './errors/oauth2-client.errors';
-export * from './errors/scope.errors';
-export * from './errors/state-action.errors';
-
-export * from './errors/access-token.errors';
-export * from './errors/authorization-code.errors';
-
-export * from './errors/id-token.errors';
-export * from './errors/refresh-token.errors';
-
-export * from './errors/jwk.errors';
+export * from './errors/access-token';
+export * from './errors/authorization-code';
+export * from './errors/authorization-code-callback';
+export * from './errors/id-token';
+export * from './errors/jose';
+export * from './errors/jwk';
+export * from './errors/oauth2.client';
+export * from './errors/scope';

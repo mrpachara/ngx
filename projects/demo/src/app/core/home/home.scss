@@ -1,0 +1,33 @@
+h2 {
+  color: blue;
+}
+
+details {
+  & > summary {
+    cursor: pointer;
+  }
+}
+
+.-cl-warn {
+  color: red;
+}
+
+.-cl-sub-container {
+  margin-left: 4ch;
+}
+
+dl.-cmp-details-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+
+  margin-top: 1em;
+  margin-bottom: 1em;
+
+  & > dt {
+    font-weight: bold;
+  }
+
+  & > dd {
+    margin-left: 1ch;
+  }
+}

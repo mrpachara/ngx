@@ -5,6 +5,12 @@
     "paths": {
       "@mrpachara/ngx-oauth2-access-token": [
         "dist/mrpachara/ngx-oauth2-access-token"
+      ],
+      "@mrpachara/ngx-oauth2-access-token/jwt-verifiers": [
+        "dist/mrpachara/ngx-oauth2-access-token/jwt-verifiers"
+      ],
+      "@mrpachara/ngx-oauth2-access-token/jwt-verifiers/*": [
+        "dist/mrpachara/ngx-oauth2-access-token/jwt-verifiers/*"
       ]
     },
     "baseUrl": "./",
@@ -19,12 +25,15 @@
     "sourceMap": true,
     "declaration": false,
     "experimentalDecorators": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "importHelpers": true,
     "target": "ES2022",
     "module": "ES2022",
     "useDefineForClassFields": false,
-    "lib": ["ES2022", "DOM"]
+    "lib": [
+      "ES2022",
+      "DOM"
+    ]
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

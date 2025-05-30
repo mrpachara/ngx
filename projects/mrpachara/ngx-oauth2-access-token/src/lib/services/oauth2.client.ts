@@ -3,136 +3,158 @@ import {
   HttpContext,
   HttpErrorResponse,
 } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { Observable, catchError, throwError } from 'rxjs';
-
+import { inject, Injectable } from '@angular/core';
+import { catchError, firstValueFrom, throwError } from 'rxjs';
 import { Oauth2ClientResponseError } from '../errors';
-import { SKIP_ASSIGNING_ACCESS_TOKEN } from '../tokens';
+import { assignRequestData, takeUntilAbortignal } from '../helpers';
 import {
+  OAUTH2_CLIENT_CONFIG,
+  OAUTH2_CLIENT_ERROR_TRANSFORMER,
+  SKIP_ASSIGNING_ACCESS_TOKEN,
+} from '../tokens';
+import {
+  AccessTokenRequest,
   AccessTokenResponse,
-  Oauth2ClientErrorTransformer,
-  Oauth2ClientFullConfig,
-  StandardGrantsParams,
+  AdditionalParams,
+  Oauth2ClientConfig,
+  PickOptionalExcept,
 } from '../types';
 
-/** OAuth 2.0 client */
+const defaultOauth2ClientConfig: PickOptionalExcept<
+  Oauth2ClientConfig,
+  'clientSecret'
+> = {
+  clientCredentialsInParams: false,
+} as const;
+
+const existingNameSet = new Set<string>();
+
+function configure(config: Oauth2ClientConfig) {
+  if (typeof config.id.description === 'undefined') {
+    throw new Error(`oauth2 client id MUST has description`);
+  }
+
+  if (existingNameSet.has(config.id.description)) {
+    throw new Error(
+      `Non-unique oauth2 client id description '${config.id.description}'`,
+    );
+  }
+
+  existingNameSet.add(config.id.description);
+
+  return {
+    ...defaultOauth2ClientConfig,
+    ...config,
+  } as const;
+}
+
+@Injectable()
 export class Oauth2Client {
+  private readonly config = configure(inject(OAUTH2_CLIENT_CONFIG));
+
+  private readonly errorTransformer = inject(OAUTH2_CLIENT_ERROR_TRANSFORMER);
+
   private readonly http = inject(HttpClient);
 
-  /** The client name */
+  get id() {
+    return this.config.id;
+  }
+
   get name() {
-    return this.config.name;
+    return this.config.id.description!;
   }
 
-  constructor(
-    private readonly config: Oauth2ClientFullConfig,
-    private readonly errorTransformer: Oauth2ClientErrorTransformer,
-  ) {}
+  /** The client id of Oauth2Cient */
+  get clientId() {
+    return this.config.clientId;
+  }
 
-  private generateClientHeaderIfNeeded():
-    | { Authorization: string }
-    | undefined {
+  private generateHeaderAndBody(
+    request: AccessTokenRequest,
+    { params = {} as AdditionalParams } = {},
+  ) {
+    const formData = new FormData();
+
     if (this.config.clientCredentialsInParams) {
-      return undefined;
-    }
-
-    const authData = btoa(
-      `${this.config.clientId}:${this.config.clientSecret ?? ''}`,
-    );
-
-    return {
-      Authorization: `Basic ${authData}`,
-    };
-  }
-
-  private generateClientParamIfNeeded(withSecret = false):
-    | {
-        client_id: string;
-        client_secret?: string;
-      }
-    | undefined {
-    if (!this.config.clientCredentialsInParams) {
-      return undefined;
-    }
-
-    return this.generateClientParams(withSecret);
-  }
-
-  private generateClientParams<T extends boolean>(
-    withSecret: T,
-  ): true extends T
-    ? {
-        client_id: string;
-        client_secret?: string;
-      }
-    : { client_id: string } {
-    return {
-      client_id: this.config.clientId,
-      ...(withSecret && this.config.clientSecret
-        ? { client_secret: this.config.clientSecret }
-        : {}),
-    };
-  }
-
-  /**
-   * Request for the new access token. The method **DO NOT** store the new
-   * access token. The new access token **MUST** be stored manually.
-   *
-   * @param params The requesting parameters
-   * @returns The `Observable` of access token response
-   */
-  requestAccessToken<T extends StandardGrantsParams>(
-    params: T,
-  ): Observable<AccessTokenResponse> {
-    return this.http
-      .post<AccessTokenResponse>(
-        this.config.accessTokenUrl,
-        {
-          ...params,
-          ...this.generateClientParamIfNeeded(true),
-        },
-        {
-          context: new HttpContext().set(SKIP_ASSIGNING_ACCESS_TOKEN, true),
-          headers: {
-            ...this.generateClientHeaderIfNeeded(),
+      return {
+        headers: undefined,
+        body: assignRequestData(
+          formData,
+          {
+            ...request,
+            client_id: this.config.clientId,
+            ...(typeof this.config.clientSecret === 'undefined'
+              ? {}
+              : {
+                  client_secret: this.config.clientSecret,
+                }),
           },
-        },
-      )
-      .pipe(
-        catchError((err: unknown) => {
-          return throwError(
-            () =>
-              new Oauth2ClientResponseError(
-                this.config.name,
-                err instanceof HttpErrorResponse
-                  ? this.errorTransformer(err)
-                  : err instanceof Error
-                    ? {
-                        error: err.name,
-                        error_description: err.message,
-                      }
-                    : {
-                        error: 'Unknown',
-                        error_description: `${
-                          typeof err === 'object' ? JSON.stringify(err) : err
-                        }`,
-                      },
-                {
-                  cause: err,
-                },
-              ),
-          );
-        }),
+          { params },
+        ),
+      };
+    } else {
+      const authData = btoa(
+        `${this.config.clientId}:${this.config.clientSecret ?? ''}`,
       );
+
+      return {
+        headers: {
+          Authorization: `Basic ${authData}` as const,
+        },
+        body: assignRequestData(formData, request, { params }),
+      };
+    }
   }
 
   /**
-   * Get the client credential parameters. The result always exclude
-   * `client_secret`.
+   * Fetch the new access token. The method **DO NOT** store the new access
+   * token. The new access token **MUST** be stored manually.
    *
-   * @returns The client credential paramters excluding `client_secret`
+   * @param request The requesting parameters
+   * @returns The `Promise` of access token response
    */
-  getClientParams(): { client_id: string } {
-    return this.generateClientParams(false);
+  async fetchAccessToken<RES extends AccessTokenResponse = AccessTokenResponse>(
+    request: AccessTokenRequest,
+    {
+      params = {} as AdditionalParams,
+      signal = undefined as AbortSignal | undefined,
+    } = {},
+  ): Promise<RES> {
+    const { headers, body } = this.generateHeaderAndBody(request, { params });
+
+    return await firstValueFrom(
+      this.http
+        .post<RES>(this.config.accessTokenUrl, body, {
+          headers: headers,
+          context: new HttpContext().set(SKIP_ASSIGNING_ACCESS_TOKEN, true),
+        })
+        .pipe(
+          takeUntilAbortignal(signal),
+          catchError((err) =>
+            throwError(
+              () =>
+                new Oauth2ClientResponseError(
+                  this.name,
+                  err instanceof HttpErrorResponse
+                    ? this.errorTransformer(err)
+                    : err instanceof Error
+                      ? {
+                          error: err.name,
+                          error_description: err.message,
+                        }
+                      : {
+                          error: 'Unknown',
+                          error_description: `${
+                            typeof err === 'object' ? JSON.stringify(err) : err
+                          }`,
+                        },
+                  {
+                    cause: err,
+                  },
+                ),
+            ),
+          ),
+        ),
+    );
   }
 }

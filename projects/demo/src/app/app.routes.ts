@@ -1,18 +1,31 @@
-import { Routes } from '@angular/router';
-
-import { AuthorizationCodeCallbackComponent } from '@mrpachara/ngx-oauth2-access-token';
-
-import { HomeComponent } from './core/home/home.component';
+import { inject } from '@angular/core';
+import { Router, Routes } from '@angular/router';
+import {
+  AuthorizationCodeCallbackComponent,
+  provideAuthorizationCodeCallbackData,
+} from '@mrpachara/ngx-oauth2-access-token';
+import { demoOauth } from './app.config';
+import { Home } from './core/home/home';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
 
-  // NOTE: HomeComponent should call AccessTokenService.fetchToken()
-  //       or AccessTokenService.extract(idTokenService).
-  { path: 'home', component: HomeComponent },
+  { path: 'home', component: Home },
 
   {
     path: 'google/authorization',
+    providers: [
+      provideAuthorizationCodeCallbackData<{ intendedUrl: string }>(() => ({
+        id: demoOauth,
+        processFactory: () => {
+          const router = inject(Router);
+
+          return ({ intendedUrl }) => {
+            router.navigateByUrl(intendedUrl);
+          };
+        },
+      })),
+    ],
     component: AuthorizationCodeCallbackComponent,
   },
 ];

@@ -1,514 +1,426 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { inject, isDevMode } from '@angular/core';
+import { APP_ID, inject, Injectable, signal } from '@angular/core';
+import { ReplaySubject } from 'rxjs';
 import {
-  Observable,
-  Subject,
-  catchError,
-  concat,
-  defer,
-  distinctUntilChanged,
-  filter,
-  firstValueFrom,
-  from,
-  map,
-  merge,
-  of,
-  pipe,
-  race,
-  share,
-  switchMap,
-  take,
-  tap,
-  throwError,
-} from 'rxjs';
-
-import {
-  AccessTokenExpiredError,
-  InvalidScopeError,
-  NonRegisteredExtractorError,
+  AccessTokenNotFoundError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
 } from '../errors';
-import { validateAndTransformScopes } from '../functions';
+import { validateAndTransformScopes } from '../helpers';
+import { libPrefix } from '../predefined';
+import { ACCESS_TOKEN_CONFIG, ACCESS_TOKEN_STORAGE } from '../tokens';
 import {
-  AccessTokenStorage,
-  AccessTokenStorageFactory,
-  StoredAccessTokenResponse,
-} from '../storage';
-import {
-  ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
-  PREREQUIRED_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
-} from '../tokens';
-import {
-  AccessTokenFullConfig,
+  AccessTokenConfig,
   AccessTokenInfo,
+  AccessTokenMessage,
   AccessTokenResponse,
-  AccessTokenResponseExtractor,
-  AccessTokenResponseExtractorInfo,
-  AccessTokenResponseInfo,
-  AccessTokenServiceInfo,
-  DeepReadonly,
-  Provided,
+  AdditionalParams,
+  AuthorizationCodeGrantAccessTokenRequest,
+  ClientGrantAccessTokenRequest,
+  ExtensionGrantAccessTokenRequest,
+  ExtensionWithDataGrant,
+  ExtensionWithoutDataGrant,
+  PasswordGrantAccessTokenRequest,
+  PickOptional,
+  RefreshTokenGrantAccessTokenRequest,
   Scopes,
-  StandardGrantsParams,
+  StandardGrantType,
 } from '../types';
 import { Oauth2Client } from './oauth2.client';
-import { RefreshTokenService } from './refresh-token.service';
 
-const latencyTime = 2 * 5 * 1000;
+/** Default access token configuration */
+const defaultAccessTokenConfig: PickOptional<AccessTokenConfig> = {
+  /** `600_000` miliseconds (10 minutes) */
+  accessTokenTtl: 600_000,
 
-/** Access token service */
+  /** `2_592_000_000` miliseconds (30 days) */
+  refreshTokenTtl: 2_592_000_000,
+} as const;
+
+function configure(config: AccessTokenConfig) {
+  return {
+    ...defaultAccessTokenConfig,
+    ...config,
+  } as const;
+}
+
+/** Network latency time in units of **miliseconds** */
+const networkLatencyTime = 10_000;
+
+Injectable();
 export class AccessTokenService {
-  private readonly storageFactory = inject(AccessTokenStorageFactory);
-  private readonly storage: AccessTokenStorage;
-  private readonly refreshTokenService = inject(RefreshTokenService);
+  private readonly config = configure(inject(ACCESS_TOKEN_CONFIG));
 
-  private readonly prerequiredExtractors = inject(
-    PREREQUIRED_ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
-  );
-  private readonly scopedExtractors = inject(
-    ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
-    {
-      self: true,
-      optional: true,
-    },
-  );
-  private readonly parentExtractors = inject(
-    ACCESS_TOKEN_RESPONSE_EXTRACTOR_INFOS,
-    {
-      skipSelf: true,
-      optional: true,
-    },
-  );
+  private readonly client = inject(Oauth2Client);
 
-  private readonly extractorMap: Map<AccessTokenResponseExtractor, unknown>;
-  private readonly listeners: AccessTokenResponseExtractor[];
+  private readonly storage = inject(ACCESS_TOKEN_STORAGE);
 
-  private readonly accessTokenResponse$: Observable<
-    DeepReadonly<StoredAccessTokenResponse>
-  >;
+  get id() {
+    return this.client.id;
+  }
 
-  private readonly subjectStoredAccessTokenResponse$ = new Subject<
-    DeepReadonly<StoredAccessTokenResponse>
-  >();
-
-  private readonly storedAccessTokenResponse$: Observable<
-    DeepReadonly<StoredAccessTokenResponse>
-  >;
-
-  /** The name of service */
   get name() {
-    return this.config.name;
+    return this.client.name;
   }
 
-  constructor(
-    private readonly config: AccessTokenFullConfig,
-    private readonly individualExtractors: AccessTokenResponseExtractorInfo[],
-    private readonly renewAccessToken$: Observable<AccessTokenResponse> | null = null,
-    private readonly client: Oauth2Client,
-  ) {
-    this.extractorMap = new Map([
-      ...this.prerequiredExtractors,
-      ...(this.parentExtractors ?? []),
-      ...(this.scopedExtractors ?? []),
-      ...this.individualExtractors,
-    ]);
-
-    this.listeners = [...this.extractorMap.keys()];
-
-    this.storage = this.storageFactory.create(this.config.name);
-
-    const ready = new Promise<void>((resolve) => {
-      (async () => {
-        try {
-          const storedAccessTokenResponse =
-            await this.loadStoredAccessTokenResponse();
-          await this.updateToListeners(storedAccessTokenResponse);
-        } catch {
-          // Prevent error.
-        } finally {
-          resolve();
-        }
-      })();
-    });
-
-    this.accessTokenResponse$ = from(ready).pipe(
-      switchMap(() =>
-        // NOTE: multiple tabs can request refresh_token at the same time
-        //       so use race() for finding the winner.
-        race(
-          defer(() => this.loadStoredAccessTokenResponse()).pipe(
-            catchError((accessTokenErr: unknown) => {
-              return this.storeByRefreshToken().pipe(
-                catchError((refreshTokenErr: unknown) => {
-                  if (
-                    refreshTokenErr instanceof RefreshTokenNotFoundError ||
-                    refreshTokenErr instanceof RefreshTokenExpiredError
-                  ) {
-                    return throwError(() => accessTokenErr);
-                  }
-
-                  return throwError(() => refreshTokenErr);
-                }),
-              );
-            }),
-            catchError((err) => {
-              if (this.renewAccessToken$) {
-                if (isDevMode() && !(err instanceof HttpErrorResponse)) {
-                  console.log(err);
-                }
-
-                if (err instanceof HttpErrorResponse) {
-                  console.warn(err);
-                }
-
-                return this.renewAccessToken$.pipe(this.storeTokenPipe);
-              } else {
-                return throwError(() => err);
-              }
-            }),
-            tap(() => {
-              if (isDevMode()) {
-                console.log('access-token-race:', 'I am a winner!!!');
-              }
-            }),
-          ),
-          // NOTE: The access token is assigned by another tab.
-          this.watchStoredAccessTokenResponse().pipe(
-            filter(
-              (
-                storedTokenData,
-              ): storedTokenData is DeepReadonly<StoredAccessTokenResponse> =>
-                storedTokenData !== null,
-            ),
-            filter(
-              (storedTokenData) => storedTokenData.expiresAt >= Date.now(),
-            ),
-            take(1),
-            tap(() => {
-              if (isDevMode()) {
-                console.log('access-token-race:', 'I am a loser!!!');
-              }
-            }),
-          ),
-        ),
-      ),
-      share(),
-    );
-
-    this.storedAccessTokenResponse$ = merge(
-      this.subjectStoredAccessTokenResponse$,
-      this.watchStoredAccessTokenResponse().pipe(
-        filter(
-          (
-            storedAccessTokenResponse,
-          ): storedAccessTokenResponse is StoredAccessTokenResponse =>
-            storedAccessTokenResponse !== null,
-        ),
-      ),
-    ).pipe(distinctUntilChanged());
+  get clientId() {
+    return this.client.clientId;
   }
 
-  private readonly loadStoredAccessTokenResponse = async () => {
-    const storedAccessTokenResponse =
-      await this.storage.loadAccessTokenResponse();
+  readonly #ready = signal<boolean | undefined>(undefined);
+  readonly ready = this.#ready.asReadonly();
 
-    if (storedAccessTokenResponse.expiresAt < Date.now()) {
-      throw new AccessTokenExpiredError(this.config.name);
-    }
+  readonly #lastUpdated = signal<number | undefined>(undefined);
+  readonly lastUpdated = this.#lastUpdated.asReadonly();
 
-    return storedAccessTokenResponse;
-  };
-
-  private readonly storeStoringAccessTokenResponse = (
-    accessTokenResponse: StoredAccessTokenResponse,
-  ) => this.storage.storeAccessTokenResponse(accessTokenResponse);
-
-  private readonly removeStoredAccessTokenResponse = () =>
-    this.storage.removeAccessTokenResponse();
-
-  private readonly watchStoredAccessTokenResponse = () =>
-    this.storage.watchAccessTokenResponse();
-
-  private readonly transformAccessTokenResponse = (
-    accessTokenResponse: AccessTokenResponse,
-  ) => {
-    const currentTime = Date.now();
-
-    const { expires_in } = accessTokenResponse;
-
-    const storingAccessTokenResponse: StoredAccessTokenResponse = {
-      createdAt: currentTime,
-      expiresAt:
-        currentTime +
-        (expires_in ? expires_in * 1000 : this.config.accessTokenTtl) -
-        latencyTime,
-      response: accessTokenResponse,
-    };
-
-    return storingAccessTokenResponse;
-  };
-
-  private readonly updateToListeners = async (
-    storingAccessTokenResponse: StoredAccessTokenResponse,
-  ) => {
-    const results = await Promise.allSettled(
-      this.listeners
-        .filter(
-          (
-            listener,
-          ): listener is Provided<
-            typeof listener,
-            'onAccessTokenResponseUpdate'
-          > => typeof listener.onAccessTokenResponseUpdate === 'function',
-        )
-        .map((listener) =>
-          listener.onAccessTokenResponseUpdate(
-            this.serviceInfo(listener),
-            storingAccessTokenResponse,
-          ),
-        ),
-    );
-
-    if (isDevMode()) {
-      const errors = results
-        .filter(
-          (result): result is PromiseRejectedResult =>
-            result.status === 'rejected',
-        )
-        .map((err) => err.reason);
-
-      if (errors.length > 0) {
-        console.log(errors);
-      }
-    }
-
-    return results;
-  };
-
-  private readonly clearToListeners = async () => {
-    const results = await Promise.allSettled(
-      this.listeners
-        .filter(
-          (
-            listener,
-          ): listener is Provided<
-            typeof listener,
-            'onAccessTokenResponseClear'
-          > => typeof listener.onAccessTokenResponseClear === 'function',
-        )
-        .map((listener) =>
-          listener.onAccessTokenResponseClear(this.serviceInfo(listener)),
-        ),
-    );
-
-    if (isDevMode()) {
-      const errors = results
-        .filter(
-          (result): result is PromiseRejectedResult =>
-            result.status === 'rejected',
-        )
-        .map((err) => err.reason);
-
-      if (errors.length > 0) {
-        console.log(errors);
-      }
-    }
-
-    return results;
-  };
-
-  private readonly storeStoringToken = async (
-    storingAccessTokenResponse: StoredAccessTokenResponse,
-  ) => {
-    await this.updateToListeners(storingAccessTokenResponse);
-
-    // NOTE: Storing AccessTokenResponse must be called after updateToListeners()
-    //       unless localStorage Event will be tiggered too early.
-    return await this.storeStoringAccessTokenResponse(
-      storingAccessTokenResponse,
-    );
-  };
-
-  private readonly storeTokenPipe = pipe(
-    map(this.transformAccessTokenResponse),
-    switchMap(this.storeStoringToken),
-    tap((storedAccessTokenResponse) =>
-      this.subjectStoredAccessTokenResponse$.next(storedAccessTokenResponse),
-    ),
+  readonly #accessTokenResponse = new ReplaySubject<AccessTokenResponse | null>(
+    1,
   );
+  readonly accessTokenResponse = this.#accessTokenResponse.asObservable();
 
-  private readonly requestAccessToken = (
-    params: StandardGrantsParams,
-  ): Observable<AccessTokenResponse> => {
-    return this.client.requestAccessToken({
-      ...this.config.additionalParams,
-      ...params,
-    });
-  };
+  readonly #uuid = crypto.randomUUID();
 
-  private serviceInfo<T extends AccessTokenResponse, C>(
-    extractor: AccessTokenResponseExtractor<T, C>,
-  ): AccessTokenServiceInfo<C> {
-    if (!this.extractorMap.has(extractor as AccessTokenResponseExtractor)) {
-      throw new NonRegisteredExtractorError(
-        extractor.constructor.name,
-        this.constructor.name,
-      );
-    }
+  readonly #bc: BroadcastChannel;
 
-    return {
-      serviceConfig: this.config,
-      config: this.extractorMap.get(
-        extractor as AccessTokenResponseExtractor,
-      ) as C,
-      client: this.client,
-      storage: this.storage.keyValuePairsStorage,
-    };
+  #post(
+    type: AccessTokenMessage['type'],
+    timestamp: number,
+    ready: boolean,
+    to?: AccessTokenMessage['to'],
+  ): void {
+    this.#bc.postMessage({
+      type,
+      timestamp: timestamp,
+      from: this.#uuid,
+      ...(to ? { to } : {}),
+      ready,
+    } satisfies AccessTokenMessage);
   }
 
-  private storeByRefreshToken(
-    scopes?: Scopes,
-  ): Observable<DeepReadonly<StoredAccessTokenResponse>> {
-    return this.refreshTokenService
-      .fetchToken(this.serviceInfo(this.refreshTokenService))
-      .pipe(
-        switchMap((token) => {
-          const scope = scopes ? validateAndTransformScopes(scopes) : null;
+  constructor() {
+    this.#bc = new BroadcastChannel(
+      `${inject(APP_ID)}-${libPrefix}-access-token:${this.name}`,
+    );
 
-          if (scope instanceof InvalidScopeError) {
-            return throwError(() => scope);
+    this.#bc.addEventListener(
+      'message',
+      (ev: MessageEvent<AccessTokenMessage>) => {
+        const message = ev.data;
+
+        if (typeof message.to !== 'undefined' && message.to !== this.#uuid) {
+          return;
+        }
+
+        switch (message.type) {
+          case 'external-storing':
+            this.#ready.set(message.ready);
+            this.#lastUpdated.set(message.timestamp);
+
+            return;
+          default:
+            console.warn(
+              `Broadcast '${this.#bc.name}' does not implement '${(message as { type: string }).type}.'`,
+            );
+        }
+      },
+    );
+  }
+
+  #currentLoad: Promise<AccessTokenInfo> | undefined;
+
+  /** NOTE: this method **MUST** be called from `loadAccessToken()` only. */
+  async #tryLoad(
+    projector: () => Promise<AccessTokenInfo>,
+  ): Promise<AccessTokenInfo> {
+    return await (this.#currentLoad ??
+      (this.#currentLoad = (async () => {
+        await this.storage.lock();
+
+        try {
+          const result = await projector();
+
+          this.#ready.set(true);
+
+          return result;
+        } catch (err) {
+          this.#ready.set(false);
+
+          throw err;
+        } finally {
+          await this.storage.release();
+          this.#currentLoad = undefined;
+        }
+      })()));
+  }
+
+  /**
+   * Try to laod access token information from storage:
+   *
+   * 1. If not found or expired then try to get the new one from _refresh token_.
+   * 2. If failed then try to get from `fetchNewAccessToken`.
+   * 3. If failed then throw `AccessTokenNotFoundError`.
+   *
+   * @throws AccessTokenNotFoundError
+   */
+  async loadAccessTokenInfo(): Promise<AccessTokenInfo> {
+    return await this.#tryLoad(async () => {
+      while (true) {
+        const storedAccessToken = await this.storage.load('access');
+
+        if (storedAccessToken && storedAccessToken.expiresAt > Date.now()) {
+          return {
+            type: storedAccessToken.data.token_type,
+            token: storedAccessToken.data.access_token,
+          } as const;
+        }
+
+        const storageRefreshToken = await this.storage.load('refresh');
+
+        if (storageRefreshToken && storageRefreshToken.expiresAt > Date.now()) {
+          try {
+            await this.fetch('refresh_token');
+
+            continue;
+          } catch (err) {
+            console.warn(err);
+          }
+        }
+
+        throw new AccessTokenNotFoundError(this.name);
+      }
+    });
+  }
+
+  #changeReadyByStorage(
+    ready: true,
+    accessTokenResponse: AccessTokenResponse,
+  ): void;
+
+  #changeReadyByStorage(ready: false): void;
+
+  #changeReadyByStorage(
+    ready: boolean,
+    accessTokenResponse: AccessTokenResponse | null = null,
+  ): void {
+    const now = Date.now();
+
+    this.#ready.set(ready);
+    this.#lastUpdated.set(now);
+
+    this.#accessTokenResponse.next(accessTokenResponse);
+
+    this.#post('external-storing', now, ready);
+  }
+
+  /** Fetch access token from _Authorization Code_ grant. Then store to storage. */
+  async fetch(
+    type: 'authorization_code',
+    code: string,
+    redirectUri: string,
+    opts?: { codeVerifier?: string; params?: AdditionalParams },
+  ): Promise<void>;
+
+  /**
+   * Fetch access token from _Resource Owner Password Credentials_ grant. Then
+   * store to storage.
+   */
+  async fetch(
+    type: 'password',
+    username: string,
+    password: string,
+    opts?: { scopes?: Scopes; params?: AdditionalParams },
+  ): Promise<void>;
+
+  /** Fetch access token from _Client Credentials_ grant. Then store to storage. */
+  async fetch(
+    type: 'client_credentials',
+    opts?: { scopes?: Scopes; params?: AdditionalParams },
+  ): Promise<void>;
+
+  /**
+   * Fetch access token from _Extension_ without data grants. Then store to
+   * storage.
+   */
+  async fetch<EG extends ExtensionWithoutDataGrant>(
+    type: EG['grantType'],
+    opts?: { scopes?: Scopes; params?: AdditionalParams },
+  ): Promise<void>;
+
+  /**
+   * Fetch access token from _Extension_ with data grants. Then store to
+   * storage.
+   */
+  async fetch<EG extends ExtensionWithDataGrant>(
+    type: EG['grantType'],
+    opts?: { data: EG['dataType']; scopes?: Scopes; params?: AdditionalParams },
+  ): Promise<void>;
+
+  /**
+   * Fetch access token from _Refreshing an Access Token_ grant. Then store to
+   * storage.
+   *
+   * @throws RefreshTokenNotFoundError | RefreshTokenExpiredError
+   */
+  async fetch(
+    type: 'refresh_token',
+    opts?: { scopes?: Scopes; params?: AdditionalParams },
+  ): Promise<void>;
+
+  async fetch<EG extends ExtensionWithoutDataGrant | ExtensionWithDataGrant>(
+    type: StandardGrantType,
+    ...args: unknown[]
+  ): Promise<void> {
+    const { request, params } = await (async () => {
+      switch (type) {
+        case 'authorization_code': {
+          const [code, redirectUri, { codeVerifier, params } = {}] = args as [
+            string,
+            string,
+            { codeVerifier?: string; params?: AdditionalParams } | undefined,
+          ];
+
+          return {
+            request: {
+              grant_type: type,
+              code,
+              redirect_uri: redirectUri,
+              ...(typeof codeVerifier === 'undefined'
+                ? {}
+                : { code_verifier: codeVerifier }),
+            } satisfies AuthorizationCodeGrantAccessTokenRequest,
+            params,
+          } as const;
+        }
+
+        case 'password': {
+          const [username, password, { scopes, params } = {}] = args as [
+            string,
+            string,
+            { scopes?: Scopes; params?: AdditionalParams } | undefined,
+          ];
+
+          return {
+            request: {
+              grant_type: type,
+              username,
+              password,
+              ...(typeof scopes === 'undefined'
+                ? {}
+                : { scope: validateAndTransformScopes(scopes) }),
+            } satisfies PasswordGrantAccessTokenRequest,
+            params,
+          } as const;
+        }
+
+        case 'client_credentials': {
+          const [{ scopes, params } = {}] = args as [
+            { scopes?: Scopes; params?: AdditionalParams } | undefined,
+          ];
+
+          return {
+            request: {
+              grant_type: type,
+              ...(typeof scopes === 'undefined'
+                ? {}
+                : { scope: validateAndTransformScopes(scopes) }),
+            } satisfies ClientGrantAccessTokenRequest,
+            params,
+          } as const;
+        }
+
+        case 'refresh_token': {
+          const [{ scopes, params } = {}] = args as [
+            { scopes?: Scopes; params?: AdditionalParams } | undefined,
+          ];
+
+          const storageRefreshToken = await this.storage.load('refresh');
+
+          if (typeof storageRefreshToken === 'undefined') {
+            throw new RefreshTokenNotFoundError(this.name);
           }
 
-          return this.requestAccessToken({
-            grant_type: 'refresh_token',
-            refresh_token: token,
-            ...(scope ? { scope } : {}),
-          });
-        }),
-        this.storeTokenPipe,
-      );
-  }
+          if (storageRefreshToken.expiresAt <= Date.now()) {
+            throw new RefreshTokenExpiredError(this.name);
+          }
 
-  private applyWatch(
-    watchMode: boolean,
-  ): Observable<DeepReadonly<StoredAccessTokenResponse>> {
-    if (watchMode) {
-      return concat(this.accessTokenResponse$, this.storedAccessTokenResponse$);
+          return {
+            request: {
+              grant_type: type,
+              refresh_token: storageRefreshToken.data,
+              ...(typeof scopes === 'undefined'
+                ? {}
+                : { scope: validateAndTransformScopes(scopes) }),
+            } satisfies RefreshTokenGrantAccessTokenRequest,
+            params,
+          } as const;
+        }
+
+        default: {
+          const [{ data = {}, scopes, params } = {}] = args as [
+            | {
+                data?: EG['dataType'];
+                scopes?: Scopes;
+                params?: AdditionalParams;
+              }
+            | undefined,
+          ];
+
+          return {
+            request: {
+              grant_type: type,
+              ...data,
+              ...(typeof scopes === 'undefined'
+                ? {}
+                : { scope: validateAndTransformScopes(scopes) }),
+            } satisfies ExtensionGrantAccessTokenRequest,
+            params,
+          } as const;
+        }
+      }
+    })();
+
+    const accessTokenResponse = await this.client.fetchAccessToken(request, {
+      params,
+    });
+
+    const now = Date.now();
+    if (accessTokenResponse.refresh_token) {
+      await this.storage.store('refresh', {
+        expiresAt: now + this.config.refreshTokenTtl - networkLatencyTime,
+        data: accessTokenResponse.refresh_token,
+      });
+    } else {
+      const storedRefreshToken = await this.storage.load('refresh');
+
+      if (storedRefreshToken) {
+        await this.storage.store('refresh', {
+          expiresAt: now + this.config.refreshTokenTtl - networkLatencyTime,
+          data: storedRefreshToken.data,
+        });
+      }
     }
 
-    return this.accessTokenResponse$;
+    await this.storage.store('access', {
+      expiresAt:
+        now +
+        (typeof accessTokenResponse.expires_in === 'undefined' ||
+        accessTokenResponse.expires_in === null
+          ? this.config.accessTokenTtl
+          : accessTokenResponse.expires_in * 1_000) -
+        networkLatencyTime,
+      data: accessTokenResponse,
+    });
+
+    return this.#changeReadyByStorage(true, accessTokenResponse);
   }
 
   /**
-   * Fetch access token information.
+   * Clear acccess token and refresh token storage.
    *
-   * @param watchMode The mode for fetching, when `watchMode` is `true`, the
-   *   observable emits value every times access token is changed. The default
-   *   value is `false`.
-   * @returns The `Observable` of immuable access token information. If
-   *   `watchMode` is `false`, it emits only one value. But if `watchMode` is
-   *   `ture`, it fetch and emit the first one and the following changed value.
+   * @returns
    */
-  fetchToken(watchMode = false): Observable<DeepReadonly<AccessTokenInfo>> {
-    return this.applyWatch(watchMode).pipe(
-      map((storedAccessTokenResponse) => ({
-        type: storedAccessTokenResponse.response.token_type,
-        token: storedAccessTokenResponse.response.access_token,
-      })),
-    );
-  }
+  async clearTokens(): Promise<void> {
+    await this.storage.clear();
 
-  /**
-   * Fetch access token response information.
-   *
-   * @param watchMode The mode for fetching, when `watchMode` is `true`, the
-   *   observable emits value every times access token is changed. The default
-   *   value is `false`.
-   * @returns The `Observable` of immuable access token information. If
-   *   `watchMode` is `false`, it emits only one value. But if `watchMode` is
-   *   `ture`, it fetch and emit the first one and the following changed value.
-   */
-  fetchResponse<R extends AccessTokenResponse = AccessTokenResponse>(
-    watchMode = false,
-  ): Observable<DeepReadonly<AccessTokenResponseInfo<R>>> {
-    return this.applyWatch(watchMode) as Observable<
-      DeepReadonly<AccessTokenResponseInfo<R>>
-    >;
-  }
-
-  /**
-   * Exchange refresh token for the new access token. The method will store the
-   * new access token internally.
-   *
-   * @param scopes The new scopes for the new access token. If it is not
-   *   specified, the OAuth server use the same scopes as the previous one. If
-   *   it is specified, it **MUST** be a subset of the previous one.
-   * @returns The `Observable` of immuable access token response
-   */
-  exchangeRefreshToken(
-    scopes?: Scopes,
-  ): Observable<DeepReadonly<AccessTokenResponse>> {
-    return this.storeByRefreshToken(scopes).pipe(
-      map((storedAccessTokenResponse) => storedAccessTokenResponse.response),
-    );
-  }
-
-  /**
-   * Fetch access token response information and extract response by using
-   * `extractor`.
-   *
-   * @param extractor The extractor
-   * @param watchMode The mode for fetching, when `watchMode` is `true`, the
-   *   observable emits value every times access token is changed. The default
-   *   value is `false`.
-   * @returns The `Observable` of immuable access token information. If
-   *   `watchMode` is `false`, it emits only one value. But if `watchMode` is
-   *   `ture`, it fetch and emit the first one and the following changed value.
-   */
-  extract<T extends AccessTokenResponse, C, R>(
-    extractor: AccessTokenResponseExtractor<T, C, R>,
-    watchMode = false,
-  ): Observable<R> {
-    return this.fetchResponse<T>(watchMode).pipe(
-      extractor.extractPipe(this.serviceInfo(extractor)),
-    );
-  }
-
-  /**
-   * Set the new access token response manually.
-   *
-   * @param accessTokenResponse The access token response to be set
-   * @returns The `Promise` of immuable access token response
-   */
-  async setAccessTokenResponse(
-    accessTokenResponse: AccessTokenResponse,
-  ): Promise<DeepReadonly<AccessTokenResponse>> {
-    return firstValueFrom(
-      of(accessTokenResponse).pipe(
-        this.storeTokenPipe,
-        map(() => accessTokenResponse),
-      ),
-    );
-  }
-
-  /**
-   * Remove only access token.
-   *
-   * @returns The `Promise` of `void`.
-   */
-  async removeToken(): Promise<void> {
-    return await this.removeStoredAccessTokenResponse();
-  }
-
-  /**
-   * Clear all tokens including access token and the related data from
-   * extractors.
-   *
-   * @returns The `Promise` of `void`.
-   */
-  async clearAllTokens(): Promise<void> {
-    await this.removeToken();
-    await this.clearToListeners();
+    return this.#changeReadyByStorage(false);
   }
 }
