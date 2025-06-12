@@ -1,6 +1,13 @@
-export class IdTokenNotFoundError extends Error {
+export class IdTokenInfoNotFoundError extends Error {
   constructor(name: string, options?: ErrorOptions) {
-    super(`ID token of '${name}' is not found.`, options);
+    super(`ID token infomation of '${name}' is not found.`, options);
+    this.name = this.constructor.name;
+  }
+}
+
+export class IdTokenClaimsNotFoundError extends Error {
+  constructor(name: string, options?: ErrorOptions) {
+    super(`ID token claims of '${name}' is not found.`, options);
     this.name = this.constructor.name;
   }
 }

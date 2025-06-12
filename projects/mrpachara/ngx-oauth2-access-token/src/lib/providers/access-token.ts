@@ -11,7 +11,8 @@ import { AccessTokenService, Oauth2Client } from '../services';
 import { AccessTokenIndexedDbStorage } from '../storages/indexed-db/access-token-indexed-db.storage';
 import {
   ACCESS_TOKEN_CONFIG,
-  ACCESS_TOKEN_SERVICES,
+  ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS,
+  ACCESS_TOKEN_SERVICE_TOKENS,
   ACCESS_TOKEN_STORAGE,
   OAUTH2_CLIENT_CONFIG,
   OAUTH2_CLIENT_ERROR_TRANSFORMER,
@@ -35,7 +36,8 @@ export function provideAccessToken(
   config: Oauth2ClientConfig & AccessTokenConfig,
   ...features: readonly AccessTokenFeature[]
 ): EnvironmentProviders {
-  const { description: name } = config.id;
+  const { id } = config;
+  const { description: name } = id;
 
   if (typeof name === 'undefined' || name.trim() === '') {
     throw new Error(`'id' MUST be assigned non-empty 'description'`);
@@ -84,13 +86,27 @@ export function provideAccessToken(
         }).get(AccessTokenService),
     },
     {
-      provide: ACCESS_TOKEN_SERVICES,
+      provide: ACCESS_TOKEN_SERVICE_TOKENS,
       multi: true,
+      useValue: { id, token } as const,
+    },
+    {
+      provide: ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS,
+      useFactory: () => [
+        ...(inject(ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS, {
+          skipSelf: true,
+          optional: true,
+        }) ?? []),
+        ...inject(ACCESS_TOKEN_SERVICE_TOKENS),
+      ],
+    },
+    {
+      provide: AccessTokenService,
       useExisting: token,
     },
     features
       .filter((feature) => !feature.internal)
-      .map(({ providers }) => providers(token)),
+      .map(({ providers }) => providers(id, token)),
   ]);
 }
 
@@ -116,7 +132,10 @@ export interface AccessTokenFeatureType<
   readonly internal: E;
   readonly providers: E extends true
     ? readonly Provider[]
-    : (token: InjectionToken<AccessTokenService>) => readonly Provider[];
+    : (
+        id: symbol,
+        accessTokenServiceToken: InjectionToken<AccessTokenService>,
+      ) => readonly Provider[];
 }
 
 // ------------- Features -----------------

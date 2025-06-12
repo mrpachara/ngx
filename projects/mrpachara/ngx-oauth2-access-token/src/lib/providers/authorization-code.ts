@@ -1,10 +1,10 @@
-import { inject, Injector, Provider } from '@angular/core';
-import { libPrefix } from '../predefined';
+import { inject, InjectionToken, Injector, Provider } from '@angular/core';
 import { AccessTokenService, AuthorizationCodeService } from '../services';
 import { StateIndexedDbStorage } from '../storages/indexed-db/state-indexed-db.storage';
 import {
   AUTHORIZATION_CODE_CONFIG,
-  AUTHORIZATION_CODE_SERVICES,
+  AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS,
+  AUTHORIZATION_CODE_SERVICE_TOKENS,
   AUTHORIZATION_CODE_STORAGE,
   STORAGE_NAME,
 } from '../tokens';
@@ -28,37 +28,61 @@ export function withAuthorizationCode(
   return {
     kind: AccessTokenFeatureKind.AccessTokenExtensionFeature,
     internal: false,
-    providers: (token) => [
-      {
-        provide: AUTHORIZATION_CODE_SERVICES,
-        multi: true,
-        useFactory: () =>
-          Injector.create({
-            name: `${libPrefix}-authorization-code-internal-injector`,
-            parent: inject(Injector),
-            providers: [
-              {
-                provide: AUTHORIZATION_CODE_CONFIG,
-                useValue: config,
-              },
-              {
-                provide: STORAGE_NAME,
-                useFactory: () => inject(token).name,
-              },
-              {
-                provide: AUTHORIZATION_CODE_STORAGE,
-                useClass: StateIndexedDbStorage,
-              },
-              {
-                provide: AccessTokenService,
-                useExisting: token,
-              },
-              features.map((feature) => feature.providers),
-              AuthorizationCodeService,
-            ],
-          }).get(AuthorizationCodeService),
-      },
-    ],
+    providers: (id, accessTokenServiceToken) => {
+      const token = new InjectionToken<AuthorizationCodeService>(
+        `${accessTokenServiceToken}:authorization-code`,
+      );
+
+      return [
+        {
+          provide: token,
+          useFactory: () =>
+            Injector.create({
+              name: `${token}-internal`,
+              parent: inject(Injector),
+              providers: [
+                {
+                  provide: AccessTokenService,
+                  useExisting: accessTokenServiceToken,
+                },
+                {
+                  provide: AUTHORIZATION_CODE_CONFIG,
+                  useValue: config,
+                },
+                {
+                  provide: STORAGE_NAME,
+                  useFactory: () => inject(AccessTokenService).name,
+                },
+                {
+                  provide: AUTHORIZATION_CODE_STORAGE,
+                  useClass: StateIndexedDbStorage,
+                },
+                features.map((feature) => feature.providers),
+                AuthorizationCodeService,
+              ],
+            }).get(AuthorizationCodeService),
+        },
+        {
+          provide: AUTHORIZATION_CODE_SERVICE_TOKENS,
+          multi: true,
+          useValue: { id, token } as const,
+        },
+        {
+          provide: AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS,
+          useFactory: () => [
+            ...(inject(AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS, {
+              skipSelf: true,
+              optional: true,
+            }) ?? []),
+            ...inject(AUTHORIZATION_CODE_SERVICE_TOKENS),
+          ],
+        },
+        {
+          provide: AuthorizationCodeService,
+          useExisting: token,
+        },
+      ];
+    },
   };
 }
 

@@ -3,7 +3,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  effect,
   inject,
   resource,
 } from '@angular/core';
@@ -49,7 +48,7 @@ export class Home {
   // private readonly idTokenService = inject(IdTokenService);
   private readonly jwkDispatcher = inject(JwkDispatcher);
 
-  protected readonly ready = computed(() => this.accessTokenService.ready());
+  protected readonly readyResource = this.accessTokenService.readyResource();
 
   // AccessToken
   protected readonly accessTokenResource = resource({
@@ -102,63 +101,6 @@ export class Home {
   protected readonly errorIdTokenJoseMessage = computed(() =>
     extractErrorMessage(this.idTokenJoseVerificationResource.error()),
   );
-
-  // protected readonly errorIdTokenMessage = computed(() =>
-  //   extractErrorMessage(this.accessTokenJoseResource.error()),
-  // );
-
-  // protected readonly accessToken = toSignal(
-  //   defer(() => this.accessTokenService.loadAccessToken()).pipe(
-  //     tap(() => console.debug('get new access token')),
-  //     catchError((err) => {
-  //       if (typeof err.stack === 'string') {
-  //         const [message] = err.stack.split('\n', 1);
-  //         this.errorAccessTokenMessage.set(message);
-  //       } else {
-  //         this.errorAccessTokenMessage.set(`${err}`);
-  //       }
-
-  //       return of(undefined);
-  //     }),
-  //   ),
-  // );
-
-  constructor() {
-    effect(() => {
-      if (typeof this.accessTokenService.lastUpdated() !== 'undefined') {
-        this.accessTokenResource.reload();
-      }
-    });
-  }
-
-  // private readonly idToken$ = this.accessTokenService
-  //   .extract(this.idTokenService, true)
-  //   .pipe(
-  //     tap(() => console.debug('get new ID token')),
-  //     catchError((err) => {
-  //       if (typeof err.stack === 'string') {
-  //         const [message] = err.stack.split('\n', 1);
-  //         this.errorIdTokenMessage.set(message);
-  //       } else {
-  //         this.errorIdTokenMessage.set(`${err}`);
-  //       }
-  //       return of(undefined);
-  //     }),
-  //     share(),
-  //   );
-
-  // NOTE: Unlike async pipe ( | async), toSignal() subscribes observable here.
-  //       So the result could be evaluated before it is ready.
-  // protected readonly idToken = toSignal(this.idToken$);
-
-  // protected readonly idTokenVerified = toSignal(
-  //   this.idToken$.pipe(
-  //     filter(
-  //       (idToken): idToken is IdTokenInfo => typeof idToken !== 'undefined',
-  //     ),
-  //     switchMap(async (idToken) => this.jwkServiceResolver.verify(idToken)),
-  //   ),
-  // );
 
   async renewAccessToken(): Promise<void> {
     await this.accessTokenService.fetch('refresh_token');

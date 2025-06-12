@@ -1,4 +1,4 @@
-import { inject, InjectionToken, Injector, isDevMode } from '@angular/core';
+import { inject, InjectionToken, isDevMode } from '@angular/core';
 import { IdTokenExtractor } from '../services/id-token.extractor';
 import { IdTokenStorage } from '../types/storages/id-token';
 
@@ -7,14 +7,27 @@ export const ID_TOKEN_STORAGE = new InjectionToken<IdTokenStorage>(
   'id-token-storage',
 );
 
-/** The injection token for ID Token extractors */
-export const ID_TOKEN_EXTRACTORS = new InjectionToken<IdTokenExtractor[]>(
-  'id-token-extractors',
+/** The injection token for ID Token extractor tokens */
+export const ID_TOKEN_EXTRACTOR_TOKENS = new InjectionToken<
   {
-    providedIn: 'root',
-    factory: () => [],
-  },
-);
+    readonly id: symbol;
+    readonly token: InjectionToken<IdTokenExtractor>;
+  }[]
+>('id-token-extractor-tokens', {
+  providedIn: 'root',
+  factory: () => [],
+});
+
+/** The injection token for ID Token extractor hierarchized tokens */
+export const ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS = new InjectionToken<
+  {
+    readonly id: symbol;
+    readonly token: InjectionToken<IdTokenExtractor>;
+  }[]
+>('id-token-extractor-hierarchized-tokens', {
+  providedIn: 'root',
+  factory: () => [],
+});
 
 /**
  * Inject IdTokenExtractor from the given id.
@@ -24,18 +37,14 @@ export const ID_TOKEN_EXTRACTORS = new InjectionToken<IdTokenExtractor[]>(
  * @throws If is not found.
  * @publicApi
  */
-export function injectIdTokenExtractor(
-  id: symbol,
-  { injector = undefined as Injector | undefined } = {},
-): IdTokenExtractor {
-  const services =
-    injector?.get(ID_TOKEN_EXTRACTORS) ?? inject(ID_TOKEN_EXTRACTORS);
+export function injectIdTokenExtractor(id: symbol): IdTokenExtractor {
+  const tokenItems = inject(ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS);
 
-  const service = services.find((service) => service.id === id);
+  const tokenItem = tokenItems.find((tokenItem) => tokenItem.id === id);
 
-  if (!service) {
+  if (!tokenItem) {
     if (isDevMode()) {
-      console.debug('ID_TOKEN_EXTRACTORS', services);
+      console.debug('ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS', tokenItems);
     }
 
     throw new Error(
@@ -43,5 +52,5 @@ export function injectIdTokenExtractor(
     );
   }
 
-  return service;
+  return inject(tokenItem.token);
 }

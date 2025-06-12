@@ -22,7 +22,20 @@ export interface AccessTokenInfo {
   readonly token: string;
 }
 
-export interface AccessTokenNotificationData {
-  readonly id: symbol;
-  readonly accessTokenResponse: AccessTokenResponse | null;
+export const storedData = Symbol('stored-data');
+export const removedData = Symbol('removed-data');
+
+export interface AccessTokenResponseUpdatedData<
+  T extends AccessTokenResponse = AccessTokenResponse,
+> {
+  readonly timestamp: number;
+  readonly accessTokenResponse: T | typeof removedData | typeof storedData;
+}
+
+export interface AccessTokenResponseExtractor<
+  T extends AccessTokenResponse = AccessTokenResponse,
+> {
+  register(id: symbol): this;
+  update(updatedData: AccessTokenResponseUpdatedData<T>): Promise<void>;
+  ready(status: boolean): void;
 }

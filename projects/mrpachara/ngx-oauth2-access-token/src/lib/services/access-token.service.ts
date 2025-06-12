@@ -1,5 +1,11 @@
-import { APP_ID, inject, Injectable, signal } from '@angular/core';
-import { ReplaySubject } from 'rxjs';
+import {
+  APP_ID,
+  effect,
+  inject,
+  Injectable,
+  resource,
+  signal,
+} from '@angular/core';
 import {
   AccessTokenNotFoundError,
   RefreshTokenExpiredError,
@@ -7,12 +13,17 @@ import {
 } from '../errors';
 import { validateAndTransformScopes } from '../helpers';
 import { libPrefix } from '../predefined';
-import { ACCESS_TOKEN_CONFIG, ACCESS_TOKEN_STORAGE } from '../tokens';
+import {
+  ACCESS_TOKEN_CONFIG,
+  ACCESS_TOKEN_RESPONSE_EXTRACTORS,
+  ACCESS_TOKEN_STORAGE,
+} from '../tokens';
 import {
   AccessTokenConfig,
   AccessTokenInfo,
   AccessTokenMessage,
   AccessTokenResponse,
+  AccessTokenResponseUpdatedData,
   AdditionalParams,
   AuthorizationCodeGrantAccessTokenRequest,
   ClientGrantAccessTokenRequest,
@@ -22,8 +33,10 @@ import {
   PasswordGrantAccessTokenRequest,
   PickOptional,
   RefreshTokenGrantAccessTokenRequest,
+  removedData,
   Scopes,
   StandardGrantType,
+  storedData,
 } from '../types';
 import { Oauth2Client } from './oauth2.client';
 
@@ -66,16 +79,29 @@ export class AccessTokenService {
     return this.client.clientId;
   }
 
+  private readonly extractors = [
+    ...(inject(ACCESS_TOKEN_RESPONSE_EXTRACTORS, {
+      optional: true,
+    }) ?? []),
+  ].map((extractor) => extractor.register(this.id));
+
   readonly #ready = signal<boolean | undefined>(undefined);
-  readonly ready = this.#ready.asReadonly();
+  readyResource() {
+    return resource({
+      params: () => this.#ready(),
+      loader: async ({ params: ready }) => ready,
+    });
+  }
 
-  readonly #lastUpdated = signal<number | undefined>(undefined);
-  readonly lastUpdated = this.#lastUpdated.asReadonly();
-
-  readonly #accessTokenResponse = new ReplaySubject<AccessTokenResponse | null>(
-    1,
+  readonly #lastUpdated = signal<AccessTokenResponseUpdatedData | undefined>(
+    undefined,
   );
-  readonly accessTokenResponse = this.#accessTokenResponse.asObservable();
+  lastUpdatedResource() {
+    return resource({
+      params: () => this.#lastUpdated(),
+      loader: async ({ params: lastUpdated }) => lastUpdated,
+    });
+  }
 
   readonly #uuid = crypto.randomUUID();
 
@@ -113,7 +139,10 @@ export class AccessTokenService {
         switch (message.type) {
           case 'external-storing':
             this.#ready.set(message.ready);
-            this.#lastUpdated.set(message.timestamp);
+            this.#lastUpdated.set({
+              timestamp: message.timestamp,
+              accessTokenResponse: storedData,
+            } as const);
 
             return;
           default:
@@ -123,6 +152,22 @@ export class AccessTokenService {
         }
       },
     );
+
+    effect(() => {
+      const state = this.#ready();
+
+      if (typeof state !== 'undefined') {
+        this.extractors.forEach((extractor) => extractor.ready(state));
+      }
+    });
+
+    effect(() => {
+      const lastUpdated = this.#lastUpdated();
+
+      if (lastUpdated?.accessTokenResponse === storedData) {
+        this.extractors.forEach((extractor) => extractor.update(lastUpdated));
+      }
+    });
   }
 
   #currentLoad: Promise<AccessTokenInfo> | undefined;
@@ -193,20 +238,27 @@ export class AccessTokenService {
   #changeReadyByStorage(
     ready: true,
     accessTokenResponse: AccessTokenResponse,
-  ): void;
+  ): Promise<void>;
 
-  #changeReadyByStorage(ready: false): void;
+  #changeReadyByStorage(ready: false): Promise<void>;
 
-  #changeReadyByStorage(
+  async #changeReadyByStorage(
     ready: boolean,
-    accessTokenResponse: AccessTokenResponse | null = null,
-  ): void {
+    accessTokenResponse: AccessTokenResponse | typeof removedData = removedData,
+  ): Promise<void> {
     const now = Date.now();
 
-    this.#ready.set(ready);
-    this.#lastUpdated.set(now);
+    const updatedData = {
+      timestamp: now,
+      accessTokenResponse,
+    } as const;
 
-    this.#accessTokenResponse.next(accessTokenResponse);
+    await Promise.allSettled(
+      this.extractors.map((extractor) => extractor.update(updatedData)),
+    );
+
+    this.#ready.set(ready);
+    this.#lastUpdated.set(updatedData);
 
     this.#post('external-storing', now, ready);
   }
@@ -410,7 +462,7 @@ export class AccessTokenService {
       data: accessTokenResponse,
     });
 
-    return this.#changeReadyByStorage(true, accessTokenResponse);
+    return await this.#changeReadyByStorage(true, accessTokenResponse);
   }
 
   /**
@@ -421,6 +473,6 @@ export class AccessTokenService {
   async clearTokens(): Promise<void> {
     await this.storage.clear();
 
-    return this.#changeReadyByStorage(false);
+    return await this.#changeReadyByStorage(false);
   }
 }

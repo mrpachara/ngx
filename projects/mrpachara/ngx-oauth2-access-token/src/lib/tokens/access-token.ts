@@ -1,6 +1,10 @@
-import { inject, InjectionToken, Injector, isDevMode } from '@angular/core';
+import { inject, InjectionToken, isDevMode } from '@angular/core';
 import { AccessTokenService } from '../services';
-import { AccessTokenConfig, AccessTokenStorage } from '../types';
+import {
+  AccessTokenConfig,
+  AccessTokenResponseExtractor,
+  AccessTokenStorage,
+} from '../types';
 
 /** The injection token for access-token service config */
 export const ACCESS_TOKEN_CONFIG = new InjectionToken<AccessTokenConfig>(
@@ -12,14 +16,32 @@ export const ACCESS_TOKEN_STORAGE = new InjectionToken<AccessTokenStorage>(
   'access-token-storage',
 );
 
-/** The injection token for access token services */
-export const ACCESS_TOKEN_SERVICES = new InjectionToken<AccessTokenService[]>(
-  'access-token-services',
+/** The injection token for access-token storage */
+export const ACCESS_TOKEN_RESPONSE_EXTRACTORS = new InjectionToken<
+  AccessTokenResponseExtractor[]
+>('access-token-response-extractors');
+
+/** The injection token for access token service tokens */
+export const ACCESS_TOKEN_SERVICE_TOKENS = new InjectionToken<
   {
-    providedIn: 'root',
-    factory: () => [],
-  },
-);
+    readonly id: symbol;
+    readonly token: InjectionToken<AccessTokenService>;
+  }[]
+>('access-token-service-tokens', {
+  providedIn: 'root',
+  factory: () => [],
+});
+
+/** The injection token for access token service hierarchized tokens */
+export const ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS = new InjectionToken<
+  {
+    readonly id: symbol;
+    readonly token: InjectionToken<AccessTokenService>;
+  }[]
+>('access-token-service-hierarchized-tokens', {
+  providedIn: 'root',
+  factory: () => [],
+});
 
 /**
  * Inject AccessTokenService from the given name.
@@ -29,18 +51,14 @@ export const ACCESS_TOKEN_SERVICES = new InjectionToken<AccessTokenService[]>(
  * @throws If is not found.
  * @publicApi
  */
-export function injectAccessTokenService(
-  id: symbol,
-  { injector = undefined as Injector | undefined } = {},
-): AccessTokenService {
-  const services =
-    injector?.get(ACCESS_TOKEN_SERVICES) ?? inject(ACCESS_TOKEN_SERVICES);
+export function injectAccessTokenService(id: symbol): AccessTokenService {
+  const tokenItems = inject(ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS);
 
-  const service = services.find((service) => service.id === id);
+  const tokenItem = tokenItems.find((tokenItem) => tokenItem.id === id);
 
-  if (!service) {
+  if (!tokenItem) {
     if (isDevMode()) {
-      console.debug('ACCESS_TOKEN_SERVICES', services);
+      console.debug('ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS', tokenItems);
     }
 
     throw new Error(
@@ -48,5 +66,5 @@ export function injectAccessTokenService(
     );
   }
 
-  return service;
+  return inject(tokenItem.token);
 }

@@ -1,4 +1,4 @@
-import { inject, InjectionToken, Injector, isDevMode } from '@angular/core';
+import { inject, InjectionToken, isDevMode } from '@angular/core';
 import { AuthorizationCodeService } from '../services';
 import { AuthorizationCodeConfig, StateStorage } from '../types';
 
@@ -11,13 +11,28 @@ export const AUTHORIZATION_CODE_STORAGE = new InjectionToken<StateStorage>(
   'authorization-code-storage',
 );
 
-/** The injection token for authorization code services */
-export const AUTHORIZATION_CODE_SERVICES = new InjectionToken<
-  AuthorizationCodeService[]
->('authorization-code-services', {
+/** The injection token for authorization code tokens */
+export const AUTHORIZATION_CODE_SERVICE_TOKENS = new InjectionToken<
+  {
+    readonly id: symbol;
+    readonly token: InjectionToken<AuthorizationCodeService>;
+  }[]
+>('authorization-code-tokens', {
   providedIn: 'root',
   factory: () => [],
 });
+
+/** The injection token for authorization code hierarchized tokens */
+export const AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS =
+  new InjectionToken<
+    {
+      readonly id: symbol;
+      readonly token: InjectionToken<AuthorizationCodeService>;
+    }[]
+  >('authorization-code-hierarachized-tokens', {
+    providedIn: 'root',
+    factory: () => [],
+  });
 
 /**
  * Inject AuthorizationCodeService from the given id.
@@ -29,17 +44,17 @@ export const AUTHORIZATION_CODE_SERVICES = new InjectionToken<
  */
 export function injectAuthorizationCodeService(
   id: symbol,
-  { injector = undefined as Injector | undefined } = {},
 ): AuthorizationCodeService {
-  const services =
-    injector?.get(AUTHORIZATION_CODE_SERVICES) ??
-    inject(AUTHORIZATION_CODE_SERVICES);
+  const tokenItems = inject(AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS);
 
-  const service = services.find((service) => service.id === id);
+  const tokenItem = tokenItems.find((tokenItem) => tokenItem.id === id);
 
-  if (!service) {
+  if (!tokenItem) {
     if (isDevMode()) {
-      console.debug('AUTHORIZATION_CODE_SERVICES', services);
+      console.debug(
+        'AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS',
+        tokenItems,
+      );
     }
 
     throw new Error(
@@ -47,5 +62,5 @@ export function injectAuthorizationCodeService(
     );
   }
 
-  return service;
+  return inject(tokenItem.token);
 }
