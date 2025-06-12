@@ -5,7 +5,12 @@ import {
   IdTokenInfoNotFoundError,
 } from '../errors';
 import { deserializeJose, isJwt } from '../helpers';
-import { ID_TOKEN_STORAGE } from '../tokens/id-token';
+import { EXTRACTOR_ID } from '../tokens';
+import {
+  ID_TOKEN_CLAIMS_TRANSFORMER,
+  ID_TOKEN_STORAGE,
+  ID_TOKEN_VERIFICATION,
+} from '../tokens/id-token';
 import {
   AccessTokenResponse,
   AccessTokenResponseExtractor,
@@ -33,43 +38,25 @@ function isIdTokenResponse(
 export class IdTokenExtractor
   implements AccessTokenResponseExtractor<IdTokenResponse>
 {
+  readonly #id = inject(EXTRACTOR_ID);
+
   private readonly storage = inject(ID_TOKEN_STORAGE);
 
-  private _id?: symbol;
+  private readonly claimsTransformer = inject(ID_TOKEN_CLAIMS_TRANSFORMER);
+
+  private readonly verification = inject(ID_TOKEN_VERIFICATION);
 
   get id() {
-    return this._id;
+    return this.#id;
   }
 
   get name() {
-    return this.id?.description ?? '[non-registered]';
+    return this.id.description ?? '[unknown]';
   }
-
-  readonly #ready = signal<boolean | undefined>(undefined);
 
   readonly #lastUpdated = signal<number | undefined>(undefined);
 
-  readonly #internalUpdated = computed(() =>
-    typeof this.#ready() === 'undefined'
-      ? undefined
-      : (this.#lastUpdated() ?? Date.now()),
-  );
-
-  register(id: symbol): this {
-    if (typeof this._id !== 'undefined') {
-      throw new Error(
-        `Extractor must be registered once. But '${this.name}' is re-registered again with '${id.description ?? '[unknown]'}'`,
-      );
-    }
-
-    this._id = id;
-
-    return this;
-  }
-
-  ready(status: boolean): void {
-    this.#ready.set(status);
-  }
+  readonly #internalUpdated = computed(() => this.#lastUpdated() ?? Date.now());
 
   async update(
     updatedData: AccessTokenResponseUpdatedData<IdTokenResponse>,
@@ -89,10 +76,18 @@ export class IdTokenExtractor
             );
 
             if (isJwt(idTokenInfo, 'JWS')) {
-              // TODO: merge claims
+              await this.verification(idTokenInfo);
+
+              const oldClaims = await this.loadClaims();
+
               await Promise.all([
                 this.storage.store('info', idTokenInfo),
-                this.storage.store('claims', idTokenInfo.payload),
+                this.storage.store(
+                  'claims',
+                  oldClaims
+                    ? this.claimsTransformer(oldClaims, idTokenInfo.payload)
+                    : idTokenInfo.payload,
+                ),
               ]);
             } else {
               throw new IdTokenEncryptedError(this.name);

@@ -45,15 +45,11 @@ export class Home {
     injectAuthorizationCodeService(demoOauth);
   private readonly idTokenExtractor = injectIdTokenExtractor(demoOauth);
 
-  // private readonly idTokenService = inject(IdTokenService);
   private readonly jwkDispatcher = inject(JwkDispatcher);
 
-  protected readonly readyResource = this.accessTokenService.readyResource();
-
   // AccessToken
-  protected readonly accessTokenResource = resource({
-    loader: async () => await this.accessTokenService.loadAccessTokenInfo(),
-  });
+  protected accessTokenResource =
+    this.accessTokenService.accessTokenResponseResource();
 
   protected readonly errorAccessTokenMessage = computed(() =>
     extractErrorMessage(this.accessTokenResource.error()),
@@ -64,7 +60,7 @@ export class Home {
       this.accessTokenResource.hasValue()
         ? this.accessTokenResource.value()
         : undefined,
-    loader: async ({ params }) => deserializeJose(params.token),
+    loader: async ({ params }) => deserializeJose(params.access_token),
   });
 
   protected readonly errorAccessTokenJoseMessage = computed(() =>
@@ -86,9 +82,10 @@ export class Home {
   });
 
   // ID Token
-  protected readonly idTokenJoseResource = resource({
-    loader: async () => await this.idTokenExtractor.loadInfo(),
-  });
+  protected readonly idTokenJoseResource = this.idTokenExtractor.infoResource();
+
+  protected readonly idTokenClaimsResource =
+    this.idTokenExtractor.claimsResource();
 
   protected readonly idTokenJoseVerificationResource = resource({
     params: () =>
@@ -99,7 +96,7 @@ export class Home {
   });
 
   protected readonly errorIdTokenJoseMessage = computed(() =>
-    extractErrorMessage(this.idTokenJoseVerificationResource.error()),
+    extractErrorMessage(this.idTokenJoseResource.error()),
   );
 
   async renewAccessToken(): Promise<void> {

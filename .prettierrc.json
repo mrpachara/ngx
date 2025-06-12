@@ -2,5 +2,13 @@
   "semi": true,
   "singleQuote": true,
   "trailingComma": "all",
-  "plugins": ["prettier-plugin-jsdoc"]
+  "plugins": ["prettier-plugin-jsdoc"],
+  "overrides": [
+    {
+      "files": "*.html",
+      "options": {
+        "parser": "angular"
+      }
+    }
+  ]
 }

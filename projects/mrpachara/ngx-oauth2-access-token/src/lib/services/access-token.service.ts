@@ -83,7 +83,15 @@ export class AccessTokenService {
     ...(inject(ACCESS_TOKEN_RESPONSE_EXTRACTORS, {
       optional: true,
     }) ?? []),
-  ].map((extractor) => extractor.register(this.id));
+  ].map((extractor) => {
+    if (extractor.id !== this.id) {
+      throw new Error(
+        `Extractor '${extractor.id.description ?? '[unknown]'}' mismatches AccessTokenService '${this.name}'.`,
+      );
+    }
+
+    return extractor;
+  });
 
   readonly #ready = signal<boolean | undefined>(undefined);
   readyResource() {
@@ -96,10 +104,10 @@ export class AccessTokenService {
   readonly #lastUpdated = signal<AccessTokenResponseUpdatedData | undefined>(
     undefined,
   );
-  lastUpdatedResource() {
+  accessTokenResponseResource() {
     return resource({
-      params: () => this.#lastUpdated(),
-      loader: async ({ params: lastUpdated }) => lastUpdated,
+      params: () => this.#lastUpdated()?.timestamp ?? Date.now(),
+      loader: async () => await this.loadAccessTokenResponse(),
     });
   }
 
@@ -154,14 +162,6 @@ export class AccessTokenService {
     );
 
     effect(() => {
-      const state = this.#ready();
-
-      if (typeof state !== 'undefined') {
-        this.extractors.forEach((extractor) => extractor.ready(state));
-      }
-    });
-
-    effect(() => {
       const lastUpdated = this.#lastUpdated();
 
       if (lastUpdated?.accessTokenResponse === storedData) {
@@ -170,12 +170,12 @@ export class AccessTokenService {
     });
   }
 
-  #currentLoad: Promise<AccessTokenInfo> | undefined;
+  #currentLoad: Promise<AccessTokenResponse> | undefined;
 
-  /** NOTE: this method **MUST** be called from `loadAccessToken()` only. */
+  /** NOTE: this method **MUST** be called from `loadAccessTokenResponse()` only. */
   async #tryLoad(
-    projector: () => Promise<AccessTokenInfo>,
-  ): Promise<AccessTokenInfo> {
+    projector: () => Promise<AccessTokenResponse>,
+  ): Promise<AccessTokenResponse> {
     return await (this.#currentLoad ??
       (this.#currentLoad = (async () => {
         await this.storage.lock();
@@ -198,7 +198,7 @@ export class AccessTokenService {
   }
 
   /**
-   * Try to laod access token information from storage:
+   * Try to laod access token response from storage:
    *
    * 1. If not found or expired then try to get the new one from _refresh token_.
    * 2. If failed then try to get from `fetchNewAccessToken`.
@@ -206,16 +206,13 @@ export class AccessTokenService {
    *
    * @throws AccessTokenNotFoundError
    */
-  async loadAccessTokenInfo(): Promise<AccessTokenInfo> {
+  async loadAccessTokenResponse(): Promise<AccessTokenResponse> {
     return await this.#tryLoad(async () => {
       while (true) {
         const storedAccessToken = await this.storage.load('access');
 
         if (storedAccessToken && storedAccessToken.expiresAt > Date.now()) {
-          return {
-            type: storedAccessToken.data.token_type,
-            token: storedAccessToken.data.access_token,
-          } as const;
+          return storedAccessToken.data;
         }
 
         const storageRefreshToken = await this.storage.load('refresh');
@@ -233,6 +230,21 @@ export class AccessTokenService {
         throw new AccessTokenNotFoundError(this.name);
       }
     });
+  }
+
+  /**
+   * Try to load access token info from storage
+   *
+   * @throws AccessTokenNotFoundError
+   * @see {@link loadAccessTokenResponse}
+   */
+  async loadAccessTokenInfo(): Promise<AccessTokenInfo> {
+    const accessTokenResponse = await this.loadAccessTokenResponse();
+
+    return {
+      type: accessTokenResponse.token_type,
+      token: accessTokenResponse.access_token,
+    } as const;
   }
 
   #changeReadyByStorage(

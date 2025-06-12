@@ -35,7 +35,6 @@ export interface AccessTokenResponseUpdatedData<
 export interface AccessTokenResponseExtractor<
   T extends AccessTokenResponse = AccessTokenResponse,
 > {
-  register(id: symbol): this;
+  readonly id: symbol;
   update(updatedData: AccessTokenResponseUpdatedData<T>): Promise<void>;
-  ready(status: boolean): void;
 }

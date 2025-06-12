@@ -41,3 +41,13 @@ export class SupportedJwkAlgNotFoundError extends Error {
     this.name = this.constructor.name;
   }
 }
+
+export class JwtVerificationFailedError extends Error {
+  constructor(jwtInfo: JwtInfo) {
+    super(
+      `Verification falied for:\n${JSON.stringify(jwtInfo.header, undefined, 2)}`,
+      { cause: jwtInfo },
+    );
+    this.name = this.constructor.name;
+  }
+}

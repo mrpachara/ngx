@@ -1,2 +1,2 @@
 export const idTokenInfoObjectStoreName = 'idTokenInfos';
-export const idTokenClaimsObjectStoreName = 'idTokenCliams';
+export const idTokenClaimsObjectStoreName = 'idTokenClaims';

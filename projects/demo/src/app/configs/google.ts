@@ -11,6 +11,7 @@ import {
   provideJwkDispatcher,
   Scopes,
   withAuthorizationCode,
+  withClaimmsTransformer,
   withIdTokenExtractor,
 } from '@mrpachara/ngx-oauth2-access-token';
 import {
@@ -18,6 +19,7 @@ import {
   verifyEddsa,
   verifyRsassa,
 } from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
+import { withIdTokenVerification } from 'projects/mrpachara/ngx-oauth2-access-token/src/public-api';
 import { clientId, clientSecret } from '../../secrets/oauth-client';
 import { routes } from '../app.routes';
 
@@ -53,7 +55,19 @@ export const appConfig: ApplicationConfig = {
         redirectUri: 'http://localhost:4200/google/authorization',
         pkce: 'S256',
       }),
-      withIdTokenExtractor(),
+      withIdTokenExtractor(
+        withIdTokenVerification(),
+        withClaimmsTransformer(() => (oldClaims, newClaims) => {
+          if (oldClaims.sub === newClaims.sub) {
+            return {
+              ...oldClaims,
+              ...newClaims,
+            };
+          } else {
+            return newClaims;
+          }
+        }),
+      ),
     ),
 
     provideJwkDispatcher(

@@ -16,6 +16,9 @@ export const ACCESS_TOKEN_STORAGE = new InjectionToken<AccessTokenStorage>(
   'access-token-storage',
 );
 
+/** The injection token for extractor ID */
+export const EXTRACTOR_ID = new InjectionToken<symbol>('extractor-id');
+
 /** The injection token for access-token storage */
 export const ACCESS_TOKEN_RESPONSE_EXTRACTORS = new InjectionToken<
   AccessTokenResponseExtractor[]
