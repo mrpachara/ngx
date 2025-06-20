@@ -11,6 +11,8 @@ import {
   provideJwkDispatcher,
   Scopes,
   withAuthorizationCode,
+  withIdTokenExtractor,
+  withIdTokenVerification,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { verifyEddsa } from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
 import { routes } from '../app.routes';
@@ -43,6 +45,7 @@ export const appConfig: ApplicationConfig = {
         redirectUri: 'http://localhost:4200/google/authorization',
         pkce: 'S256',
       }),
+      withIdTokenExtractor(withIdTokenVerification()),
     ),
 
     provideJwkDispatcher(

@@ -130,10 +130,14 @@ export class AccessTokenService {
     } satisfies AccessTokenMessage);
   }
 
+  readonly #syncName: string;
+
   constructor() {
-    this.#bc = new BroadcastChannel(
-      `${inject(APP_ID)}-${libPrefix}-access-token:${this.name}`,
-    );
+    const prefix = `${inject(APP_ID)}-${libPrefix}-access-token`;
+
+    this.#syncName = `${prefix}-sync:${this.name}`;
+
+    this.#bc = new BroadcastChannel(`${prefix}:${this.name}`);
 
     this.#bc.addEventListener(
       'message',
@@ -170,31 +174,23 @@ export class AccessTokenService {
     });
   }
 
-  #currentLoad: Promise<AccessTokenResponse> | undefined;
-
   /** NOTE: this method **MUST** be called from `loadAccessTokenResponse()` only. */
-  async #tryLoad(
+  async #lockedlyLoad(
     projector: () => Promise<AccessTokenResponse>,
   ): Promise<AccessTokenResponse> {
-    return await (this.#currentLoad ??
-      (this.#currentLoad = (async () => {
-        await this.storage.lock();
+    return await navigator.locks.request(this.#syncName, async () => {
+      try {
+        const result = await projector();
 
-        try {
-          const result = await projector();
+        this.#ready.set(true);
 
-          this.#ready.set(true);
+        return result;
+      } catch (err) {
+        this.#ready.set(false);
 
-          return result;
-        } catch (err) {
-          this.#ready.set(false);
-
-          throw err;
-        } finally {
-          await this.storage.release();
-          this.#currentLoad = undefined;
-        }
-      })()));
+        throw err;
+      }
+    });
   }
 
   /**
@@ -207,7 +203,7 @@ export class AccessTokenService {
    * @throws AccessTokenNotFoundError
    */
   async loadAccessTokenResponse(): Promise<AccessTokenResponse> {
-    return await this.#tryLoad(async () => {
+    return await this.#lockedlyLoad(async () => {
       while (true) {
         const storedAccessToken = await this.storage.load('access');
 
