@@ -2,7 +2,6 @@ import { APP_ID, inject, Injectable } from '@angular/core';
 import { libPrefix } from '../../predefined';
 import {
   accessTokenObjectStoreName,
-  lockerObjectStoreName,
   refreshTokenObjectStoreName,
 } from './acces-token';
 
@@ -35,7 +34,6 @@ export class AccessTokenIndexedDbConnection {
             case 0:
               db.createObjectStore(accessTokenObjectStoreName);
               db.createObjectStore(refreshTokenObjectStoreName);
-              db.createObjectStore(lockerObjectStoreName);
           }
         },
         { signal: ac.signal },

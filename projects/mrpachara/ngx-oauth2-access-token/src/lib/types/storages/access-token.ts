@@ -1,5 +1,5 @@
-import { AccessTokenResponse, Uuid } from '../../types';
-import { KeyableDataStorage, Lockable, StoredData } from './commons';
+import { AccessTokenResponse } from '../../types';
+import { KeyableDataStorage, StoredData } from './commons';
 
 /** Stored access token */
 export type StoredAccessToken = StoredData<AccessTokenResponse>;
@@ -12,16 +12,4 @@ export interface StoredAccessTokenMap {
   readonly refresh: StoredRefreshToken;
 }
 
-export interface AccessTokenStorage
-  extends KeyableDataStorage<StoredAccessTokenMap>,
-    Lockable {}
-
-export interface AccessTokenStorageMessageType<T extends string> {
-  readonly type: T;
-  readonly timestamp: number;
-  readonly from: Uuid;
-  readonly to?: Uuid;
-}
-
-export type AccessTokenStorageMessage =
-  AccessTokenStorageMessageType<'release'>;
+export type AccessTokenStorage = KeyableDataStorage<StoredAccessTokenMap>;
