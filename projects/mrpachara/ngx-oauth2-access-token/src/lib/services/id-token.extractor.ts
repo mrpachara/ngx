@@ -4,7 +4,7 @@ import {
   IdTokenEncryptedError,
   IdTokenInfoNotFoundError,
 } from '../errors';
-import { deserializeJose, isJwt } from '../helpers';
+import { deserializeJose, flatStreamResource, isJwt } from '../helpers';
 import { EXTRACTOR_ID } from '../tokens';
 import {
   ID_TOKEN_CLAIMS_TRANSFORMER,
@@ -108,19 +108,21 @@ export class IdTokenExtractor
   }
 
   infoResource() {
-    return resource({
-      params: () => this.#internalUpdated(),
-      loader: async () => {
-        const result = await this.loadInfo();
+    return flatStreamResource(
+      resource({
+        params: () => this.#internalUpdated(),
+        loader: async () => {
+          const result = await this.loadInfo();
 
-        if (typeof result === 'undefined') {
-          throw new IdTokenInfoNotFoundError(this.name);
-        }
+          if (typeof result === 'undefined') {
+            throw new IdTokenInfoNotFoundError(this.name);
+          }
 
-        return result;
-      },
-      equal: (oldValue, newValue) => oldValue.serial === newValue.serial,
-    });
+          return result;
+        },
+        equal: (oldValue, newValue) => oldValue.serial === newValue.serial,
+      }),
+    ).asReadonly();
   }
 
   async loadClaims(): Promise<IdTokenClaims | undefined> {
@@ -128,17 +130,19 @@ export class IdTokenExtractor
   }
 
   claimsResource() {
-    return resource({
-      params: () => this.#internalUpdated(),
-      loader: async () => {
-        const result = await this.loadClaims();
+    return flatStreamResource(
+      resource({
+        params: () => this.#internalUpdated(),
+        loader: async () => {
+          const result = await this.loadClaims();
 
-        if (typeof result === 'undefined') {
-          throw new IdTokenClaimsNotFoundError(this.name);
-        }
+          if (typeof result === 'undefined') {
+            throw new IdTokenClaimsNotFoundError(this.name);
+          }
 
-        return result;
-      },
-    });
+          return result;
+        },
+      }),
+    ).asReadonly();
   }
 }

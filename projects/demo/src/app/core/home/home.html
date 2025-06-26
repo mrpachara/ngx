@@ -56,11 +56,11 @@
           }
         </dl>
       </div>
-    } @else {
-      <div>
-        <button type="button" (click)="authorization()">Authorization</button>
-      </div>
     }
+  } @else if (!accessTokenResource.isLoading()) {
+    <div>
+      <button type="button" (click)="authorization()">Authorization</button>
+    </div>
   }
 
   @if (errorAccessTokenMessage(); as errorMessage) {

@@ -11,7 +11,7 @@ import {
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
 } from '../errors';
-import { validateAndTransformScopes } from '../helpers';
+import { flatStreamResource, validateAndTransformScopes } from '../helpers';
 import { libPrefix } from '../predefined';
 import {
   ACCESS_TOKEN_CONFIG,
@@ -95,20 +95,24 @@ export class AccessTokenService {
 
   readonly #ready = signal<boolean | undefined>(undefined);
   readyResource() {
-    return resource({
-      params: () => this.#ready(),
-      loader: async ({ params: ready }) => ready,
-    });
+    return flatStreamResource(
+      resource({
+        params: () => this.#ready(),
+        loader: async ({ params: ready }) => ready,
+      }),
+    ).asReadonly();
   }
 
   readonly #lastUpdated = signal<AccessTokenResponseUpdatedData | undefined>(
     undefined,
   );
   accessTokenResponseResource() {
-    return resource({
-      params: () => this.#lastUpdated()?.timestamp ?? Date.now(),
-      loader: async () => await this.loadAccessTokenResponse(),
-    });
+    return flatStreamResource(
+      resource({
+        params: () => this.#lastUpdated() ?? Date.now(),
+        loader: async () => await this.loadAccessTokenResponse(),
+      }),
+    ).asReadonly();
   }
 
   readonly #uuid = crypto.randomUUID();
