@@ -1,11 +1,8 @@
-import { Uuid } from '../commons';
 import { AccessTokenResponse } from '../standards';
 
 interface AccessTokenMessageType<T extends string> {
   readonly type: T;
   readonly timestamp: number;
-  readonly from: Uuid;
-  readonly to?: Uuid;
 }
 
 export interface AccessTokenMessage

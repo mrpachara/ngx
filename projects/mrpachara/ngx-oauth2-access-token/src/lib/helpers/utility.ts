@@ -121,7 +121,7 @@ export function flatStreamResource<T>(
 ): ResourceRef<T | undefined> {
   const { promise, resolve } = withResolvers<Signal<ResourceStreamItem<T>>>();
 
-  const streamSignal = signal<ResourceStreamItem<T>>({
+  const streamItem = signal<ResourceStreamItem<T>>({
     error: new Error('initializing'),
   });
 
@@ -129,13 +129,13 @@ export function flatStreamResource<T>(
     const status = source.status();
 
     if (status === 'resolved' || status === 'local' || status === 'error') {
-      streamSignal.set(
+      streamItem.set(
         source.hasValue()
           ? { value: source.value() }
           : { error: source.error()! },
       );
 
-      resolve(streamSignal);
+      resolve(streamItem);
     }
   });
 

@@ -1,11 +1,4 @@
-import {
-  APP_ID,
-  effect,
-  inject,
-  Injectable,
-  resource,
-  signal,
-} from '@angular/core';
+import { APP_ID, inject, Injectable, resource, signal } from '@angular/core';
 import {
   AccessTokenNotFoundError,
   RefreshTokenExpiredError,
@@ -115,21 +108,16 @@ export class AccessTokenService {
     ).asReadonly();
   }
 
-  readonly #uuid = crypto.randomUUID();
-
   readonly #bc: BroadcastChannel;
 
   #post(
     type: AccessTokenMessage['type'],
     timestamp: number,
     ready: boolean,
-    to?: AccessTokenMessage['to'],
   ): void {
     this.#bc.postMessage({
       type,
       timestamp: timestamp,
-      from: this.#uuid,
-      ...(to ? { to } : {}),
       ready,
     } satisfies AccessTokenMessage);
   }
@@ -145,22 +133,27 @@ export class AccessTokenService {
 
     this.#bc.addEventListener(
       'message',
-      (ev: MessageEvent<AccessTokenMessage>) => {
+      async (ev: MessageEvent<AccessTokenMessage>) => {
         const message = ev.data;
 
-        if (typeof message.to !== 'undefined' && message.to !== this.#uuid) {
-          return;
-        }
-
         switch (message.type) {
-          case 'external-storing':
-            this.#ready.set(message.ready);
-            this.#lastUpdated.set({
+          case 'external-storing': {
+            const lastUpdated = {
               timestamp: message.timestamp,
               accessTokenResponse: storedData,
-            } as const);
+            } as const;
+
+            Promise.allSettled(
+              this.extractors.map((extractor) => extractor.update(lastUpdated)),
+            );
+
+            this.#ready.set(message.ready);
+
+            this.#lastUpdated.set(lastUpdated);
 
             return;
+          }
+
           default:
             console.warn(
               `Broadcast '${this.#bc.name}' does not implement '${(message as { type: string }).type}.'`,
@@ -168,14 +161,6 @@ export class AccessTokenService {
         }
       },
     );
-
-    effect(() => {
-      const lastUpdated = this.#lastUpdated();
-
-      if (lastUpdated?.accessTokenResponse === storedData) {
-        this.extractors.forEach((extractor) => extractor.update(lastUpdated));
-      }
-    });
   }
 
   /** NOTE: this method **MUST** be called from `loadAccessTokenResponse()` only. */
