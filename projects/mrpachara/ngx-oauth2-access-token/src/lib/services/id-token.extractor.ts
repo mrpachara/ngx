@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, resource, signal } from '@angular/core';
+import { inject, Injectable, resource, signal } from '@angular/core';
 import {
   IdTokenClaimsNotFoundError,
   IdTokenEncryptedError,
@@ -56,8 +56,6 @@ export class IdTokenExtractor
 
   readonly #lastUpdated = signal<number | undefined>(undefined);
 
-  readonly #internalUpdated = computed(() => this.#lastUpdated() ?? Date.now());
-
   async update(
     updatedData: AccessTokenResponseUpdatedData<IdTokenResponse>,
   ): Promise<void> {
@@ -110,7 +108,7 @@ export class IdTokenExtractor
   infoResource() {
     return flatStreamResource(
       resource({
-        params: () => this.#internalUpdated(),
+        params: () => this.#lastUpdated() ?? Date.now(),
         loader: async () => {
           const result = await this.loadInfo();
 
@@ -132,7 +130,7 @@ export class IdTokenExtractor
   claimsResource() {
     return flatStreamResource(
       resource({
-        params: () => this.#internalUpdated(),
+        params: () => this.#lastUpdated() ?? Date.now(),
         loader: async () => {
           const result = await this.loadClaims();
 

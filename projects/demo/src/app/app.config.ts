@@ -1,1 +1,1 @@
-export * from './configs/local';
+export * from './configs/google';
