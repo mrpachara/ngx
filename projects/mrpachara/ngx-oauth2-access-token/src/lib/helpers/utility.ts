@@ -1,3 +1,12 @@
+import {
+  effect,
+  Resource,
+  resource,
+  ResourceRef,
+  ResourceStreamItem,
+  signal,
+  Signal,
+} from '@angular/core';
 import { fromEvent, Observable, pipe, take, takeUntil } from 'rxjs';
 import { DeepReadonly } from '../types';
 
@@ -88,4 +97,47 @@ export function abortSignalFromObservable<T>(observable: Observable<T>): {
     signal: ac.signal,
     unsubcript: () => subscription.unsubscribe(),
   } as const;
+}
+
+export function withResolvers<T>(): {
+  readonly promise: Promise<T>;
+  readonly resolve: (value: T | PromiseLike<T>) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readonly reject: (reason?: any) => void;
+} {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let reject!: (reason?: any) => void;
+  const promise = new Promise<T>((innerResolve, innerReject) => {
+    resolve = innerResolve;
+    reject = innerReject;
+  });
+
+  return { promise, resolve, reject } as const;
+}
+
+export function flatStreamResource<T>(
+  source: Resource<T>,
+): ResourceRef<T | undefined> {
+  const { promise, resolve } = withResolvers<Signal<ResourceStreamItem<T>>>();
+
+  const streamSignal = signal<ResourceStreamItem<T>>({
+    error: new Error('initializing'),
+  });
+
+  effect(() => {
+    const status = source.status();
+
+    if (status === 'resolved' || status === 'local' || status === 'error') {
+      streamSignal.set(
+        source.hasValue()
+          ? { value: source.value() }
+          : { error: source.error()! },
+      );
+
+      resolve(streamSignal);
+    }
+  });
+
+  return resource({ stream: async () => await promise });
 }
