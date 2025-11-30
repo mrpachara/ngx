@@ -1,6 +1,6 @@
 import { inject, InjectionToken, Injector, Provider } from '@angular/core';
 import { AccessTokenService, AuthorizationCodeService } from '../services';
-import { StateIndexedDbStorage } from '../storages/indexed-db/state-indexed-db.storage';
+import { StateIndexedDbStorage } from '../storages';
 import {
   AUTHORIZATION_CODE_CONFIG,
   AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS,

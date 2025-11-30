@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { libPrefix } from '../predefined';
 import { AccessTokenService, Oauth2Client } from '../services';
-import { AccessTokenIndexedDbStorage } from '../storages/indexed-db/access-token-indexed-db.storage';
+import { AccessTokenIndexedDbStorage } from '../storages';
 import {
   ACCESS_TOKEN_CONFIG,
   ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS,

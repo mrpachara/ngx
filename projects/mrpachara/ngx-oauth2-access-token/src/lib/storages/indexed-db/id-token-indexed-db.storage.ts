@@ -1,9 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { STORAGE_NAME } from '../../tokens';
-import {
-  IdTokenStorage,
-  StoredIdTokenInfoMap,
-} from '../../types/storages/id-token';
+import { IdTokenStorage, StoredIdTokenInfoMap } from '../../types';
 import { promisifyRequest } from './helpers';
 import { IdTokenIndexedDbConnection } from './id-token-indexed-db.connection';
 import {

@@ -1,7 +1,10 @@
 import { inject, InjectionToken, isDevMode } from '@angular/core';
 import { IdTokenExtractor } from '../services/id-token.extractor';
-import { IdTokenClaimsTransformer, IdTokenVerification } from '../types';
-import { IdTokenStorage } from '../types/storages/id-token';
+import {
+  IdTokenClaimsTransformer,
+  IdTokenStorage,
+  IdTokenVerification,
+} from '../types';
 
 /** The injection token for ID Token storage */
 export const ID_TOKEN_STORAGE = new InjectionToken<IdTokenStorage>(

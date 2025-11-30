@@ -7,23 +7,24 @@ import {
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
   AdditionalParams,
+  createIdSymbol,
   provideAccessToken,
   provideJwkDispatcher,
   Scopes,
   withAuthorizationCode,
   withClaimmsTransformer,
   withIdTokenExtractor,
+  withIdTokenVerification,
 } from '@mrpachara/ngx-oauth2-access-token';
 import {
   verifyEcdsa,
   verifyEddsa,
   verifyRsassa,
 } from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
-import { withIdTokenVerification } from 'projects/mrpachara/ngx-oauth2-access-token/src/public-api';
 import { clientId, clientSecret } from '../../secrets/oauth-client';
 import { routes } from '../app.routes';
 
-export const demoOauth = Symbol('google');
+export const demoOauth = createIdSymbol('google');
 
 export const scopes: Scopes = ['profile', 'email', 'openid'];
 

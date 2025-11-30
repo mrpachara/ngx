@@ -6,17 +6,18 @@ import { IdTokenIndexedDbStorage } from '../storages';
 import {
   ACCESS_TOKEN_RESPONSE_EXTRACTORS,
   EXTRACTOR_ID,
-  STORAGE_NAME,
-} from '../tokens';
-import {
   ID_TOKEN_CLAIMS_TRANSFORMER,
   ID_TOKEN_EXTRACTOR_TOKENS,
   ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS,
   ID_TOKEN_STORAGE,
   ID_TOKEN_VERIFICATION,
-} from '../tokens/id-token';
-import { IdTokenClaimsTransformer, IdTokenInfo } from '../types';
-import { IdTokenStorage } from '../types/storages/id-token';
+  STORAGE_NAME,
+} from '../tokens';
+import {
+  IdTokenClaimsTransformer,
+  IdTokenInfo,
+  IdTokenStorage,
+} from '../types';
 import {
   AccessTokenExtensionFeature,
   AccessTokenFeatureKind,
