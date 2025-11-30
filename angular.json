@@ -22,9 +22,6 @@
       "architect": {
         "build": {
           "builder": "@angular/build:ng-packagr",
-          "options": {
-            "project": "projects/mrpachara/ngx-oauth2-access-token/ng-package.json"
-          },
           "configurations": {
             "production": {
               "tsConfig": "projects/mrpachara/ngx-oauth2-access-token/tsconfig.lib.prod.json"
@@ -36,10 +33,9 @@
           "defaultConfiguration": "production"
         },
         "test": {
-          "builder": "@angular/build:karma",
+          "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "projects/mrpachara/ngx-oauth2-access-token/tsconfig.spec.json",
-            "polyfills": []
+            "tsConfig": "projects/mrpachara/ngx-oauth2-access-token/tsconfig.spec.json"
           }
         },
         "lint": {
@@ -69,10 +65,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "outputPath": "dist/demo",
-            "index": "projects/demo/src/index.html",
             "browser": "projects/demo/src/main.ts",
-            "polyfills": [],
             "tsConfig": "projects/demo/tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -139,20 +132,7 @@
           }
         },
         "test": {
-          "builder": "@angular/build:karma",
-          "options": {
-            "polyfills": [],
-            "tsConfig": "projects/demo/tsconfig.spec.json",
-            "inlineStyleLanguage": "scss",
-            "assets": [
-              {
-                "glob": "**/*",
-                "input": "projects/demo/public"
-              }
-            ],
-            "styles": ["projects/demo/src/styles.scss"],
-            "scripts": []
-          }
+          "builder": "@angular/build:unit-test"
         },
         "lint": {
           "builder": "@angular-eslint/builder:lint",

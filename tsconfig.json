@@ -1,19 +1,19 @@
-/* To learn more about this file see: https://angular.io/config/tsconfig. */
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
 {
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
       "@mrpachara/ngx-oauth2-access-token": [
-        "dist/mrpachara/ngx-oauth2-access-token"
+        "./dist/mrpachara/ngx-oauth2-access-token"
       ],
       "@mrpachara/ngx-oauth2-access-token/jwt-verifiers": [
-        "dist/mrpachara/ngx-oauth2-access-token/jwt-verifiers"
+        "./dist/mrpachara/ngx-oauth2-access-token/jwt-verifiers"
       ],
       "@mrpachara/ngx-oauth2-access-token/jwt-verifiers/*": [
-        "dist/mrpachara/ngx-oauth2-access-token/jwt-verifiers/*"
+        "./dist/mrpachara/ngx-oauth2-access-token/jwt-verifiers/*"
       ]
     },
-    "baseUrl": "./",
     "outDir": "./dist/out-tsc",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -28,9 +28,8 @@
     "moduleResolution": "bundler",
     "importHelpers": true,
     "target": "ES2022",
-    "module": "ES2022",
-    "useDefineForClassFields": false,
-    "lib": ["ES2022", "DOM"]
+    "module": "preserve",
+    "useDefineForClassFields": false
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
@@ -38,5 +37,20 @@
     "strictInputAccessModifiers": true,
     "typeCheckHostBindings": true,
     "strictTemplates": true
-  }
+  },
+  "files": [],
+  "references": [
+    {
+      "path": "./projects/mrpachara/ngx-oauth2-access-token/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/mrpachara/ngx-oauth2-access-token/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/demo/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/demo/tsconfig.spec.json"
+    }
+  ]
 }

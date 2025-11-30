@@ -2,7 +2,6 @@ import { provideHttpClient, withFetch } from '@angular/common/http';
 import {
   ApplicationConfig,
   provideBrowserGlobalErrorListeners,
-  provideZonelessChangeDetection,
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
@@ -26,7 +25,6 @@ export const params: AdditionalParams = {};
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideZonelessChangeDetection(),
 
     // NOTE: withComponentInputBinding() will atomatically bind
     //       query strings to component inputs.
