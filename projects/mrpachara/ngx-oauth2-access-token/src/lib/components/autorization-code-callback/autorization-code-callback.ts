@@ -1,4 +1,3 @@
-import { NgClass } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -41,12 +40,12 @@ interface MessageInfo {
  */
 @Component({
   selector: 'oat-authorization-code-callback',
-  imports: [NgClass],
-  templateUrl: './autorization-code-callback.component.html',
-  styleUrls: ['./autorization-code-callback.component.scss'],
+  imports: [],
+  templateUrl: './autorization-code-callback.html',
+  styleUrls: ['./autorization-code-callback.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AuthorizationCodeCallbackComponent<T> implements OnInit {
+export class AuthorizationCodeCallback<T> implements OnInit {
   private readonly data = inject<AuthorizationCodeCallbackData<T>>(
     AUTHORIZATION_CODE_CALLBACK_DATA,
   );

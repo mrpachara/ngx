@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AuthorizationCodeCallbackComponent } from './autorization-code-callback.component';
+import { AuthorizationCodeCallback } from './autorization-code-callback';
 
 describe('AuthorizationCodeCallbackComponent', () => {
-  let component: AuthorizationCodeCallbackComponent;
-  let fixture: ComponentFixture<AuthorizationCodeCallbackComponent>;
+  let component: AuthorizationCodeCallback<unknown>;
+  let fixture: ComponentFixture<AuthorizationCodeCallback<unknown>>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [AuthorizationCodeCallbackComponent],
+      imports: [AuthorizationCodeCallback],
     });
-    fixture = TestBed.createComponent(AuthorizationCodeCallbackComponent);
+    fixture = TestBed.createComponent(AuthorizationCodeCallback);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
