@@ -1,4 +1,9 @@
-import { inject, InjectionToken, isDevMode } from '@angular/core';
+import {
+  inject,
+  InjectionToken,
+  InjectOptions,
+  isDevMode,
+} from '@angular/core';
 import { IdTokenExtractor } from '../services/id-token.extractor';
 import {
   IdTokenClaimsTransformer,
@@ -59,7 +64,47 @@ export const ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS = new InjectionToken<
  * @throws If is not found.
  * @publicApi
  */
-export function injectIdTokenExtractor(id: symbol): IdTokenExtractor {
+export function injectIdTokenExtractor(id: symbol): IdTokenExtractor;
+
+/**
+ * Inject IdTokenExtractor from the given id.
+ *
+ * @param id IdTokenExtractor id symbol.
+ * @param options Control how injection is executed. Options correspond to
+ *   injection strategies that can be specified with parameter decorators
+ *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
+ * @returns IdTokenExtractor from the given id.
+ * @throws If is not found.
+ * @publicApi
+ */
+export function injectIdTokenExtractor(
+  id: symbol,
+  options: InjectOptions & {
+    optional?: false;
+  },
+): IdTokenExtractor;
+
+/**
+ * Inject IdTokenExtractor from the given id.
+ *
+ * @param id IdTokenExtractor id symbol.
+ * @param options Control how injection is executed. Options correspond to
+ *   injection strategies that can be specified with parameter decorators
+ *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
+ * @returns IdTokenExtractor from the given id, `null` if the token is not
+ *   found.
+ * @throws If is not found.
+ * @publicApi
+ */
+export function injectIdTokenExtractor(
+  id: symbol,
+  options: InjectOptions,
+): IdTokenExtractor | null;
+
+export function injectIdTokenExtractor(
+  id: symbol,
+  options?: InjectOptions,
+): IdTokenExtractor | null {
   const tokenItems = inject(ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS);
 
   const tokenItem = tokenItems.find((tokenItem) => tokenItem.id === id);
@@ -74,5 +119,9 @@ export function injectIdTokenExtractor(id: symbol): IdTokenExtractor {
     );
   }
 
-  return inject(tokenItem.token);
+  if (typeof options === 'undefined') {
+    return inject(tokenItem.token);
+  } else {
+    return inject(tokenItem.token, options);
+  }
 }

@@ -1,4 +1,9 @@
-import { inject, InjectionToken, isDevMode } from '@angular/core';
+import {
+  inject,
+  InjectionToken,
+  InjectOptions,
+  isDevMode,
+} from '@angular/core';
 import { AuthorizationCodeService } from '../services';
 import { AuthorizationCodeConfig, StateStorage } from '../types';
 
@@ -44,7 +49,47 @@ export const AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS =
  */
 export function injectAuthorizationCodeService(
   id: symbol,
-): AuthorizationCodeService {
+): AuthorizationCodeService;
+
+/**
+ * Inject AuthorizationCodeService from the given id.
+ *
+ * @param id AuthorizationCodeService id symbol.
+ * @param options Control how injection is executed. Options correspond to
+ *   injection strategies that can be specified with parameter decorators
+ *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
+ * @returns AuthorizationCodeService from the given id.
+ * @throws If is not found.
+ * @publicApi
+ */
+export function injectAuthorizationCodeService(
+  id: symbol,
+  options: InjectOptions & {
+    optional?: false;
+  },
+): AuthorizationCodeService;
+
+/**
+ * Inject AuthorizationCodeService from the given id.
+ *
+ * @param id AuthorizationCodeService id symbol.
+ * @param options Control how injection is executed. Options correspond to
+ *   injection strategies that can be specified with parameter decorators
+ *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
+ * @returns AuthorizationCodeService from the given id, `null` if the token is
+ *   not found.
+ * @throws If is not found.
+ * @publicApi
+ */
+export function injectAuthorizationCodeService(
+  id: symbol,
+  options: InjectOptions,
+): AuthorizationCodeService | null;
+
+export function injectAuthorizationCodeService(
+  id: symbol,
+  options?: InjectOptions,
+): AuthorizationCodeService | null {
   const tokenItems = inject(AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS);
 
   const tokenItem = tokenItems.find((tokenItem) => tokenItem.id === id);
@@ -62,5 +107,9 @@ export function injectAuthorizationCodeService(
     );
   }
 
-  return inject(tokenItem.token);
+  if (typeof options === 'undefined') {
+    return inject(tokenItem.token);
+  } else {
+    return inject(tokenItem.token, options);
+  }
 }
