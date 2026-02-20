@@ -87,13 +87,16 @@ export class AccessTokenService {
   });
 
   readonly #ready = signal<boolean | undefined>(undefined);
-  readyResource() {
-    return flatStreamResource(
-      resource({
-        params: () => this.#ready(),
-        loader: async ({ params: ready }) => ready,
-      }),
-    ).asReadonly();
+
+  readonly #_ready = flatStreamResource(
+    resource({
+      params: () => this.#ready(),
+      loader: async ({ params: ready }) => ready,
+    }),
+  ).asReadonly();
+
+  get ready() {
+    return this.#_ready;
   }
 
   readonly #lastUpdated = signal<AccessTokenResponseUpdatedData | undefined>(
