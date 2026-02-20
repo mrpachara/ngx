@@ -56,8 +56,6 @@ export class AuthorizationCodeCallback<T> implements OnInit {
 
   private readonly process = this.data.processFactory?.();
 
-  readonly processFactory = input;
-
   readonly state = input<string>();
 
   readonly code = input<string>();
