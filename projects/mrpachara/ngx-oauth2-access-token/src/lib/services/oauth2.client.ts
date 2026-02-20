@@ -125,7 +125,7 @@ export class Oauth2Client {
     return await firstValueFrom(
       this.http
         .post<RES>(this.config.accessTokenUrl, body, {
-          headers: headers,
+          ...(headers ? { headers } : {}),
           context: new HttpContext().set(SKIP_ASSIGNING_ACCESS_TOKEN, true),
         })
         .pipe(

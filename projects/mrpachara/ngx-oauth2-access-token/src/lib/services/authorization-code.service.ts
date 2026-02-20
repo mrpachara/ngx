@@ -160,8 +160,8 @@ export class AuthorizationCodeService {
       code,
       this.config.redirectUri,
       {
-        codeVerifier,
-        params,
+        ...(codeVerifier ? { codeVerifier } : {}),
+        ...(params ? { params } : {}),
       },
     );
 
