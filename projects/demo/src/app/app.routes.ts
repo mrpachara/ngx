@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { Router, Routes } from '@angular/router';
 import {
-  AuthorizationCodeCallbackComponent,
+  AuthorizationCodeCallback,
   provideAuthorizationCodeCallbackData,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { demoOauth } from './app.config';
@@ -26,6 +26,6 @@ export const routes: Routes = [
         },
       })),
     ],
-    component: AuthorizationCodeCallbackComponent,
+    component: AuthorizationCodeCallback,
   },
 ];
