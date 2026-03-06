@@ -1,12 +1,3 @@
-import {
-  effect,
-  Resource,
-  resource,
-  ResourceRef,
-  ResourceStreamItem,
-  signal,
-  Signal,
-} from '@angular/core';
 import { fromEvent, Observable, pipe, take, takeUntil } from 'rxjs';
 import { DeepReadonly } from '../types';
 
@@ -74,13 +65,9 @@ export async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-export function takeUntilAbortignal<T>(signal?: AbortSignal) {
-  if (typeof signal === 'undefined') {
-    return pipe();
-  }
-
+export function takeUntilAbortSignal<T>(signal: AbortSignal) {
   // NOTE: take(1) may not needed
-  return pipe(takeUntil<T>(fromEvent(signal, 'message')));
+  return pipe(takeUntil<T>(fromEvent(signal, 'abort')));
 }
 
 export function abortSignalFromObservable<T>(observable: Observable<T>): {
@@ -114,30 +101,4 @@ export function withResolvers<T>(): {
   });
 
   return { promise, resolve, reject } as const;
-}
-
-export function flatStreamResource<T>(
-  source: Resource<T>,
-): ResourceRef<T | undefined> {
-  const { promise, resolve } = withResolvers<Signal<ResourceStreamItem<T>>>();
-
-  const streamItem = signal<ResourceStreamItem<T>>({
-    error: new Error('initializing'),
-  });
-
-  effect(() => {
-    const status = source.status();
-
-    if (status === 'resolved' || status === 'local' || status === 'error') {
-      streamItem.set(
-        source.hasValue()
-          ? { value: source.value() }
-          : { error: source.error()! },
-      );
-
-      resolve(streamItem);
-    }
-  });
-
-  return resource({ stream: async () => await promise });
 }

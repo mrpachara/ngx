@@ -1,10 +1,18 @@
-import { APP_ID, inject, Injectable, resource, signal } from '@angular/core';
+import {
+  APP_ID,
+  computed,
+  inject,
+  Injectable,
+  resource,
+  signal,
+  untracked,
+} from '@angular/core';
 import {
   AccessTokenNotFoundError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
 } from '../errors';
-import { flatStreamResource, validateAndTransformScopes } from '../helpers';
+import { validateAndTransformScopes } from '../helpers';
 import { libPrefix } from '../predefined';
 import {
   ACCESS_TOKEN_CONFIG,
@@ -16,20 +24,19 @@ import {
   AccessTokenInfo,
   AccessTokenMessage,
   AccessTokenResponse,
-  AccessTokenResponseUpdatedData,
   AdditionalParams,
   AuthorizationCodeGrantAccessTokenRequest,
   ClientGrantAccessTokenRequest,
   ExtensionGrantAccessTokenRequest,
   ExtensionWithDataGrant,
   ExtensionWithoutDataGrant,
+  loadedData,
   PasswordGrantAccessTokenRequest,
   PickOptional,
   RefreshTokenGrantAccessTokenRequest,
   removedData,
   Scopes,
   StandardGrantType,
-  storedData,
 } from '../types';
 import { Oauth2Client } from './oauth2.client';
 
@@ -86,42 +93,12 @@ export class AccessTokenService {
     return extractor;
   });
 
-  readonly #ready = signal<boolean | undefined>(undefined);
-
-  readonly #_ready = flatStreamResource(
-    resource({
-      params: () => this.#ready(),
-      loader: async ({ params: ready }) => ready,
-    }),
-  ).asReadonly();
-
-  get ready() {
-    return this.#_ready;
-  }
-
-  readonly #lastUpdated = signal<AccessTokenResponseUpdatedData | undefined>(
-    undefined,
-  );
-  accessTokenResponseResource() {
-    return flatStreamResource(
-      resource({
-        params: () => this.#lastUpdated() ?? Date.now(),
-        loader: async () => await this.loadAccessTokenResponse(),
-      }),
-    ).asReadonly();
-  }
-
   readonly #bc: BroadcastChannel;
 
-  #post(
-    type: AccessTokenMessage['type'],
-    timestamp: number,
-    ready: boolean,
-  ): void {
+  #post(type: AccessTokenMessage['type'], timestamp: number): void {
     this.#bc.postMessage({
       type,
       timestamp: timestamp,
-      ready,
     } satisfies AccessTokenMessage);
   }
 
@@ -140,21 +117,8 @@ export class AccessTokenService {
         const message = ev.data;
 
         switch (message.type) {
-          case 'external-storing': {
-            const lastUpdated = {
-              timestamp: message.timestamp,
-              accessTokenResponse: storedData,
-            } as const;
-
-            Promise.allSettled(
-              this.extractors.map((extractor) => extractor.update(lastUpdated)),
-            );
-
-            this.#ready.set(message.ready);
-
-            this.#lastUpdated.set(lastUpdated);
-
-            return;
+          case 'external-store': {
+            return void (await this.loadAccessTokenResponse());
           }
 
           default:
@@ -164,25 +128,6 @@ export class AccessTokenService {
         }
       },
     );
-  }
-
-  /** NOTE: this method **MUST** be called from `loadAccessTokenResponse()` only. */
-  async #lockedlyLoad(
-    projector: () => Promise<AccessTokenResponse>,
-  ): Promise<AccessTokenResponse> {
-    return await navigator.locks.request(this.#syncName, async () => {
-      try {
-        const result = await projector();
-
-        this.#ready.set(true);
-
-        return result;
-      } catch (err) {
-        this.#ready.set(false);
-
-        throw err;
-      }
-    });
   }
 
   /**
@@ -195,17 +140,17 @@ export class AccessTokenService {
    * @throws AccessTokenNotFoundError
    */
   async loadAccessTokenResponse(): Promise<AccessTokenResponse> {
-    return await this.#lockedlyLoad(async () => {
+    return await navigator.locks.request(this.#syncName, async () => {
       while (true) {
         const storedAccessToken = await this.storage.load('access');
 
         if (storedAccessToken && storedAccessToken.expiresAt > Date.now()) {
-          return storedAccessToken.data;
+          return this.#updateAccessTokenResponse(storedAccessToken.data);
         }
 
-        const storageRefreshToken = await this.storage.load('refresh');
+        const storedRefreshToken = await this.storage.load('refresh');
 
-        if (storageRefreshToken && storageRefreshToken.expiresAt > Date.now()) {
+        if (storedRefreshToken && storedRefreshToken.expiresAt > Date.now()) {
           try {
             await this.fetch('refresh_token');
 
@@ -215,6 +160,7 @@ export class AccessTokenService {
           }
         }
 
+        this.#updateAccessTokenResponse(null);
         throw new AccessTokenNotFoundError(this.name);
       }
     });
@@ -235,16 +181,8 @@ export class AccessTokenService {
     } as const;
   }
 
-  #changeReadyByStorage(
-    ready: true,
-    accessTokenResponse: AccessTokenResponse,
-  ): Promise<void>;
-
-  #changeReadyByStorage(ready: false): Promise<void>;
-
-  async #changeReadyByStorage(
-    ready: boolean,
-    accessTokenResponse: AccessTokenResponse | typeof removedData = removedData,
+  async #updatedByStorage(
+    accessTokenResponse: AccessTokenResponse | typeof removedData,
   ): Promise<void> {
     const now = Date.now();
 
@@ -253,14 +191,13 @@ export class AccessTokenService {
       accessTokenResponse,
     } as const;
 
+    // NOTE: `await` is required to let extractors update their storage
+    //       before fires `external-store` event.
     await Promise.allSettled(
       this.extractors.map((extractor) => extractor.update(updatedData)),
     );
 
-    this.#ready.set(ready);
-    this.#lastUpdated.set(updatedData);
-
-    this.#post('external-storing', now, ready);
+    this.#post('external-store', now);
   }
 
   /** Fetch access token from _Authorization Code_ grant. Then store to storage. */
@@ -462,7 +399,7 @@ export class AccessTokenService {
       data: accessTokenResponse,
     });
 
-    return await this.#changeReadyByStorage(true, accessTokenResponse);
+    return await this.#updatedByStorage(accessTokenResponse);
   }
 
   /**
@@ -473,6 +410,58 @@ export class AccessTokenService {
   async clearTokens(): Promise<void> {
     await this.storage.clear();
 
-    return await this.#changeReadyByStorage(false);
+    return await this.#updatedByStorage(removedData);
+  }
+
+  readonly #accessTokenResponse = signal<AccessTokenResponse | null>(null, {
+    equal: (previous, current) =>
+      previous?.access_token === current?.access_token,
+  });
+
+  #updateAccessTokenResponse<const T extends AccessTokenResponse | null>(
+    value: T,
+  ): T {
+    return untracked(() => {
+      this.#accessTokenResponse.set(value);
+
+      const now = new Date().getTime();
+      Promise.allSettled(
+        this.extractors.map((extractor) =>
+          extractor.update({
+            timestamp: now,
+            accessTokenResponse: loadedData,
+          }),
+        ),
+      );
+
+      return value;
+    });
+  }
+
+  /**
+   * Create AccessTokenResponse _resource_.
+   *
+   * @returns
+   */
+  responseResource() {
+    return resource({
+      stream: async () => {
+        try {
+          await this.loadAccessTokenResponse();
+        } catch {
+          /* empty */
+        }
+
+        return computed(() => {
+          const value = this.#accessTokenResponse();
+
+          if (value !== null) {
+            return { value };
+          } else {
+            return { error: new AccessTokenNotFoundError(this.name) };
+          }
+        });
+      },
+    }).asReadonly();
   }
 }

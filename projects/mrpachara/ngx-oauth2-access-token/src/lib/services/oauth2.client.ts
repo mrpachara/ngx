@@ -4,9 +4,9 @@ import {
   HttpErrorResponse,
 } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, firstValueFrom, throwError } from 'rxjs';
+import { catchError, firstValueFrom, pipe, throwError } from 'rxjs';
 import { Oauth2ClientResponseError } from '../errors';
-import { assignRequestData, takeUntilAbortignal } from '../helpers';
+import { assignRequestData, takeUntilAbortSignal } from '../helpers';
 import {
   OAUTH2_CLIENT_CONFIG,
   OAUTH2_CLIENT_ERROR_TRANSFORMER,
@@ -129,7 +129,7 @@ export class Oauth2Client {
           context: new HttpContext().set(SKIP_ASSIGNING_ACCESS_TOKEN, true),
         })
         .pipe(
-          takeUntilAbortignal(signal),
+          signal ? takeUntilAbortSignal(signal) : pipe(),
           catchError((err) =>
             throwError(
               () =>

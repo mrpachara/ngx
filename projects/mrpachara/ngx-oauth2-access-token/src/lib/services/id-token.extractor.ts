@@ -1,10 +1,17 @@
-import { inject, Injectable, resource, signal } from '@angular/core';
+import {
+  computed,
+  inject,
+  Injectable,
+  resource,
+  signal,
+  untracked,
+} from '@angular/core';
 import {
   IdTokenClaimsNotFoundError,
   IdTokenEncryptedError,
   IdTokenInfoNotFoundError,
 } from '../errors';
-import { deserializeJose, flatStreamResource, isJwt } from '../helpers';
+import { deserializeJose, isJwt } from '../helpers';
 import { EXTRACTOR_ID } from '../tokens';
 import {
   ID_TOKEN_CLAIMS_TRANSFORMER,
@@ -18,8 +25,8 @@ import {
   IdTokenClaims,
   IdTokenInfo,
   JwtHeader,
+  loadedData,
   removedData,
-  storedData,
 } from '../types';
 
 interface IdTokenRespodable {
@@ -35,9 +42,7 @@ function isIdTokenResponse(
 }
 
 @Injectable()
-export class IdTokenExtractor
-  implements AccessTokenResponseExtractor<IdTokenResponse>
-{
+export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenResponse> {
   readonly #id = inject(EXTRACTOR_ID);
 
   private readonly storage = inject(ID_TOKEN_STORAGE);
@@ -54,18 +59,20 @@ export class IdTokenExtractor
     return this.id.description ?? '[unknown]';
   }
 
-  readonly #lastUpdated = signal<number | undefined>(undefined);
+  async #loadAll() {
+    await Promise.allSettled([this.loadInfo(), this.loadClaims()] as const);
+  }
 
   async update(
     updatedData: AccessTokenResponseUpdatedData<IdTokenResponse>,
   ): Promise<void> {
     switch (updatedData.accessTokenResponse) {
-      case storedData:
-        return this.#lastUpdated.set(updatedData.timestamp);
+      case loadedData:
+        return void (await this.#loadAll());
       case removedData:
         await this.storage.clear();
 
-        return this.#lastUpdated.set(updatedData.timestamp);
+        return void (await this.#loadAll());
       default:
         if (isIdTokenResponse(updatedData.accessTokenResponse)) {
           try {
@@ -95,52 +102,74 @@ export class IdTokenExtractor
 
             await this.storage.clear();
           }
-
-          return this.#lastUpdated.set(updatedData.timestamp);
         }
     }
   }
 
-  async loadInfo(): Promise<IdTokenInfo | undefined> {
-    return await this.storage.load('info');
+  readonly #idTokenInfo = signal<IdTokenInfo | null>(null, {
+    equal: (previous, current) => previous?.serial === current?.serial,
+  });
+
+  #updateIdTokenInfo<const T extends IdTokenInfo | null>(value: T): T {
+    return untracked(() => {
+      this.#idTokenInfo.set(value);
+
+      return value;
+    });
+  }
+
+  async loadInfo(): Promise<IdTokenInfo | null> {
+    return this.#updateIdTokenInfo((await this.storage.load('info')) ?? null);
   }
 
   infoResource() {
-    return flatStreamResource(
-      resource({
-        params: () => this.#lastUpdated() ?? Date.now(),
-        loader: async () => {
-          const result = await this.loadInfo();
+    return resource({
+      stream: async () => {
+        await this.loadInfo();
 
-          if (typeof result === 'undefined') {
-            throw new IdTokenInfoNotFoundError(this.name);
-          }
+        return computed(() => {
+          const value = this.#idTokenInfo();
 
-          return result;
-        },
-        equal: (oldValue, newValue) => oldValue.serial === newValue.serial,
-      }),
-    ).asReadonly();
+          return value !== null
+            ? { value }
+            : { error: new IdTokenInfoNotFoundError(this.name) };
+        });
+      },
+    }).asReadonly();
   }
 
-  async loadClaims(): Promise<IdTokenClaims | undefined> {
-    return await this.storage.load('claims');
+  readonly #idTokenClaims = signal<IdTokenClaims | null>(null, {
+    equal: (previous, current) =>
+      JSON.stringify(previous) === JSON.stringify(current),
+  });
+
+  #updateIdTokenClaims<const T extends IdTokenClaims | null>(value: T): T {
+    return untracked(() => {
+      this.#idTokenClaims.set(value);
+
+      return value;
+    });
+  }
+
+  async loadClaims(): Promise<IdTokenClaims | null> {
+    return this.#updateIdTokenClaims(
+      (await this.storage.load('claims')) ?? null,
+    );
   }
 
   claimsResource() {
-    return flatStreamResource(
-      resource({
-        params: () => this.#lastUpdated() ?? Date.now(),
-        loader: async () => {
-          const result = await this.loadClaims();
+    return resource({
+      stream: async () => {
+        await this.loadClaims();
 
-          if (typeof result === 'undefined') {
-            throw new IdTokenClaimsNotFoundError(this.name);
-          }
+        return computed(() => {
+          const value = this.#idTokenClaims();
 
-          return result;
-        },
-      }),
-    ).asReadonly();
+          return value !== null
+            ? { value }
+            : { error: new IdTokenClaimsNotFoundError(this.name) };
+        });
+      },
+    }).asReadonly();
   }
 }

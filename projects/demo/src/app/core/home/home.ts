@@ -48,8 +48,7 @@ export class Home {
   private readonly jwkDispatcher = inject(JwkDispatcher);
 
   // AccessToken
-  protected accessTokenResource =
-    this.accessTokenService.accessTokenResponseResource();
+  protected accessTokenResource = this.accessTokenService.responseResource();
 
   protected readonly errorAccessTokenMessage = computed(() =>
     extractErrorMessage(this.accessTokenResource.error()),

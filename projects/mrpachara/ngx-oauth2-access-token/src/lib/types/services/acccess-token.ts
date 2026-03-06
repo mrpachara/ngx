@@ -5,10 +5,7 @@ interface AccessTokenMessageType<T extends string> {
   readonly timestamp: number;
 }
 
-export interface AccessTokenMessage
-  extends AccessTokenMessageType<'external-storing'> {
-  readonly ready: boolean;
-}
+export type AccessTokenMessage = AccessTokenMessageType<'external-store'>;
 
 /** Access token information */
 export interface AccessTokenInfo {
@@ -19,14 +16,14 @@ export interface AccessTokenInfo {
   readonly token: string;
 }
 
-export const storedData = Symbol('stored-data');
+export const loadedData = Symbol('loaded-data');
 export const removedData = Symbol('removed-data');
 
 export interface AccessTokenResponseUpdatedData<
   T extends AccessTokenResponse = AccessTokenResponse,
 > {
   readonly timestamp: number;
-  readonly accessTokenResponse: T | typeof removedData | typeof storedData;
+  readonly accessTokenResponse: T | typeof removedData | typeof loadedData;
 }
 
 export interface AccessTokenResponseExtractor<
