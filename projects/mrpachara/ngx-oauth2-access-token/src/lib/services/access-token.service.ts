@@ -323,7 +323,7 @@ export class AccessTokenService {
 
           const storageRefreshToken = await this.storage.load('refresh');
 
-          if (typeof storageRefreshToken === 'undefined') {
+          if (storageRefreshToken === null) {
             throw new RefreshTokenNotFoundError(this.name);
           }
 

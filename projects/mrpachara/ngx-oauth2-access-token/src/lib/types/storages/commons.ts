@@ -6,14 +6,9 @@ export interface StoredData<T> {
   readonly data: T;
 }
 
-export interface Lockable {
-  lock(): Promise<void>;
-  release(): Promise<void>;
-}
-
 export interface KeyableDataStorage<M extends object> {
-  load<const K extends keyof M>(key: K): Promise<M[K] | undefined>;
+  load<const K extends keyof M>(key: K): Promise<M[K] | null>;
   store<const K extends keyof M>(key: K, data: M[K]): Promise<M[K]>;
-  remove<const K extends keyof M>(key: K): Promise<M[K] | undefined>;
+  remove<const K extends keyof M>(key: K): Promise<M[K] | null>;
   clear(): Promise<void>;
 }

@@ -119,7 +119,7 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
   }
 
   async loadInfo(): Promise<IdTokenInfo | null> {
-    return this.#updateIdTokenInfo((await this.storage.load('info')) ?? null);
+    return this.#updateIdTokenInfo(await this.storage.load('info'));
   }
 
   infoResource() {
@@ -152,9 +152,7 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
   }
 
   async loadClaims(): Promise<IdTokenClaims | null> {
-    return this.#updateIdTokenClaims(
-      (await this.storage.load('claims')) ?? null,
-    );
+    return this.#updateIdTokenClaims(await this.storage.load('claims'));
   }
 
   claimsResource() {

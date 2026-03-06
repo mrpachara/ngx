@@ -21,15 +21,17 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
 
   async load<const K extends keyof StoredAccessTokenMap>(
     key: K,
-  ): Promise<StoredAccessTokenMap[K] | undefined> {
+  ): Promise<StoredAccessTokenMap[K] | null> {
     const db = await this.#connection.db$;
 
     const objectStore = db
       .transaction(keys[key], 'readonly')
       .objectStore(keys[key]);
 
-    return await promisifyRequest<StoredAccessTokenMap[K] | undefined>(
-      objectStore.get(this.#name),
+    return (
+      (await promisifyRequest<StoredAccessTokenMap[K] | undefined>(
+        objectStore.get(this.#name),
+      )) ?? null
     );
   }
 
@@ -50,18 +52,19 @@ export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
 
   async remove<const K extends keyof StoredAccessTokenMap>(
     key: K,
-  ): Promise<StoredAccessTokenMap[K] | undefined> {
+  ): Promise<StoredAccessTokenMap[K] | null> {
     const db = await this.#connection.db$;
 
     const objectStore = db
       .transaction(keys[key], 'readwrite')
       .objectStore(keys[key]);
 
-    const data = await promisifyRequest<StoredAccessTokenMap[K] | undefined>(
-      objectStore.get(this.#name),
-    );
+    const data =
+      (await promisifyRequest<StoredAccessTokenMap[K] | undefined>(
+        objectStore.get(this.#name),
+      )) ?? null;
 
-    if (typeof data !== 'undefined') {
+    if (data !== null) {
       await promisifyRequest(objectStore.delete(this.#name));
     }
 

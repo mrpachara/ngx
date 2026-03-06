@@ -33,9 +33,7 @@ export class StateIndexedDbStorage implements StateStorage {
     ));
   }
 
-  async load<T = unknown>(
-    state: string,
-  ): Promise<StoredStateData<T> | undefined> {
+  async load<T = unknown>(state: string): Promise<StoredStateData<T> | null> {
     const db = await this.#connection.db$;
 
     const objectStore = db
@@ -43,10 +41,12 @@ export class StateIndexedDbStorage implements StateStorage {
       .objectStore(stateObjectStoreName);
 
     return (
-      await promisifyRequest<IndexedStateData<T> | undefined>(
-        objectStore.get([this.#name, state]),
-      )
-    )?.data;
+      (
+        await promisifyRequest<IndexedStateData<T> | undefined>(
+          objectStore.get([this.#name, state]),
+        )
+      )?.data ?? null
+    );
   }
 
   async store<T = unknown>(
@@ -70,25 +70,24 @@ export class StateIndexedDbStorage implements StateStorage {
     return data;
   }
 
-  async remove<T = unknown>(
-    state: string,
-  ): Promise<StoredStateData<T> | undefined> {
+  async remove<T = unknown>(state: string): Promise<StoredStateData<T> | null> {
     const db = await this.#connection.db$;
 
     const objectStore = db
       .transaction(stateObjectStoreName, 'readwrite')
       .objectStore(stateObjectStoreName);
 
-    const indexedData = await promisifyRequest<IndexedStateData<T> | undefined>(
-      objectStore.get([this.#name, state]),
-    );
+    const indexedData =
+      (await promisifyRequest<IndexedStateData<T> | undefined>(
+        objectStore.get([this.#name, state]),
+      )) ?? null;
 
-    if (typeof indexedData !== 'undefined') {
+    if (indexedData !== null) {
       await promisifyRequest(
         objectStore.delete([indexedData.name, indexedData.state]),
       );
     }
 
-    return indexedData?.data;
+    return indexedData?.data ?? null;
   }
 }

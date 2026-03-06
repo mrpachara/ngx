@@ -145,7 +145,7 @@ export class AuthorizationCodeService {
 
     const storedStateData = await this.storage.remove<T>(state);
 
-    if (typeof storedStateData === 'undefined') {
+    if (storedStateData === null) {
       throw new StateNotFoundError();
     }
 
@@ -180,10 +180,7 @@ export class AuthorizationCodeService {
 
     const storedStateData = await this.storage.remove<T>(state);
 
-    if (
-      typeof storedStateData === 'undefined' ||
-      storedStateData.expiresAt <= Date.now()
-    ) {
+    if (storedStateData === null || storedStateData.expiresAt <= Date.now()) {
       return undefined;
     }
 

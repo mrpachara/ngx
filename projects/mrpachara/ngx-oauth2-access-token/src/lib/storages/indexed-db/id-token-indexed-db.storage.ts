@@ -23,15 +23,17 @@ export class IdTokenIndexedDbStorage implements IdTokenStorage {
 
   async load<const K extends keyof StoredIdTokenInfoMap>(
     key: K,
-  ): Promise<StoredIdTokenInfoMap[K] | undefined> {
+  ): Promise<StoredIdTokenInfoMap[K] | null> {
     const db = await this.#connection.db$;
 
     const objectStore = db
       .transaction(keys[key], 'readonly')
       .objectStore(keys[key]);
 
-    return await promisifyRequest<StoredIdTokenInfoMap[K] | undefined>(
-      objectStore.get(this.#name),
+    return (
+      (await promisifyRequest<StoredIdTokenInfoMap[K] | undefined>(
+        objectStore.get(this.#name),
+      )) ?? null
     );
   }
 
@@ -52,18 +54,19 @@ export class IdTokenIndexedDbStorage implements IdTokenStorage {
 
   async remove<const K extends keyof StoredIdTokenInfoMap>(
     key: K,
-  ): Promise<StoredIdTokenInfoMap[K] | undefined> {
+  ): Promise<StoredIdTokenInfoMap[K] | null> {
     const db = await this.#connection.db$;
 
     const objectStore = db
       .transaction(keys[key], 'readwrite')
       .objectStore(keys[key]);
 
-    const data = await promisifyRequest<StoredIdTokenInfoMap[K] | undefined>(
-      objectStore.get(this.#name),
-    );
+    const data =
+      (await promisifyRequest<StoredIdTokenInfoMap[K] | undefined>(
+        objectStore.get(this.#name),
+      )) ?? null;
 
-    if (typeof data !== 'undefined') {
+    if (data !== null) {
       await promisifyRequest(objectStore.delete(this.#name));
     }
 
