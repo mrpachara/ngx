@@ -1,7 +1,8 @@
-import { IdableConfig } from './commons';
+// TODO: to be deleted
+import { IdentifiableConfig } from './commons';
 
 /** OAuth 2.0 client configuration */
-export interface Oauth2ClientConfig extends IdableConfig {
+export interface Oauth2ClientConfig extends IdentifiableConfig {
   /** OAuth client ID, it is REQUIRED. */
   readonly clientId: string;
 

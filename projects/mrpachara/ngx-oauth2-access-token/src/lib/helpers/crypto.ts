@@ -5,15 +5,17 @@
  * @returns The random sting
  */
 export function randomString(length: number): string {
-  const alloc = new Uint32Array(length / 2);
-  crypto.getRandomValues(alloc);
-  return Array.from(alloc, (value) =>
-    // NOTE: when use radix 36, the group of starting number digits,
-    //       e.g. 0, 1, 2, ... , 9, a, b ..., may be appear too often
-    //       than the group of last number digits,
-    //       because radix-2 based is not divisible by it.
-    ('0' + value.toString(36)).slice(-2),
-  ).join('');
+  // NOTE: The number of characters *must* be 64 for preventing _Modulo Bias_.
+  const chars =
+    '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-.';
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars[array[i] % chars.length];
+  }
+  return result;
 }
 
 /**

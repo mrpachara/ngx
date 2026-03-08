@@ -1,3 +1,4 @@
+import { IdKey } from '../../tokens';
 import { AccessTokenResponse } from '../standards';
 
 interface AccessTokenMessageType<T extends string> {
@@ -16,19 +17,19 @@ export interface AccessTokenInfo {
   readonly token: string;
 }
 
-export const loadedData = Symbol('loaded-data');
+export const storedData = Symbol('stored-data');
 export const removedData = Symbol('removed-data');
 
 export interface AccessTokenResponseUpdatedData<
   T extends AccessTokenResponse = AccessTokenResponse,
 > {
   readonly timestamp: number;
-  readonly accessTokenResponse: T | typeof removedData | typeof loadedData;
+  readonly accessTokenResponse: T | typeof storedData | typeof removedData;
 }
 
 export interface AccessTokenResponseExtractor<
   T extends AccessTokenResponse = AccessTokenResponse,
 > {
-  readonly id: symbol;
+  readonly id: IdKey;
   update(updatedData: AccessTokenResponseUpdatedData<T>): Promise<void>;
 }

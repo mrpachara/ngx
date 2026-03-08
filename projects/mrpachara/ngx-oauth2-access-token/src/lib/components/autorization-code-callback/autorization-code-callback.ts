@@ -11,10 +11,11 @@ import {
 } from '@angular/core';
 
 import { authorizationCodeCallback } from '../../helpers';
-import { injectAuthorizationCodeService } from '../../tokens';
+import { AuthorizationCodeService } from '../../services';
+import { IdKey, injectAuthorizationCodeService } from '../../tokens';
 
 export interface AuthorizationCodeCallbackData<T = unknown> {
-  readonly id: symbol;
+  readonly id?: IdKey;
   readonly processFactory?: () => (stateData: T) => Promise<void> | void;
 }
 
@@ -50,9 +51,9 @@ export class AuthorizationCodeCallback<T> implements OnInit {
     AUTHORIZATION_CODE_CALLBACK_DATA,
   );
 
-  private readonly authorizationCodeService = injectAuthorizationCodeService(
-    this.data.id,
-  );
+  private readonly authorizationCodeService = this.data.id
+    ? injectAuthorizationCodeService(this.data.id)
+    : inject(AuthorizationCodeService);
 
   private readonly process = this.data.processFactory?.();
 

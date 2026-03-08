@@ -1,11 +1,12 @@
 import {
   APP_ID,
-  computed,
+  DestroyRef,
   inject,
   Injectable,
+  linkedSignal,
   resource,
+  ResourceStreamItem,
   signal,
-  untracked,
 } from '@angular/core';
 import {
   AccessTokenNotFoundError,
@@ -30,18 +31,24 @@ import {
   ExtensionGrantAccessTokenRequest,
   ExtensionWithDataGrant,
   ExtensionWithoutDataGrant,
-  loadedData,
+  Oauth2ClientCredentials,
   PasswordGrantAccessTokenRequest,
-  PickOptional,
+  PickOptionalExcept,
   RefreshTokenGrantAccessTokenRequest,
   removedData,
   Scopes,
   StandardGrantType,
+  storedData,
 } from '../types';
 import { Oauth2Client } from './oauth2.client';
 
 /** Default access token configuration */
-const defaultAccessTokenConfig: PickOptional<AccessTokenConfig> = {
+const defaultConfiguration: PickOptionalExcept<
+  AccessTokenConfig,
+  'clientSecret'
+> = {
+  clientCredentialsInParams: false,
+
   /** `600_000` miliseconds (10 minutes) */
   accessTokenTtl: 600_000,
 
@@ -51,7 +58,7 @@ const defaultAccessTokenConfig: PickOptional<AccessTokenConfig> = {
 
 function configure(config: AccessTokenConfig) {
   return {
-    ...defaultAccessTokenConfig,
+    ...defaultConfiguration,
     ...config,
   } as const;
 }
@@ -63,21 +70,22 @@ Injectable();
 export class AccessTokenService {
   private readonly config = configure(inject(ACCESS_TOKEN_CONFIG));
 
-  private readonly client = inject(Oauth2Client);
-
   private readonly storage = inject(ACCESS_TOKEN_STORAGE);
 
-  get id() {
-    return this.client.id;
-  }
+  private readonly client = inject(Oauth2Client);
 
-  get name() {
-    return this.client.name;
+  get id() {
+    return this.config.id;
   }
 
   get clientId() {
-    return this.client.clientId;
+    return this.config.clientId;
   }
+
+  private readonly clientCredentials = {
+    id: this.config.clientId,
+    ...(this.config.clientSecret ? { secret: this.config.clientSecret } : {}),
+  } as const satisfies Oauth2ClientCredentials;
 
   private readonly extractors = [
     ...(inject(ACCESS_TOKEN_RESPONSE_EXTRACTORS, {
@@ -86,14 +94,32 @@ export class AccessTokenService {
   ].map((extractor) => {
     if (extractor.id !== this.id) {
       throw new Error(
-        `Extractor '${extractor.id.description ?? '[unknown]'}' mismatches AccessTokenService '${this.name}'.`,
+        `Extractor '${extractor.id}' mismatches AccessTokenService '${this.id}'.`,
       );
     }
 
     return extractor;
   });
 
-  readonly #bc: BroadcastChannel;
+  readonly #version = signal<number | undefined>(undefined);
+
+  #initializeVersion<T>(value: T): T {
+    this.#version.update((version) =>
+      typeof version === 'undefined' ? 0 : version,
+    );
+
+    return value;
+  }
+
+  #updateVersion(value: number): void {
+    this.#version.update((version) =>
+      value > (version ?? -Infinity) ? value : version,
+    );
+  }
+
+  readonly #prefix = `${inject(APP_ID)}-${libPrefix}-access-token`;
+
+  readonly #bc = new BroadcastChannel(`${this.#prefix}-bc:${this.id}`);
 
   #post(type: AccessTokenMessage['type'], timestamp: number): void {
     this.#bc.postMessage({
@@ -102,83 +128,40 @@ export class AccessTokenService {
     } satisfies AccessTokenMessage);
   }
 
-  readonly #syncName: string;
+  readonly #syncName = `${this.#prefix}-sync:${this.id}`;
 
   constructor() {
-    const prefix = `${inject(APP_ID)}-${libPrefix}-access-token`;
-
-    this.#syncName = `${prefix}-sync:${this.name}`;
-
-    this.#bc = new BroadcastChannel(`${prefix}:${this.name}`);
+    const ac = new AbortController();
 
     this.#bc.addEventListener(
       'message',
       async (ev: MessageEvent<AccessTokenMessage>) => {
-        const message = ev.data;
+        const { data: message } = ev;
 
         switch (message.type) {
           case 'external-store': {
-            return void (await this.loadAccessTokenResponse());
+            Promise.allSettled(
+              this.extractors.map((extractor) =>
+                extractor.update({
+                  timestamp: message.timestamp,
+                  accessTokenResponse: storedData,
+                }),
+              ),
+            );
+
+            return this.#updateVersion(message.timestamp);
           }
 
           default:
             console.warn(
-              `Broadcast '${this.#bc.name}' does not implement '${(message as { type: string }).type}.'`,
+              `Broadcast '${this.#bc.name}' does not implement '${(message as { type: string }).type}'.`,
             );
         }
       },
+      { signal: ac.signal },
     );
-  }
 
-  /**
-   * Try to laod access token response from storage:
-   *
-   * 1. If not found or expired then try to get the new one from _refresh token_.
-   * 2. If failed then try to get from `fetchNewAccessToken`.
-   * 3. If failed then throw `AccessTokenNotFoundError`.
-   *
-   * @throws AccessTokenNotFoundError
-   */
-  async loadAccessTokenResponse(): Promise<AccessTokenResponse> {
-    return await navigator.locks.request(this.#syncName, async () => {
-      while (true) {
-        const storedAccessToken = await this.storage.load('access');
-
-        if (storedAccessToken && storedAccessToken.expiresAt > Date.now()) {
-          return this.#updateAccessTokenResponse(storedAccessToken.data);
-        }
-
-        const storedRefreshToken = await this.storage.load('refresh');
-
-        if (storedRefreshToken && storedRefreshToken.expiresAt > Date.now()) {
-          try {
-            await this.fetch('refresh_token');
-
-            continue;
-          } catch (err) {
-            console.warn(err);
-          }
-        }
-
-        this.#updateAccessTokenResponse(null);
-        throw new AccessTokenNotFoundError(this.name);
-      }
-    });
-  }
-
-  /**
-   * Try to load access token info from storage
-   *
-   * @throws AccessTokenNotFoundError
-   * @see {@link loadAccessTokenResponse}
-   */
-  async loadAccessTokenInfo(): Promise<AccessTokenInfo> {
-    const accessTokenResponse = await this.loadAccessTokenResponse();
-
-    return {
-      type: accessTokenResponse.token_type,
-      token: accessTokenResponse.access_token,
-    } as const;
+    inject(DestroyRef).onDestroy(() => ac.abort());
   }
 
   async #updatedByStorage(
@@ -186,17 +169,18 @@ export class AccessTokenService {
   ): Promise<void> {
     const now = Date.now();
 
-    const updatedData = {
-      timestamp: now,
-      accessTokenResponse,
-    } as const;
-
-    // NOTE: `await` is required to let extractors update their storage
-    //       before fires `external-store` event.
+    // NOTE: `await` is **required** to make sure that
+    //       storage is updated before sub-sequence events.
     await Promise.allSettled(
-      this.extractors.map((extractor) => extractor.update(updatedData)),
+      this.extractors.map((extractor) =>
+        extractor.update({
+          timestamp: now,
+          accessTokenResponse,
+        }),
+      ),
     );
 
+    this.#updateVersion(now);
     this.#post('external-store', now);
   }
 
@@ -324,11 +308,11 @@ export class AccessTokenService {
           const storageRefreshToken = await this.storage.load('refresh');
 
           if (storageRefreshToken === null) {
-            throw new RefreshTokenNotFoundError(this.name);
+            throw new RefreshTokenNotFoundError(this.id);
           }
 
           if (storageRefreshToken.expiresAt <= Date.now()) {
-            throw new RefreshTokenExpiredError(this.name);
+            throw new RefreshTokenExpiredError(this.id);
           }
 
           return {
@@ -367,9 +351,15 @@ export class AccessTokenService {
       }
     })();
 
-    const accessTokenResponse = await this.client.fetchAccessToken(request, {
-      params,
-    });
+    const accessTokenResponse = await this.client.fetchAccessToken(
+      this.config.accessTokenUrl,
+      this.clientCredentials,
+      request,
+      {
+        params,
+        credentialsInParams: this.config.clientCredentialsInParams,
+      },
+    );
 
     const now = Date.now();
     if (accessTokenResponse.refresh_token) {
@@ -378,6 +368,7 @@ export class AccessTokenService {
         data: accessTokenResponse.refresh_token,
       });
     } else {
+      // NOTE: extends _refresh token_ TTL.
       const storedRefreshToken = await this.storage.load('refresh');
 
       if (storedRefreshToken) {
@@ -403,6 +394,55 @@ export class AccessTokenService {
   }
 
   /**
+   * Try to laod access token response from storage:
+   *
+   * 1. If not found or expired then try to get the new one from _refresh token_.
+   * 2. If failed then try to get from `fetchNewAccessToken`.
+   * 3. If failed then throw `AccessTokenNotFoundError`.
+   */
+  async loadAccessTokenResponse(): Promise<AccessTokenResponse | null> {
+    return await navigator.locks.request(this.#syncName, async () => {
+      while (true) {
+        const storedAccessToken = await this.storage.load('access');
+
+        if (storedAccessToken && storedAccessToken.expiresAt > Date.now()) {
+          return this.#initializeVersion(storedAccessToken.data);
+        }
+
+        const storedRefreshToken = await this.storage.load('refresh');
+
+        if (storedRefreshToken && storedRefreshToken.expiresAt > Date.now()) {
+          try {
+            await this.fetch('refresh_token');
+
+            continue;
+          } catch (err) {
+            console.warn(err);
+          }
+        }
+
+        return this.#initializeVersion(null);
+      }
+    });
+  }
+
+  /**
+   * Try to load access token info from storage
+   *
+   * @see {@link loadAccessTokenResponse}
+   */
+  async loadAccessTokenInfo(): Promise<AccessTokenInfo | null> {
+    const accessTokenResponse = await this.loadAccessTokenResponse();
+
+    return accessTokenResponse === null
+      ? null
+      : {
+          type: accessTokenResponse.token_type,
+          token: accessTokenResponse.access_token,
+        };
+  }
+
+  /**
    * Clear acccess token and refresh token storage.
    *
    * @returns
@@ -413,30 +453,10 @@ export class AccessTokenService {
     return await this.#updatedByStorage(removedData);
   }
 
-  readonly #accessTokenResponse = signal<AccessTokenResponse | null>(null, {
-    equal: (previous, current) =>
-      previous?.access_token === current?.access_token,
+  readonly #accessTokenResponseResource = resource({
+    params: this.#version,
+    loader: async () => await this.loadAccessTokenResponse(),
   });
-
-  #updateAccessTokenResponse<const T extends AccessTokenResponse | null>(
-    value: T,
-  ): T {
-    return untracked(() => {
-      this.#accessTokenResponse.set(value);
-
-      const now = new Date().getTime();
-      Promise.allSettled(
-        this.extractors.map((extractor) =>
-          extractor.update({
-            timestamp: now,
-            accessTokenResponse: loadedData,
-          }),
-        ),
-      );
-
-      return value;
-    });
-  }
 
   /**
    * Create AccessTokenResponse _resource_.
@@ -446,20 +466,26 @@ export class AccessTokenService {
   responseResource() {
     return resource({
       stream: async () => {
-        try {
-          await this.loadAccessTokenResponse();
-        } catch {
-          /* empty */
-        }
+        const initializedValue = await this.loadAccessTokenResponse();
 
-        return computed(() => {
-          const value = this.#accessTokenResponse();
-
-          if (value !== null) {
-            return { value };
-          } else {
-            return { error: new AccessTokenNotFoundError(this.name) };
-          }
+        return linkedSignal({
+          source: this.#accessTokenResponseResource.snapshot,
+          computation: (
+            source,
+            previous,
+          ): ResourceStreamItem<AccessTokenResponse> => {
+            return source.status === 'error'
+              ? { error: source.error }
+              : typeof source.value !== 'undefined'
+                ? source.value !== null
+                  ? { value: source.value }
+                  : { error: new AccessTokenNotFoundError(this.id) }
+                : typeof previous !== 'undefined'
+                  ? previous.value
+                  : initializedValue !== null
+                    ? { value: initializedValue }
+                    : { error: new AccessTokenNotFoundError(this.id) };
+          },
         });
       },
     }).asReadonly();

@@ -51,7 +51,7 @@ export function withAuthorizationCode(
                 },
                 {
                   provide: STORAGE_NAME,
-                  useFactory: () => inject(AccessTokenService).name,
+                  useFactory: () => `${inject(accessTokenServiceToken).id}`,
                 },
                 {
                   provide: AUTHORIZATION_CODE_STORAGE,

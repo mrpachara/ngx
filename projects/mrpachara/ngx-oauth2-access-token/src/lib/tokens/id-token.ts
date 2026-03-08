@@ -10,6 +10,7 @@ import {
   IdTokenStorage,
   IdTokenVerification,
 } from '../types';
+import { IdKey } from './commons';
 
 /** The injection token for ID Token storage */
 export const ID_TOKEN_STORAGE = new InjectionToken<IdTokenStorage>(
@@ -37,7 +38,7 @@ export const ID_TOKEN_VERIFICATION = new InjectionToken<IdTokenVerification>(
 /** The injection token for ID Token extractor tokens */
 export const ID_TOKEN_EXTRACTOR_TOKENS = new InjectionToken<
   {
-    readonly id: symbol;
+    readonly id: IdKey;
     readonly token: InjectionToken<IdTokenExtractor>;
   }[]
 >('id-token-extractor-tokens', {
@@ -48,7 +49,7 @@ export const ID_TOKEN_EXTRACTOR_TOKENS = new InjectionToken<
 /** The injection token for ID Token extractor hierarchized tokens */
 export const ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS = new InjectionToken<
   {
-    readonly id: symbol;
+    readonly id: IdKey;
     readonly token: InjectionToken<IdTokenExtractor>;
   }[]
 >('id-token-extractor-hierarchized-tokens', {
@@ -59,17 +60,17 @@ export const ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS = new InjectionToken<
 /**
  * Inject IdTokenExtractor from the given id.
  *
- * @param id IdTokenExtractor id symbol.
+ * @param id IdTokenExtractor id.
  * @returns IdTokenExtractor from the given id.
  * @throws If is not found.
  * @publicApi
  */
-export function injectIdTokenExtractor(id: symbol): IdTokenExtractor;
+export function injectIdTokenExtractor(id: IdKey): IdTokenExtractor;
 
 /**
  * Inject IdTokenExtractor from the given id.
  *
- * @param id IdTokenExtractor id symbol.
+ * @param id IdTokenExtractor id.
  * @param options Control how injection is executed. Options correspond to
  *   injection strategies that can be specified with parameter decorators
  *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
@@ -78,7 +79,7 @@ export function injectIdTokenExtractor(id: symbol): IdTokenExtractor;
  * @publicApi
  */
 export function injectIdTokenExtractor(
-  id: symbol,
+  id: IdKey,
   options: InjectOptions & {
     optional?: false;
   },
@@ -87,7 +88,7 @@ export function injectIdTokenExtractor(
 /**
  * Inject IdTokenExtractor from the given id.
  *
- * @param id IdTokenExtractor id symbol.
+ * @param id IdTokenExtractor id.
  * @param options Control how injection is executed. Options correspond to
  *   injection strategies that can be specified with parameter decorators
  *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
@@ -97,12 +98,12 @@ export function injectIdTokenExtractor(
  * @publicApi
  */
 export function injectIdTokenExtractor(
-  id: symbol,
+  id: IdKey,
   options: InjectOptions,
 ): IdTokenExtractor | null;
 
 export function injectIdTokenExtractor(
-  id: symbol,
+  id: IdKey,
   options?: InjectOptions,
 ): IdTokenExtractor | null {
   const tokenItems = inject(ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS);
@@ -114,9 +115,7 @@ export function injectIdTokenExtractor(
       console.debug('ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS', tokenItems);
     }
 
-    throw new Error(
-      `IdTokenExtractor '${id.description ?? '[unknown]'}' is not found.`,
-    );
+    throw new Error(`IdTokenExtractor '${id}' is not found.`);
   }
 
   if (typeof options === 'undefined') {

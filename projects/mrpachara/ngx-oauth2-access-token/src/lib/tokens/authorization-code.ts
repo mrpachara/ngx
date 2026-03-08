@@ -6,6 +6,7 @@ import {
 } from '@angular/core';
 import { AuthorizationCodeService } from '../services';
 import { AuthorizationCodeConfig, StateStorage } from '../types';
+import { IdKey } from './commons';
 
 /** The injection token for authorization-code service config */
 export const AUTHORIZATION_CODE_CONFIG =
@@ -19,7 +20,7 @@ export const AUTHORIZATION_CODE_STORAGE = new InjectionToken<StateStorage>(
 /** The injection token for authorization code tokens */
 export const AUTHORIZATION_CODE_SERVICE_TOKENS = new InjectionToken<
   {
-    readonly id: symbol;
+    readonly id: IdKey;
     readonly token: InjectionToken<AuthorizationCodeService>;
   }[]
 >('authorization-code-tokens', {
@@ -31,7 +32,7 @@ export const AUTHORIZATION_CODE_SERVICE_TOKENS = new InjectionToken<
 export const AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS =
   new InjectionToken<
     {
-      readonly id: symbol;
+      readonly id: IdKey;
       readonly token: InjectionToken<AuthorizationCodeService>;
     }[]
   >('authorization-code-hierarachized-tokens', {
@@ -42,19 +43,19 @@ export const AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS =
 /**
  * Inject AuthorizationCodeService from the given id.
  *
- * @param id AuthorizationCodeService id symbol.
+ * @param id AuthorizationCodeService id.
  * @returns AuthorizationCodeService from the given id.
  * @throws If is not found.
  * @publicApi
  */
 export function injectAuthorizationCodeService(
-  id: symbol,
+  id: IdKey,
 ): AuthorizationCodeService;
 
 /**
  * Inject AuthorizationCodeService from the given id.
  *
- * @param id AuthorizationCodeService id symbol.
+ * @param id AuthorizationCodeService id.
  * @param options Control how injection is executed. Options correspond to
  *   injection strategies that can be specified with parameter decorators
  *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
@@ -63,7 +64,7 @@ export function injectAuthorizationCodeService(
  * @publicApi
  */
 export function injectAuthorizationCodeService(
-  id: symbol,
+  id: IdKey,
   options: InjectOptions & {
     optional?: false;
   },
@@ -72,7 +73,7 @@ export function injectAuthorizationCodeService(
 /**
  * Inject AuthorizationCodeService from the given id.
  *
- * @param id AuthorizationCodeService id symbol.
+ * @param id AuthorizationCodeService id.
  * @param options Control how injection is executed. Options correspond to
  *   injection strategies that can be specified with parameter decorators
  *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
@@ -82,12 +83,12 @@ export function injectAuthorizationCodeService(
  * @publicApi
  */
 export function injectAuthorizationCodeService(
-  id: symbol,
+  id: IdKey,
   options: InjectOptions,
 ): AuthorizationCodeService | null;
 
 export function injectAuthorizationCodeService(
-  id: symbol,
+  id: IdKey,
   options?: InjectOptions,
 ): AuthorizationCodeService | null {
   const tokenItems = inject(AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS);
@@ -102,9 +103,7 @@ export function injectAuthorizationCodeService(
       );
     }
 
-    throw new Error(
-      `AuthorizationCodeService '${id.description ?? '[unknown]'}' is not found.`,
-    );
+    throw new Error(`AuthorizationCodeService '${id}' is not found.`);
   }
 
   if (typeof options === 'undefined') {

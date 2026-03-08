@@ -7,7 +7,7 @@ import {
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
   AdditionalParams,
-  createIdSymbol,
+  createIdKey,
   provideAccessToken,
   provideJwkDispatcher,
   Scopes,
@@ -24,7 +24,7 @@ import {
 import { clientId, clientSecret } from '../../secrets/oauth-client';
 import { routes } from '../app.routes';
 
-export const demoOauth = createIdSymbol('google');
+export const demoOauth = createIdKey('google');
 
 export const scopes: Scopes = ['profile', 'email', 'openid'];
 

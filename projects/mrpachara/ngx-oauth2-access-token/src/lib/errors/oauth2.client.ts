@@ -1,13 +1,12 @@
 export class Oauth2ClientResponseError extends Error {
   constructor(
-    name: string,
-    errorObject: {
-      error: string;
-      error_description: string;
+    readonly error: {
+      readonly error: string;
+      readonly error_description: string;
     },
-    options?: ErrorOptions,
+    override readonly cause: unknown,
   ) {
-    super(errorObject.error_description, options);
-    this.name = `client ${name}: ${errorObject.error}`;
+    super(error.error_description, { cause });
+    this.name = error.error;
   }
 }

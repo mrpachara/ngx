@@ -10,6 +10,7 @@ import {
   AccessTokenResponseExtractor,
   AccessTokenStorage,
 } from '../types';
+import { IdKey } from './commons';
 
 /** The injection token for access-token service config */
 export const ACCESS_TOKEN_CONFIG = new InjectionToken<AccessTokenConfig>(
@@ -22,7 +23,7 @@ export const ACCESS_TOKEN_STORAGE = new InjectionToken<AccessTokenStorage>(
 );
 
 /** The injection token for extractor ID */
-export const EXTRACTOR_ID = new InjectionToken<symbol>('extractor-id');
+export const EXTRACTOR_ID = new InjectionToken<IdKey>('extractor-id');
 
 /** The injection token for access-token storage */
 export const ACCESS_TOKEN_RESPONSE_EXTRACTORS = new InjectionToken<
@@ -32,7 +33,7 @@ export const ACCESS_TOKEN_RESPONSE_EXTRACTORS = new InjectionToken<
 /** The injection token for access token service tokens */
 export const ACCESS_TOKEN_SERVICE_TOKENS = new InjectionToken<
   {
-    readonly id: symbol;
+    readonly id: IdKey;
     readonly token: InjectionToken<AccessTokenService>;
   }[]
 >('access-token-service-tokens', {
@@ -43,7 +44,7 @@ export const ACCESS_TOKEN_SERVICE_TOKENS = new InjectionToken<
 /** The injection token for access token service hierarchized tokens */
 export const ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS = new InjectionToken<
   {
-    readonly id: symbol;
+    readonly id: IdKey;
     readonly token: InjectionToken<AccessTokenService>;
   }[]
 >('access-token-service-hierarchized-tokens', {
@@ -54,17 +55,17 @@ export const ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS = new InjectionToken<
 /**
  * Inject AccessTokenService from the given name.
  *
- * @param id AccessTokenService id symbol.
+ * @param id AccessTokenService id.
  * @returns AccessTokenService from the given name.
  * @throws If is not found.
  * @publicApi
  */
-export function injectAccessTokenService(id: symbol): AccessTokenService;
+export function injectAccessTokenService(id: IdKey): AccessTokenService;
 
 /**
  * Inject AccessTokenService from the given name.
  *
- * @param id AccessTokenService id symbol.
+ * @param id AccessTokenService id.
  * @param options Control how injection is executed. Options correspond to
  *   injection strategies that can be specified with parameter decorators
  *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
@@ -73,7 +74,7 @@ export function injectAccessTokenService(id: symbol): AccessTokenService;
  * @publicApi
  */
 export function injectAccessTokenService(
-  id: symbol,
+  id: IdKey,
   options: InjectOptions & {
     optional?: false;
   },
@@ -82,7 +83,7 @@ export function injectAccessTokenService(
 /**
  * Inject AccessTokenService from the given name.
  *
- * @param id AccessTokenService id symbol.
+ * @param id AccessTokenService id.
  * @param options Control how injection is executed. Options correspond to
  *   injection strategies that can be specified with parameter decorators
  *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
@@ -92,12 +93,12 @@ export function injectAccessTokenService(
  * @publicApi
  */
 export function injectAccessTokenService(
-  id: symbol,
+  id: IdKey,
   options: InjectOptions,
 ): AccessTokenService | null;
 
 export function injectAccessTokenService(
-  id: symbol,
+  id: IdKey,
   options?: InjectOptions,
 ): AccessTokenService | null {
   const tokenItems = inject(ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS);
@@ -106,12 +107,13 @@ export function injectAccessTokenService(
 
   if (!tokenItem) {
     if (isDevMode()) {
-      console.debug('ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS', tokenItems);
+      console.debug(
+        `ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS:${id}`,
+        tokenItems,
+      );
     }
 
-    throw new Error(
-      `AccessTokenService '${id.description ?? '[unknown]'}' is not found.`,
-    );
+    throw new Error(`AccessTokenService '${id}' is not found.`);
   }
 
   if (typeof options === 'undefined') {

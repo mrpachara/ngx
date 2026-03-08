@@ -6,11 +6,7 @@ import {
   SupportedJwkAlgNotFoundError,
 } from '../errors';
 import { findJwk } from '../helpers';
-import {
-  JWK_CONFIG,
-  JWT_VERIFIERS,
-  SKIP_ASSIGNING_ACCESS_TOKEN,
-} from '../tokens';
+import { JWK_CONFIG, JWT_VERIFIERS, OAT_REQUEST } from '../tokens';
 import { JwkConfig, JwkSet, JwsInfo, JwtInfo, PickOptional } from '../types';
 
 /** Default JWK configuration */
@@ -45,7 +41,7 @@ export class JwkService {
 
   private fetchJwkSet(): Observable<JwkSet> {
     return this.http.get<JwkSet>(this.config.jwkSetUrl, {
-      context: new HttpContext().set(SKIP_ASSIGNING_ACCESS_TOKEN, true),
+      context: new HttpContext().set(OAT_REQUEST, true),
     });
   }
 

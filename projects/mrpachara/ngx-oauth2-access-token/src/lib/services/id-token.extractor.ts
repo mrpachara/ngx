@@ -1,10 +1,11 @@
+// TODO: separate extractor to sub entry point
 import {
-  computed,
   inject,
   Injectable,
+  linkedSignal,
   resource,
+  ResourceStreamItem,
   signal,
-  untracked,
 } from '@angular/core';
 import {
   IdTokenClaimsNotFoundError,
@@ -25,8 +26,8 @@ import {
   IdTokenClaims,
   IdTokenInfo,
   JwtHeader,
-  loadedData,
   removedData,
+  storedData,
 } from '../types';
 
 interface IdTokenRespodable {
@@ -55,24 +56,31 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
     return this.#id;
   }
 
-  get name() {
-    return this.id.description ?? '[unknown]';
+  readonly #version = signal<number | undefined>(undefined);
+
+  #initializeVersion<T>(value: T): T {
+    this.#version.update((version) =>
+      typeof version === 'undefined' ? 0 : version,
+    );
+    return value;
   }
 
-  async #loadAll() {
-    await Promise.allSettled([this.loadInfo(), this.loadClaims()] as const);
+  #updateVersion(value: number): void {
+    this.#version.update((version) =>
+      value > (version ?? -Infinity) ? value : version,
+    );
   }
 
   async update(
     updatedData: AccessTokenResponseUpdatedData<IdTokenResponse>,
   ): Promise<void> {
     switch (updatedData.accessTokenResponse) {
-      case loadedData:
-        return void (await this.#loadAll());
+      case storedData:
+        return this.#updateVersion(updatedData.timestamp);
       case removedData:
         await this.storage.clear();
 
-        return void (await this.#loadAll());
+        return this.#updateVersion(updatedData.timestamp);
       default:
         if (isIdTokenResponse(updatedData.accessTokenResponse)) {
           try {
@@ -95,77 +103,85 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
                 ),
               ]);
             } else {
-              throw new IdTokenEncryptedError(this.name);
+              throw new IdTokenEncryptedError(this.id);
             }
-          } catch (err) {
-            console.error(err);
+          } catch (error) {
+            console.error(error);
 
             await this.storage.clear();
           }
+
+          return this.#updateVersion(updatedData.timestamp);
         }
     }
   }
 
-  readonly #idTokenInfo = signal<IdTokenInfo | null>(null, {
-    equal: (previous, current) => previous?.serial === current?.serial,
+  readonly #idTokenInfoResource = resource({
+    params: this.#version,
+    loader: async () => await this.loadInfo(),
   });
 
-  #updateIdTokenInfo<const T extends IdTokenInfo | null>(value: T): T {
-    return untracked(() => {
-      this.#idTokenInfo.set(value);
-
-      return value;
-    });
-  }
-
   async loadInfo(): Promise<IdTokenInfo | null> {
-    return this.#updateIdTokenInfo(await this.storage.load('info'));
+    return this.#initializeVersion(await this.storage.load('info'));
   }
 
   infoResource() {
     return resource({
       stream: async () => {
-        await this.loadInfo();
+        const initializedValue = await this.loadInfo();
 
-        return computed(() => {
-          const value = this.#idTokenInfo();
-
-          return value !== null
-            ? { value }
-            : { error: new IdTokenInfoNotFoundError(this.name) };
+        return linkedSignal({
+          source: this.#idTokenInfoResource.snapshot,
+          computation: (source, previous): ResourceStreamItem<IdTokenInfo> => {
+            return source.status === 'error'
+              ? { error: source.error }
+              : typeof source.value !== 'undefined'
+                ? source.value !== null
+                  ? { value: source.value }
+                  : { error: new IdTokenInfoNotFoundError(this.id) }
+                : typeof previous !== 'undefined'
+                  ? previous.value
+                  : initializedValue !== null
+                    ? { value: initializedValue }
+                    : { error: new IdTokenInfoNotFoundError(this.id) };
+          },
         });
       },
     }).asReadonly();
   }
 
-  readonly #idTokenClaims = signal<IdTokenClaims | null>(null, {
-    equal: (previous, current) =>
-      JSON.stringify(previous) === JSON.stringify(current),
+  readonly #idTokenClaimsResource = resource({
+    params: this.#version,
+    loader: async () => await this.loadClaims(),
   });
 
-  #updateIdTokenClaims<const T extends IdTokenClaims | null>(value: T): T {
-    return untracked(() => {
-      this.#idTokenClaims.set(value);
-
-      return value;
-    });
-  }
-
   async loadClaims(): Promise<IdTokenClaims | null> {
-    return this.#updateIdTokenClaims(await this.storage.load('claims'));
+    return this.#initializeVersion(await this.storage.load('claims'));
   }
 
   claimsResource() {
     return resource({
       stream: async () => {
-        await this.loadClaims();
+        const initializedValue = await this.loadClaims();
 
-        return computed(() => {
-          const value = this.#idTokenClaims();
-
-          return value !== null
-            ? { value }
-            : { error: new IdTokenClaimsNotFoundError(this.name) };
+        return linkedSignal({
+          source: this.#idTokenClaimsResource.snapshot,
+          computation: (
+            source,
+            previous,
+          ): ResourceStreamItem<IdTokenClaims> => {
+            return source.status === 'error'
+              ? { error: source.error }
+              : typeof source.value !== 'undefined'
+                ? source.value !== null
+                  ? { value: source.value }
+                  : { error: new IdTokenClaimsNotFoundError(this.id) }
+                : typeof previous !== 'undefined'
+                  ? previous.value
+                  : initializedValue !== null
+                    ? { value: initializedValue }
+                    : { error: new IdTokenClaimsNotFoundError(this.id) };
+          },
         });
       },
     }).asReadonly();

@@ -1,11 +1,54 @@
+import { HttpContextToken } from '@angular/common/http';
+
+/**
+ * The token for `HttpClient` indicates that the request comes from library. It
+ * is useful for HTTP request interceptors.
+ */
+export const OAT_REQUEST = new HttpContextToken(() => false);
+
+const idKeyName = Symbol('id-key-name');
+
+export interface IdKey<N extends string = string> {
+  readonly [idKeyName]: N;
+}
+
+class IdKeyImplementation<N extends string> implements IdKey<N> {
+  readonly [idKeyName]: N;
+
+  constructor(name: N) {
+    this[idKeyName] = name;
+  }
+
+  toString(): string {
+    return this[idKeyName];
+  }
+
+  get [Symbol.toStringTag](): string {
+    return this.toString();
+  }
+
+  [Symbol.toPrimitive](hint: string): string | undefined {
+    switch (hint) {
+      case 'string':
+        return this.toString();
+      default:
+        return undefined;
+    }
+  }
+}
+
 const existingIdName = new Set<string>();
 
-export function createIdSymbol(name: string): symbol {
+export function createIdKey<N extends string>(name: N): IdKey<N> {
+  if (name.trim() === '') {
+    throw new Error(`ID MUST be non-empty string`);
+  }
+
   if (existingIdName.has(name)) {
     throw new Error(`ID '${name}' already exists.`);
   }
 
   existingIdName.add(name);
 
-  return Symbol(name);
+  return new IdKeyImplementation(name);
 }

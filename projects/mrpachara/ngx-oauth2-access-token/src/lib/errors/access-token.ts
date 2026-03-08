@@ -1,27 +1,29 @@
+import { IdKey } from '../tokens';
+
 export class AccessTokenNotFoundError extends Error {
-  constructor(name: string, options?: ErrorOptions) {
-    super(`Access token of '${name}' is not found.`, options);
+  constructor(id: IdKey, options?: ErrorOptions) {
+    super(`Access token of '${id}' is not found.`, options);
     this.name = this.constructor.name;
   }
 }
 
 export class AccessTokenExpiredError extends Error {
-  constructor(name: string, options?: ErrorOptions) {
-    super(`Access token of '${name}' has expired.`, options);
+  constructor(id: IdKey, options?: ErrorOptions) {
+    super(`Access token of '${id}' has expired.`, options);
     this.name = this.constructor.name;
   }
 }
 
 export class RefreshTokenNotFoundError extends Error {
-  constructor(name: string, options?: ErrorOptions) {
-    super(`Refresh token of '${name}' is not found.`, options);
+  constructor(id: IdKey, options?: ErrorOptions) {
+    super(`Refresh token of '${id}' is not found.`, options);
     this.name = this.constructor.name;
   }
 }
 
 export class RefreshTokenExpiredError extends Error {
-  constructor(name: string, options?: ErrorOptions) {
-    super(`Refresh token of '${name}' has expired.`, options);
+  constructor(id: IdKey, options?: ErrorOptions) {
+    super(`Refresh token of '${id}' has expired.`, options);
     this.name = this.constructor.name;
   }
 }

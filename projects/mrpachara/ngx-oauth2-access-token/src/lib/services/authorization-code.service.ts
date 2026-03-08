@@ -22,7 +22,7 @@ import {
 import { AccessTokenService } from './access-token.service';
 
 /** Default authorization code configuration */
-const defaultAuthorizationCodeConfig: PickOptionalExcept<
+const defaultConfiguration: PickOptionalExcept<
   AuthorizationCodeConfig,
   'pkce'
 > = {
@@ -33,7 +33,7 @@ const defaultAuthorizationCodeConfig: PickOptionalExcept<
 
 function configure(config: AuthorizationCodeConfig) {
   return {
-    ...defaultAuthorizationCodeConfig,
+    ...defaultConfiguration,
     ...config,
   } as const;
 }
@@ -50,15 +50,7 @@ export class AuthorizationCodeService {
     return this.accessTokenService.id;
   }
 
-  get name() {
-    return this.accessTokenService.name;
-  }
-
-  readonly #init$: Promise<void>;
-
-  constructor() {
-    this.#init$ = this.storage.removeExpired();
-  }
+  readonly #init$ = this.storage.removeExpired();
 
   /**
    * Generate authorization code url.
@@ -127,7 +119,7 @@ export class AuthorizationCodeService {
   }
 
   /**
-   * Exchange _authorization code_ for the new _access token_. Use fetch from
+   * Exchange _authorization code_ for a new _access token_. Use fetch from
    * `AccessTokenService` that stores the new _access token_.
    *
    * @param state The state for exchanging
@@ -139,7 +131,11 @@ export class AuthorizationCodeService {
   async exchangeCode<T>(
     state: string,
     code: string,
-    { params = undefined as AdditionalParams | undefined } = {},
+    {
+      params,
+    }: {
+      readonly params?: AdditionalParams;
+    } = {},
   ): Promise<T> {
     await this.#init$;
 

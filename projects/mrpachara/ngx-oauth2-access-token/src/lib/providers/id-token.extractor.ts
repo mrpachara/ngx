@@ -54,8 +54,7 @@ export function withIdTokenExtractor(
                 },
                 {
                   provide: STORAGE_NAME,
-                  useFactory: () =>
-                    inject(EXTRACTOR_ID).description ?? 'unknown',
+                  useFactory: () => `${inject(EXTRACTOR_ID)}`,
                 },
                 {
                   provide: ID_TOKEN_STORAGE,

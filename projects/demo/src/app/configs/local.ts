@@ -6,7 +6,7 @@ import {
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
   AdditionalParams,
-  createIdSymbol,
+  createIdKey,
   provideAccessToken,
   provideJwkDispatcher,
   Scopes,
@@ -17,7 +17,7 @@ import {
 import { verifyEddsa } from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
 import { routes } from '../app.routes';
 
-export const demoOauth = createIdSymbol('my');
+export const demoOauth = createIdKey('my');
 
 export const scopes: Scopes = ['basic'];
 

@@ -1,4 +1,3 @@
-export * from './helpers/config';
 export * from './helpers/crypto';
 export * from './helpers/jose';
 export * from './helpers/jwk';
