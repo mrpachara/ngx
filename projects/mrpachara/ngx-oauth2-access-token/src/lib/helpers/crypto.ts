@@ -5,9 +5,9 @@
  * @returns The random sting
  */
 export function randomString(length: number): string {
-  // NOTE: The number of characters *must* be 64 for preventing _Modulo Bias_.
+  // NOTE: The number of characters **must** be 64 for preventing _Modulo Bias_.
   const chars =
-    '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-.';
+    '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_';
   const array = new Uint8Array(length);
   crypto.getRandomValues(array);
 
