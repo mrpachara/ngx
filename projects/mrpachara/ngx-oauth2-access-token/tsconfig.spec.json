@@ -9,7 +9,9 @@
   "include": [
     "src/**/*.d.ts",
     "src/**/*.spec.ts",
-    "jwt-verifiers/**/*.d.ts",
-    "jwt-verifiers/**/*.spec.ts"
+    "extractors/src/**/*.d.ts",
+    "extractors/src/**/*.spec.ts",
+    "jwt-verifiers/src/**/*.d.ts",
+    "jwt-verifiers/src/**/*.spec.ts"
   ]
 }
