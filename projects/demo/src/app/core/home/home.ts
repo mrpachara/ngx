@@ -11,10 +11,10 @@ import {
   deserializeJose,
   injectAccessTokenService,
   injectAuthorizationCodeService,
-  injectIdTokenExtractor,
   isJwt,
   JwkDispatcher,
 } from '@mrpachara/ngx-oauth2-access-token';
+import { injectIdTokenExtractor } from '@mrpachara/ngx-oauth2-access-token/extractors';
 import { demoOauth, params, scopes } from '../../app.config';
 
 function extractErrorMessage(error: Error | undefined): string | null {

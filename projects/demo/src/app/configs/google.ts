@@ -12,10 +12,12 @@ import {
   provideJwkDispatcher,
   Scopes,
   withAuthorizationCode,
+} from '@mrpachara/ngx-oauth2-access-token';
+import {
   withClaimmsTransformer,
   withIdTokenExtractor,
   withIdTokenVerification,
-} from '@mrpachara/ngx-oauth2-access-token';
+} from '@mrpachara/ngx-oauth2-access-token/extractors';
 import {
   verifyEcdsa,
   verifyEddsa,

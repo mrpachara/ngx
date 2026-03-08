@@ -11,9 +11,11 @@ import {
   provideJwkDispatcher,
   Scopes,
   withAuthorizationCode,
+} from '@mrpachara/ngx-oauth2-access-token';
+import {
   withIdTokenExtractor,
   withIdTokenVerification,
-} from '@mrpachara/ngx-oauth2-access-token';
+} from '@mrpachara/ngx-oauth2-access-token/extractors';
 import { verifyEddsa } from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
 import { routes } from '../app.routes';
 

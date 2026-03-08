@@ -16,7 +16,7 @@ export const routes: Routes = [
     providers: [
       provideAuthorizationCodeCallbackData<{ intendedUrl: string }>(() => ({
         // id: demoOauth,
-        processFactory: () => {
+        actionFactory: () => {
           const router = inject(Router);
 
           return ({ intendedUrl }) => {
