@@ -15,9 +15,10 @@ import {
   ACCESS_TOKEN_SERVICE_TOKENS,
   ACCESS_TOKEN_STORAGE,
   IdKey,
+  provideHierarchization,
   STORAGE_NAME,
 } from '../tokens';
-import { AccessTokenConfig, AccessTokenStorage } from '../types';
+import { AccessTokenConfig, AccessTokenStorage, TypeOfToken } from '../types';
 
 /**
  * Provide AccessToken service.
@@ -33,7 +34,7 @@ export function provideAccessToken<N extends string>(
   const { id } = config;
 
   const token = new InjectionToken<AccessTokenService>(
-    `${libPrefix}-${id}-access-token-injector`,
+    `${libPrefix}-access-token-injector:${id}`,
   );
 
   return makeEnvironmentProviders([
@@ -41,16 +42,21 @@ export function provideAccessToken<N extends string>(
       provide: token,
       useFactory: () =>
         Injector.create({
-          name: `${libPrefix}-${name}-access-token-internal-injector`,
+          name: `${token}:internal`,
           parent: inject(Injector),
           providers: [
             {
               provide: ACCESS_TOKEN_CONFIG,
-              useValue: config,
+              useValue: config satisfies TypeOfToken<
+                typeof ACCESS_TOKEN_CONFIG
+              >,
             },
             {
               provide: STORAGE_NAME,
-              useFactory: () => `${inject(ACCESS_TOKEN_CONFIG).id}`,
+              useFactory: () =>
+                `${inject(ACCESS_TOKEN_CONFIG).id}` satisfies TypeOfToken<
+                  typeof STORAGE_NAME
+                >,
             },
             {
               provide: ACCESS_TOKEN_STORAGE,
@@ -69,28 +75,26 @@ export function provideAccessToken<N extends string>(
           ],
         }).get(AccessTokenService),
     },
-    {
-      provide: ACCESS_TOKEN_SERVICE_TOKENS,
-      multi: true,
-      useValue: { id, token } as const,
-    },
-    {
-      provide: ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS,
-      useFactory: () => [
-        ...(inject(ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS, {
-          skipSelf: true,
-          optional: true,
-        }) ?? []),
-        ...inject(ACCESS_TOKEN_SERVICE_TOKENS),
-      ],
-    },
+    provideHierarchization(
+      ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS,
+      ACCESS_TOKEN_SERVICE_TOKENS,
+      () => ({
+        id,
+        token,
+      }),
+    ),
     {
       provide: AccessTokenService,
       useExisting: token,
     },
     features
       .filter((feature) => !feature.internal)
-      .map(({ providers }) => providers(id, token)),
+      .map(({ providers }) =>
+        providers({
+          id,
+          accessTokenServiceToken: token,
+        }),
+      ),
   ]);
 }
 
@@ -114,10 +118,11 @@ export interface AccessTokenFeatureType<
   readonly internal: E;
   readonly providers: E extends true
     ? readonly Provider[]
-    : (
-        id: IdKey,
-        accessTokenServiceToken: InjectionToken<AccessTokenService>,
-      ) => readonly Provider[];
+    : (context: {
+        // NOTE: `id` is needed to prevent **circular reference** of extractor
+        readonly id: IdKey;
+        readonly accessTokenServiceToken: InjectionToken<AccessTokenService>;
+      }) => readonly Provider[];
 }
 
 // ------------- Features -----------------

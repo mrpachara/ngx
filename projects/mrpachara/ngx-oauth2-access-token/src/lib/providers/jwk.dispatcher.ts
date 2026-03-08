@@ -7,7 +7,7 @@ import {
 import { libPrefix } from '../predefined';
 import { JwkDispatcher, JwkService } from '../services';
 import { JWK_CONFIG, JWK_SERVICES, JWT_VERIFIERS } from '../tokens';
-import { JwkConfigs, JwtVerifier } from '../types';
+import { JwkConfigs, JwtVerifier, TypeOfToken } from '../types';
 
 /**
  * Provide JWK dispatcher.
@@ -34,7 +34,7 @@ export function provideJwkDispatcher(
               useValue: {
                 ...config,
                 issuer,
-              },
+              } satisfies TypeOfToken<typeof JWK_CONFIG>,
             },
             JwkService,
           ],
@@ -44,7 +44,7 @@ export function provideJwkDispatcher(
     jwtVerifiers.map((jwtVerifier) => ({
       provide: JWT_VERIFIERS,
       multi: true,
-      useValue: jwtVerifier,
+      useValue: jwtVerifier satisfies TypeOfToken<typeof JWT_VERIFIERS>[number],
     })),
 
     JwkDispatcher,

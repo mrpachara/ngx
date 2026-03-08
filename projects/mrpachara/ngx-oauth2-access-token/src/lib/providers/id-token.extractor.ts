@@ -11,12 +11,14 @@ import {
   ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS,
   ID_TOKEN_STORAGE,
   ID_TOKEN_VERIFICATION,
+  provideHierarchization,
   STORAGE_NAME,
 } from '../tokens';
 import {
   IdTokenClaimsTransformer,
   IdTokenInfo,
   IdTokenStorage,
+  TypeOfToken,
 } from '../types';
 import {
   AccessTokenExtensionFeature,
@@ -35,7 +37,7 @@ export function withIdTokenExtractor(
   return {
     kind: AccessTokenFeatureKind.AccessTokenExtensionFeature,
     internal: false,
-    providers: (id, accessTokenServiceToken) => {
+    providers: ({ id, accessTokenServiceToken }) => {
       const token = new InjectionToken<IdTokenExtractor>(
         `${accessTokenServiceToken}:id-token-extractor`,
       );
@@ -45,12 +47,12 @@ export function withIdTokenExtractor(
           provide: token,
           useFactory: () =>
             Injector.create({
-              name: `${token}-internal`,
+              name: `${token}:internal`,
               parent: inject(Injector),
               providers: [
                 {
                   provide: EXTRACTOR_ID,
-                  useValue: id,
+                  useValue: id satisfies TypeOfToken<typeof EXTRACTOR_ID>,
                 },
                 {
                   provide: STORAGE_NAME,
@@ -65,21 +67,14 @@ export function withIdTokenExtractor(
               ],
             }).get(IdTokenExtractor),
         },
-        {
-          provide: ID_TOKEN_EXTRACTOR_TOKENS,
-          multi: true,
-          useValue: { id, token } as const,
-        },
-        {
-          provide: ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS,
-          useFactory: () => [
-            ...(inject(ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS, {
-              skipSelf: true,
-              optional: true,
-            }) ?? []),
-            ...inject(ID_TOKEN_EXTRACTOR_TOKENS),
-          ],
-        },
+        provideHierarchization(
+          ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS,
+          ID_TOKEN_EXTRACTOR_TOKENS,
+          () => ({
+            id,
+            token,
+          }),
+        ),
         {
           provide: ACCESS_TOKEN_RESPONSE_EXTRACTORS,
           multi: true,

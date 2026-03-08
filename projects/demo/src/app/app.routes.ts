@@ -4,7 +4,6 @@ import {
   AuthorizationCodeCallback,
   provideAuthorizationCodeCallbackData,
 } from '@mrpachara/ngx-oauth2-access-token';
-import { demoOauth } from './app.config';
 import { Home } from './core/home/home';
 
 export const routes: Routes = [
@@ -16,7 +15,7 @@ export const routes: Routes = [
     path: 'google/authorization',
     providers: [
       provideAuthorizationCodeCallbackData<{ intendedUrl: string }>(() => ({
-        id: demoOauth,
+        // id: demoOauth,
         processFactory: () => {
           const router = inject(Router);
 

@@ -6,6 +6,7 @@ import {
   AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS,
   AUTHORIZATION_CODE_SERVICE_TOKENS,
   AUTHORIZATION_CODE_STORAGE,
+  provideHierarchization,
   STORAGE_NAME,
 } from '../tokens';
 import { AuthorizationCodeConfig, StateStorage } from '../types';
@@ -28,7 +29,7 @@ export function withAuthorizationCode(
   return {
     kind: AccessTokenFeatureKind.AccessTokenExtensionFeature,
     internal: false,
-    providers: (id, accessTokenServiceToken) => {
+    providers: ({ accessTokenServiceToken }) => {
       const token = new InjectionToken<AuthorizationCodeService>(
         `${accessTokenServiceToken}:authorization-code`,
       );
@@ -38,7 +39,7 @@ export function withAuthorizationCode(
           provide: token,
           useFactory: () =>
             Injector.create({
-              name: `${token}-internal`,
+              name: `${token}:internal`,
               parent: inject(Injector),
               providers: [
                 {
@@ -62,21 +63,14 @@ export function withAuthorizationCode(
               ],
             }).get(AuthorizationCodeService),
         },
-        {
-          provide: AUTHORIZATION_CODE_SERVICE_TOKENS,
-          multi: true,
-          useValue: { id, token } as const,
-        },
-        {
-          provide: AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS,
-          useFactory: () => [
-            ...(inject(AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS, {
-              skipSelf: true,
-              optional: true,
-            }) ?? []),
-            ...inject(AUTHORIZATION_CODE_SERVICE_TOKENS),
-          ],
-        },
+        provideHierarchization(
+          AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS,
+          AUTHORIZATION_CODE_SERVICE_TOKENS,
+          () => ({
+            id: inject(accessTokenServiceToken).id,
+            token,
+          }),
+        ),
         {
           provide: AuthorizationCodeService,
           useExisting: token,

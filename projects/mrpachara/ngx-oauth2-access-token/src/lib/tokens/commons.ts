@@ -1,4 +1,5 @@
 import { HttpContextToken } from '@angular/common/http';
+import { inject, InjectionToken, Provider, Type } from '@angular/core';
 
 /**
  * The token for `HttpClient` indicates that the request comes from library. It
@@ -51,4 +52,28 @@ export function createIdKey<N extends string>(name: N): IdKey<N> {
   existingIdName.add(name);
 
   return new IdKeyImplementation(name);
+}
+
+export function provideHierarchization<T>(
+  parentToken: InjectionToken<T[]> | Type<T>,
+  chlidToken: InjectionToken<T[]> | Type<T>,
+  factory: () => T,
+): Provider {
+  return [
+    {
+      provide: chlidToken,
+      multi: true,
+      useFactory: factory,
+    },
+    {
+      provide: parentToken,
+      useFactory: () => [
+        ...(inject(parentToken, {
+          skipSelf: true,
+          optional: true,
+        }) ?? []),
+        ...inject(chlidToken),
+      ],
+    },
+  ];
 }
