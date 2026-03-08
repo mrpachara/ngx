@@ -16,7 +16,7 @@ import { IdKey, injectAuthorizationCodeService } from '../../tokens';
 
 export interface AuthorizationCodeCallbackData<T = unknown> {
   readonly id?: IdKey;
-  readonly processFactory?: () => (stateData: T) => Promise<void> | void;
+  readonly actionFactory?: () => (stateData: T) => Promise<void> | void;
 }
 
 const AUTHORIZATION_CODE_CALLBACK_DATA =
@@ -55,7 +55,7 @@ export class AuthorizationCodeCallback<T> implements OnInit {
     ? injectAuthorizationCodeService(this.data.id)
     : inject(AuthorizationCodeService);
 
-  private readonly process = this.data.processFactory?.();
+  private readonly action = this.data.actionFactory?.();
 
   readonly state = input<string>();
 
@@ -81,7 +81,7 @@ export class AuthorizationCodeCallback<T> implements OnInit {
         this.authorizationCodeService,
       );
 
-      await this.process?.(stateData);
+      await this.action?.(stateData);
     } catch (err) {
       this.messageInfo.set({
         type: 'error',
