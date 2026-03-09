@@ -7,6 +7,14 @@ import { inject, InjectionToken, Provider, Type } from '@angular/core';
  */
 export const OAT_REQUEST = new HttpContextToken(() => false);
 
+/**
+ * The token for `HttpClient` indicates that the request requires _access
+ * token_, it can be used with `IdKey`.
+ */
+export const WITH_ACCESS_TOKEN = new HttpContextToken<IdKey | boolean>(
+  () => false,
+);
+
 const idKeyName = Symbol('id-key-name');
 
 export interface IdKey<N extends string = string> {
