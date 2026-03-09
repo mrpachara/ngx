@@ -9,35 +9,60 @@ import {
   WITH_ACCESS_TOKEN,
 } from '../tokens';
 
-export function assignAccessTokenInterceptor(
-  req: HttpRequest<unknown>,
-  next: HttpHandlerFn,
-): Observable<HttpEvent<unknown>> {
-  const token = req.context.get(WITH_ACCESS_TOKEN);
+const defaultAccessTokenParamName = 'access_token';
 
-  if (token && !req.context.get(OAT_REQUEST)) {
-    const service =
-      token === true
-        ? inject(AccessTokenService)
-        : injectAccessTokenService(token);
+/**
+ * Create interceptor for assigning _access token_ to request determined by
+ * using `WITH_ACCESS_TOKEN` `HttpContext`.
+ *
+ * @param inParams If it is provided in `HttpClient.params`, default `false`.
+ *   Assign a `string` to be the parameter name.
+ * @returns
+ */
+export function createAssignAccessTokenInterceptor(
+  inParams: boolean | string = false,
+) {
+  return (
+    req: HttpRequest<unknown>,
+    next: HttpHandlerFn,
+  ): Observable<HttpEvent<unknown>> => {
+    const token = req.context.get(WITH_ACCESS_TOKEN);
 
-    return defer(async () => await service.loadAccessTokenInfo()).pipe(
-      switchMap((info) => {
-        if (info === null) {
-          return throwError(() => new AccessTokenNotFoundError(service.id));
-        }
+    if (token && !req.context.get(OAT_REQUEST)) {
+      const service =
+        token === true
+          ? inject(AccessTokenService)
+          : injectAccessTokenService(token);
 
-        return next(
-          req.clone({
-            headers: req.headers.set(
-              'Authorization',
-              `${info.type} ${info.token}`,
+      return defer(async () => await service.loadAccessTokenInfo()).pipe(
+        switchMap((info) => {
+          if (info === null) {
+            return throwError(() => new AccessTokenNotFoundError(service.id));
+          }
+
+          return next(
+            req.clone(
+              inParams === false
+                ? {
+                    headers: req.headers.set(
+                      'Authorization',
+                      `${info.type} ${info.token}`,
+                    ),
+                  }
+                : {
+                    params: req.params.set(
+                      inParams === true || inParams.trim() === ''
+                        ? defaultAccessTokenParamName
+                        : inParams.trim(),
+                      info.token,
+                    ),
+                  },
             ),
-          }),
-        );
-      }),
-    );
-  } else {
-    return next(req);
-  }
+          );
+        }),
+      );
+    } else {
+      return next(req);
+    }
+  };
 }
