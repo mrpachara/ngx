@@ -8,6 +8,7 @@ import { AccessTokenService } from '../../services';
 import { AccessTokenConfig, AccessTokenStorage } from '../../types';
 import { IdKey } from '../common';
 
+// TODO: move required token for service to public api
 /** The injection token for access-token service config */
 export const ACCESS_TOKEN_CONFIG = new InjectionToken<AccessTokenConfig>(
   'access-token-config',

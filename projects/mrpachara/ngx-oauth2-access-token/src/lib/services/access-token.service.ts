@@ -385,7 +385,7 @@ export class AccessTokenService {
    *
    * 1. If not found or expired then try to get the new one from _refresh token_.
    * 2. If failed then try to get from `fetchNewAccessToken`.
-   * 3. If failed then throw `AccessTokenNotFoundError`.
+   * 3. If failed then return `null`.
    */
   async loadAccessTokenResponse(): Promise<AccessTokenResponse | null> {
     return await navigator.locks.request(this.#syncName, async () => {

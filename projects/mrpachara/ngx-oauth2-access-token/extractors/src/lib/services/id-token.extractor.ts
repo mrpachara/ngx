@@ -24,6 +24,7 @@ import {
   storedData,
 } from '@mrpachara/ngx-oauth2-access-token';
 import {
+  IdTokenClaimsExpiredError,
   IdTokenClaimsNotFoundError,
   IdTokenEncryptedError,
   IdTokenInfoNotFoundError,
@@ -214,7 +215,9 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
               ? { error: source.error }
               : typeof source.value !== 'undefined'
                 ? source.value !== null
-                  ? { value: source.value }
+                  ? source.value.exp < Date.now() / 1_000
+                    ? { error: new IdTokenClaimsExpiredError(id, source.value) }
+                    : { value: source.value }
                   : { error: new IdTokenClaimsNotFoundError(id) }
                 : typeof previous !== 'undefined'
                   ? previous.value

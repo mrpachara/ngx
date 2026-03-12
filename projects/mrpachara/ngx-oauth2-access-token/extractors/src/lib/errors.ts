@@ -1,4 +1,4 @@
-import { IdKey } from '@mrpachara/ngx-oauth2-access-token';
+import { IdKey, IdTokenClaims } from '@mrpachara/ngx-oauth2-access-token';
 
 export class IdTokenInfoNotFoundError extends Error {
   constructor(id: IdKey, options?: ErrorOptions) {
@@ -14,9 +14,13 @@ export class IdTokenClaimsNotFoundError extends Error {
   }
 }
 
-export class IdTokenExpiredError extends Error {
-  constructor(id: IdKey, options?: ErrorOptions) {
-    super(`ID token of '${id}' has expired.`, options);
+export class IdTokenClaimsExpiredError extends Error {
+  override readonly cause!: IdTokenClaims;
+
+  constructor(id: IdKey, idTokenClaims: IdTokenClaims) {
+    super(`ID token of '${id}' has expired.`, {
+      cause: idTokenClaims,
+    });
     this.name = this.constructor.name;
   }
 }
