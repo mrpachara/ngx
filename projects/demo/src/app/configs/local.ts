@@ -13,7 +13,7 @@ import {
   withAuthorizationCode,
 } from '@mrpachara/ngx-oauth2-access-token';
 import {
-  withIdTokenExtractor,
+  provideIdTokenExtractor,
   withIdTokenVerification,
 } from '@mrpachara/ngx-oauth2-access-token/extractors';
 import { verifyEddsa } from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
@@ -46,7 +46,6 @@ export const appConfig: ApplicationConfig = {
         redirectUri: 'http://localhost:4200/google/authorization',
         pkce: 'S256',
       }),
-      withIdTokenExtractor(withIdTokenVerification()),
     ),
 
     provideJwkDispatcher(
@@ -57,5 +56,7 @@ export const appConfig: ApplicationConfig = {
       },
       [verifyEddsa],
     ),
+
+    provideIdTokenExtractor(withIdTokenVerification()),
   ],
 };

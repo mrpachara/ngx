@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { libPrefix } from '../predefined';
 import { JwkDispatcher, JwkService } from '../services';
-import { JWK_CONFIG, JWK_SERVICES, JWT_VERIFIERS } from '../tokens';
+import { JWK_CONFIG, JWK_SERVICES, JWT_VERIFIERS } from '../tokens/internal';
 import { JwkConfigs, JwtVerifier, TypeOfToken } from '../types';
 
 /**

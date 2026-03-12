@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
+import { promisifyRequest, promisifyTransaction } from '../../helpers';
 import { STORAGE_NAME } from '../../tokens';
 import { StateStorage, StoredStateData } from '../../types';
-import { promisifyRequest, promisifyTransaction } from './helpers';
 import { IndexedStateData, stateObjectStoreName } from './state';
 import { StateIndexedDbConnection } from './state-indexed-db.connection';
 

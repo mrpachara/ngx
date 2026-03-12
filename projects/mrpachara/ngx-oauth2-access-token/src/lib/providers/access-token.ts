@@ -9,15 +9,14 @@ import {
 import { libPrefix } from '../predefined';
 import { AccessTokenService } from '../services';
 import { AccessTokenIndexedDbStorage } from '../storages';
+import { ACCESS_TOKEN_ID, IdKey, STORAGE_NAME } from '../tokens';
 import {
   ACCESS_TOKEN_CONFIG,
   ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS,
   ACCESS_TOKEN_SERVICE_TOKENS,
   ACCESS_TOKEN_STORAGE,
-  IdKey,
   provideHierarchization,
-  STORAGE_NAME,
-} from '../tokens';
+} from '../tokens/internal';
 import { AccessTokenConfig, AccessTokenStorage, TypeOfToken } from '../types';
 
 /**
@@ -33,11 +32,19 @@ export function provideAccessToken<N extends string>(
 ): EnvironmentProviders {
   const { id } = config;
 
+  const storageNameToken = new InjectionToken<string>(
+    `${libPrefix}-storageName:${id}`,
+  );
+
   const token = new InjectionToken<AccessTokenService>(
     `${libPrefix}-access-token-injector:${id}`,
   );
 
   return makeEnvironmentProviders([
+    {
+      provide: storageNameToken,
+      useValue: `${id}` satisfies TypeOfToken<typeof storageNameToken>,
+    },
     {
       provide: token,
       useFactory: () =>
@@ -53,17 +60,18 @@ export function provideAccessToken<N extends string>(
             },
             {
               provide: STORAGE_NAME,
-              useFactory: () =>
-                `${inject(ACCESS_TOKEN_CONFIG).id}` satisfies TypeOfToken<
-                  typeof STORAGE_NAME
-                >,
+              useExisting: storageNameToken satisfies typeof STORAGE_NAME,
             },
             {
               provide: ACCESS_TOKEN_STORAGE,
               useClass: AccessTokenIndexedDbStorage,
             },
             features
-              .filter((feature) => feature.internal)
+              .filter(
+                (feature) =>
+                  feature.kind ===
+                  AccessTokenFeatureKind.AccessTokenInternalFeature,
+              )
               .map((feature) => {
                 switch (feature.kind) {
                   default: {
@@ -83,62 +91,71 @@ export function provideAccessToken<N extends string>(
         token,
       }),
     ),
-    {
-      provide: AccessTokenService,
-      useExisting: token,
-    },
     features
-      .filter((feature) => !feature.internal)
+      .filter(
+        (feature) =>
+          feature.kind === AccessTokenFeatureKind.AccessTokenExtensionFeature,
+      )
       .map(({ providers }) =>
         providers({
           id,
+          storageNameToken,
           accessTokenServiceToken: token,
         }),
       ),
+    {
+      provide: ACCESS_TOKEN_ID,
+      useValue: id satisfies TypeOfToken<typeof ACCESS_TOKEN_ID>,
+    },
+    {
+      provide: STORAGE_NAME,
+      useExisting: storageNameToken satisfies typeof STORAGE_NAME,
+    },
+    {
+      provide: AccessTokenService,
+      useExisting: token satisfies InjectionToken<AccessTokenService>,
+    },
   ]);
 }
 
 // ------------- Avaliable Features -----------------
 export type AccessTokenFeature =
+  | StorageNameFeature
   | AccessTokenStorageFeature
   | AccessTokenExtensionFeature;
 
 // ------------- Enum -----------------
 export enum AccessTokenFeatureKind {
-  AccessTokenStorageFeature = 'ACCESS_TOKEN:ACCESS_TOKEN_STORAGE_FEATURE',
+  AccessTokenInternalFeature = 'ACCESS_TOKEN:ACCESS_TOKEN_INTERNAL_FEATURE',
   AccessTokenExtensionFeature = 'ACCESS_TOKEN:ACCESS_TOKEN_EXTENSION_FEATURE',
 }
 
 // ------------- Type -----------------
-export interface AccessTokenFeatureType<
-  K extends AccessTokenFeatureKind,
-  E extends boolean,
-> {
+export interface AccessTokenFeatureType<K extends AccessTokenFeatureKind> {
   readonly kind: K;
-  readonly internal: E;
-  readonly providers: E extends true
+  readonly providers: K extends AccessTokenFeatureKind.AccessTokenInternalFeature
     ? readonly Provider[]
     : (context: {
         // NOTE: `id` is needed to prevent **circular reference** of extractor
         readonly id: IdKey;
+        readonly storageNameToken: InjectionToken<string>;
         readonly accessTokenServiceToken: InjectionToken<AccessTokenService>;
       }) => readonly Provider[];
 }
 
 // ------------- Features -----------------
-export type AccessTokenStorageFeature = AccessTokenFeatureType<
-  AccessTokenFeatureKind.AccessTokenStorageFeature,
-  true
->;
+export type AccessTokenStorageFeature =
+  AccessTokenFeatureType<AccessTokenFeatureKind.AccessTokenInternalFeature>;
 
-export type AccessTokenExtensionFeature = AccessTokenFeatureType<
-  AccessTokenFeatureKind.AccessTokenExtensionFeature,
-  false
->;
+export type StorageNameFeature =
+  AccessTokenFeatureType<AccessTokenFeatureKind.AccessTokenExtensionFeature>;
+
+export type AccessTokenExtensionFeature =
+  AccessTokenFeatureType<AccessTokenFeatureKind.AccessTokenExtensionFeature>;
 
 // ------------- Feature Functions -----------------
 /**
- * Provide access-token storage.
+ * Provide _access token_ storage.
  *
  * @param factory
  * @returns
@@ -147,12 +164,29 @@ export function withAccessTokenStorage(
   factory: () => AccessTokenStorage,
 ): AccessTokenStorageFeature {
   return {
-    kind: AccessTokenFeatureKind.AccessTokenStorageFeature,
-    internal: true,
+    kind: AccessTokenFeatureKind.AccessTokenInternalFeature,
     providers: [
       {
         provide: ACCESS_TOKEN_STORAGE,
         useFactory: factory,
+      },
+    ],
+  };
+}
+
+/**
+ * Provide storage name.
+ *
+ * @param factory
+ * @returns
+ */
+export function withStorageName(name: string): StorageNameFeature {
+  return {
+    kind: AccessTokenFeatureKind.AccessTokenExtensionFeature,
+    providers: ({ storageNameToken }) => [
+      {
+        provide: storageNameToken,
+        useValue: name satisfies TypeOfToken<typeof storageNameToken>,
       },
     ],
   };

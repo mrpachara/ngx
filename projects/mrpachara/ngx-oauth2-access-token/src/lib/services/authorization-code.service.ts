@@ -10,7 +10,7 @@ import {
 import {
   AUTHORIZATION_CODE_CONFIG,
   AUTHORIZATION_CODE_STORAGE,
-} from '../tokens';
+} from '../tokens/internal';
 import {
   AdditionalParams,
   AuthorizationCodeConfig,
@@ -38,7 +38,9 @@ function configure(config: AuthorizationCodeConfig) {
   } as const;
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class AuthorizationCodeService {
   private readonly config = configure(inject(AUTHORIZATION_CODE_CONFIG));
 

@@ -1,4 +1,5 @@
 import { inject, Injectable } from '@angular/core';
+import { promisifyRequest } from '../../helpers';
 import { STORAGE_NAME } from '../../tokens';
 import { AccessTokenStorage, StoredAccessTokenMap } from '../../types';
 import {
@@ -6,7 +7,6 @@ import {
   refreshTokenObjectStoreName,
 } from './acces-token';
 import { AccessTokenIndexedDbConnection } from './access-token-indexed-db.connection';
-import { promisifyRequest } from './helpers';
 
 const keys = {
   access: accessTokenObjectStoreName,

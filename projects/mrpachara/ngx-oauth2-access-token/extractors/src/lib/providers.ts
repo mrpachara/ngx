@@ -1,89 +1,61 @@
-import { inject, InjectionToken, Injector, Provider } from '@angular/core';
+import {
+  EnvironmentProviders,
+  inject,
+  InjectionToken,
+  Injector,
+  makeEnvironmentProviders,
+  Provider,
+} from '@angular/core';
 import {
   ACCESS_TOKEN_RESPONSE_EXTRACTORS,
-  AccessTokenExtensionFeature,
-  AccessTokenFeatureKind,
-  EXTRACTOR_ID,
   IdTokenInfo,
   JwkDispatcher,
   JwtVerificationFailedError,
-  provideHierarchization,
-  STORAGE_NAME,
-  TypeOfToken,
+  libPrefix,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { IdTokenExtractor } from './services';
 import { IdTokenIndexedDbStorage } from './storages';
 import {
   ID_TOKEN_CLAIMS_TRANSFORMER,
-  ID_TOKEN_EXTRACTOR_TOKENS,
-  ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS,
   ID_TOKEN_STORAGE,
   ID_TOKEN_VERIFICATION,
 } from './tokens';
 import { IdTokenClaimsTransformer, IdTokenStorage } from './types';
 
-/**
- * Provide ID Token extractor.
- *
- * @param factory
- * @returns
- */
-export function withIdTokenExtractor(
+export function provideIdTokenExtractor(
   ...features: IdTokenFeature[]
-): AccessTokenExtensionFeature {
-  return {
-    kind: AccessTokenFeatureKind.AccessTokenExtensionFeature,
-    internal: false,
-    providers: ({ id, accessTokenServiceToken }) => {
-      const token = new InjectionToken<IdTokenExtractor>(
-        `${accessTokenServiceToken}:id-token-extractor`,
-      );
+): EnvironmentProviders {
+  const token = new InjectionToken<IdTokenExtractor>(
+    `${libPrefix}-id-token-extractor:internal`,
+  );
 
-      return [
-        {
-          provide: token,
-          useFactory: () =>
-            Injector.create({
-              name: `${token}:internal`,
-              parent: inject(Injector),
-              providers: [
-                {
-                  provide: EXTRACTOR_ID,
-                  useValue: id satisfies TypeOfToken<typeof EXTRACTOR_ID>,
-                },
-                {
-                  provide: STORAGE_NAME,
-                  useFactory: () => `${inject(EXTRACTOR_ID)}`,
-                },
-                {
-                  provide: ID_TOKEN_STORAGE,
-                  useClass: IdTokenIndexedDbStorage,
-                },
-                features.map((feature) => feature.providers),
-                IdTokenExtractor,
-              ],
-            }).get(IdTokenExtractor),
-        },
-        provideHierarchization(
-          ID_TOKEN_EXTRACTORE_HIERARCHIZED_TOKENS,
-          ID_TOKEN_EXTRACTOR_TOKENS,
-          () => ({
-            id,
-            token,
-          }),
-        ),
-        {
-          provide: ACCESS_TOKEN_RESPONSE_EXTRACTORS,
-          multi: true,
-          useExisting: token,
-        },
-        {
-          provide: IdTokenExtractor,
-          useExisting: token,
-        },
-      ];
+  return makeEnvironmentProviders([
+    {
+      provide: token,
+      useFactory: () =>
+        Injector.create({
+          name: `${libPrefix}-id-token-extractor-injector:internal`,
+          parent: inject(Injector),
+          providers: [
+            {
+              provide: ID_TOKEN_STORAGE,
+              useClass: IdTokenIndexedDbStorage,
+            },
+            features.map((feature) => feature.providers),
+            IdTokenExtractor,
+          ],
+        }).get(IdTokenExtractor),
     },
-  };
+    {
+      provide: ACCESS_TOKEN_RESPONSE_EXTRACTORS,
+      multi: true,
+      useExisting: token,
+    },
+    {
+      provide: IdTokenExtractor,
+      useExisting: token,
+    },
+  ]);
 }
 
 // ------------- Avaliable Features -----------------
@@ -94,9 +66,7 @@ export type IdTokenFeature =
 
 // ------------- Enum -----------------
 export enum IdTokenFeatureKind {
-  IdTokenStorageFeature = 'ID_TOKEN:ID_TOKEN_STORAGE_FEATURE',
-  IdTokenVerificationFeature = 'ID_TOKEN:ID_TOKEN_VERIFICATION',
-  IdTokenClaimsTransformerFeature = 'ID_TOKEN:ID_TOKEN_CLAIMS_TRANSFORMER_FEATURE',
+  IdTokenInternalFeature = 'ID_TOKEN:INTERNAL_FEATURE',
 }
 
 // ------------- Type -----------------
@@ -106,13 +76,13 @@ export interface IdTokenFeatureType<K extends IdTokenFeatureKind> {
 }
 // ------------- Features -----------------
 export type IdTokenStorageFeature =
-  IdTokenFeatureType<IdTokenFeatureKind.IdTokenStorageFeature>;
+  IdTokenFeatureType<IdTokenFeatureKind.IdTokenInternalFeature>;
 
 export type IdTokenVerificationFeature =
-  IdTokenFeatureType<IdTokenFeatureKind.IdTokenVerificationFeature>;
+  IdTokenFeatureType<IdTokenFeatureKind.IdTokenInternalFeature>;
 
 export type IdTokenClaimsTransformerFeature =
-  IdTokenFeatureType<IdTokenFeatureKind.IdTokenClaimsTransformerFeature>;
+  IdTokenFeatureType<IdTokenFeatureKind.IdTokenInternalFeature>;
 
 // ------------- Feature Functions -----------------
 /**
@@ -125,7 +95,7 @@ export function withIdTokenStorage(
   factory: () => IdTokenStorage,
 ): IdTokenStorageFeature {
   return {
-    kind: IdTokenFeatureKind.IdTokenStorageFeature,
+    kind: IdTokenFeatureKind.IdTokenInternalFeature,
     providers: [
       {
         provide: ID_TOKEN_STORAGE,
@@ -143,7 +113,7 @@ export function withIdTokenStorage(
  */
 export function withIdTokenVerification(): IdTokenVerificationFeature {
   return {
-    kind: IdTokenFeatureKind.IdTokenVerificationFeature,
+    kind: IdTokenFeatureKind.IdTokenInternalFeature,
     providers: [
       {
         provide: ID_TOKEN_VERIFICATION,
@@ -173,7 +143,7 @@ export function withClaimmsTransformer(
   factory: () => IdTokenClaimsTransformer,
 ): IdTokenClaimsTransformerFeature {
   return {
-    kind: IdTokenFeatureKind.IdTokenClaimsTransformerFeature,
+    kind: IdTokenFeatureKind.IdTokenInternalFeature,
     providers: [
       {
         provide: ID_TOKEN_CLAIMS_TRANSFORMER,

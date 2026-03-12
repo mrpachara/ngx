@@ -3,11 +3,8 @@ import { inject } from '@angular/core';
 import { defer, Observable, switchMap, throwError } from 'rxjs';
 import { AccessTokenNotFoundError } from '../errors';
 import { AccessTokenService } from '../services';
-import {
-  injectAccessTokenService,
-  OAT_REQUEST,
-  WITH_ACCESS_TOKEN,
-} from '../tokens';
+import { injectAccessTokenService, WITH_ACCESS_TOKEN } from '../tokens';
+import { OAT_REQUEST } from '../tokens/internal';
 
 const defaultAccessTokenParamName = 'access_token';
 

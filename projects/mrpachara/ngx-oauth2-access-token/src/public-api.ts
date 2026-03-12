@@ -9,6 +9,5 @@ export * from './lib/interceptors';
 export * from './lib/predefined';
 export * from './lib/providers';
 export * from './lib/services';
-export * from './lib/storages';
 export * from './lib/tokens';
 export * from './lib/types';

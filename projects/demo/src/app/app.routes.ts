@@ -20,7 +20,7 @@ export const routes: Routes = [
           const router = inject(Router);
 
           return ({ intendedUrl }) => {
-            router.navigateByUrl(intendedUrl);
+            router.navigateByUrl(intendedUrl, { replaceUrl: true });
           };
         },
       })),

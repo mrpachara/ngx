@@ -1,11 +1,13 @@
 import { inject, Injectable } from '@angular/core';
 import { MatchedIssuerNotFoundError, NonprovidedIssuerError } from '../errors';
-import { JWK_SERVICES } from '../tokens';
+import { JWK_SERVICES } from '../tokens/internal';
 import { JwsInfo, JwtInfo } from '../types';
 import { JwkService } from './jwk.service';
 
 /** JWK Dispatcher */
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class JwkDispatcher {
   private readonly jwkServices = inject(JWK_SERVICES);
 

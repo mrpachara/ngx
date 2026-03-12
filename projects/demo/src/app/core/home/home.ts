@@ -14,7 +14,7 @@ import {
   isJwt,
   JwkDispatcher,
 } from '@mrpachara/ngx-oauth2-access-token';
-import { injectIdTokenExtractor } from '@mrpachara/ngx-oauth2-access-token/extractors';
+import { IdTokenExtractor } from '@mrpachara/ngx-oauth2-access-token/extractors';
 import { demoOauth, params, scopes } from '../../app.config';
 
 function extractErrorMessage(error: Error | undefined): string | null {
@@ -43,7 +43,7 @@ export class Home {
   private readonly accessTokenService = injectAccessTokenService(demoOauth);
   private readonly authorizationCodeService =
     injectAuthorizationCodeService(demoOauth);
-  private readonly idTokenExtractor = injectIdTokenExtractor(demoOauth);
+  private readonly idTokenExtractor = inject(IdTokenExtractor);
 
   private readonly jwkDispatcher = inject(JwkDispatcher);
 

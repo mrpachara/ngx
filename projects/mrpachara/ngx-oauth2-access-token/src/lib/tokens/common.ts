@@ -1,11 +1,8 @@
 import { HttpContextToken } from '@angular/common/http';
-import { inject, InjectionToken, Provider, Type } from '@angular/core';
+import { InjectionToken } from '@angular/core';
 
-/**
- * The token for `HttpClient` indicates that the request comes from library. It
- * is useful for HTTP request interceptors.
- */
-export const OAT_REQUEST = new HttpContextToken(() => false);
+/** The injection token for _access token_ ID */
+export const ACCESS_TOKEN_ID = new InjectionToken<IdKey>('access-token-id');
 
 /**
  * The token for `HttpClient` indicates that the request requires _access
@@ -60,28 +57,4 @@ export function createIdKey<N extends string>(name: N): IdKey<N> {
   existingIdName.add(name);
 
   return new IdKeyImplementation(name);
-}
-
-export function provideHierarchization<T>(
-  parentToken: InjectionToken<T[]> | Type<T>,
-  chlidToken: InjectionToken<T[]> | Type<T>,
-  factory: () => T,
-): Provider {
-  return [
-    {
-      provide: chlidToken,
-      multi: true,
-      useFactory: factory,
-    },
-    {
-      provide: parentToken,
-      useFactory: () => [
-        ...(inject(parentToken, {
-          skipSelf: true,
-          optional: true,
-        }) ?? []),
-        ...inject(chlidToken),
-      ],
-    },
-  ];
 }

@@ -2,7 +2,6 @@ import { provideHttpClient, withFetch } from '@angular/common/http';
 import {
   ApplicationConfig,
   provideBrowserGlobalErrorListeners,
-  provideZonelessChangeDetection,
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
@@ -14,8 +13,8 @@ import {
   withAuthorizationCode,
 } from '@mrpachara/ngx-oauth2-access-token';
 import {
+  provideIdTokenExtractor,
   withClaimmsTransformer,
-  withIdTokenExtractor,
   withIdTokenVerification,
 } from '@mrpachara/ngx-oauth2-access-token/extractors';
 import {
@@ -38,7 +37,6 @@ export const params: AdditionalParams = {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideZonelessChangeDetection(),
 
     // NOTE: withComponentInputBinding() will atomatically bind
     //       query strings to component inputs.
@@ -58,19 +56,6 @@ export const appConfig: ApplicationConfig = {
         redirectUri: 'http://localhost:4200/google/authorization',
         pkce: 'S256',
       }),
-      withIdTokenExtractor(
-        withIdTokenVerification(),
-        withClaimmsTransformer(() => (oldClaims, newClaims) => {
-          if (oldClaims.sub === newClaims.sub) {
-            return {
-              ...oldClaims,
-              ...newClaims,
-            };
-          } else {
-            return newClaims;
-          }
-        }),
-      ),
     ),
 
     provideJwkDispatcher(
@@ -80,6 +65,20 @@ export const appConfig: ApplicationConfig = {
         },
       },
       [verifyRsassa, verifyEcdsa, verifyEddsa],
+    ),
+
+    provideIdTokenExtractor(
+      withIdTokenVerification(),
+      withClaimmsTransformer(() => (oldClaims, newClaims) => {
+        if (oldClaims.sub === newClaims.sub) {
+          return {
+            ...oldClaims,
+            ...newClaims,
+          };
+        } else {
+          return newClaims;
+        }
+      }),
     ),
   ],
 };

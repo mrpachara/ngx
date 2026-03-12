@@ -1,15 +1,15 @@
 import { inject, InjectionToken, Injector, Provider } from '@angular/core';
 import { AccessTokenService, AuthorizationCodeService } from '../services';
 import { StateIndexedDbStorage } from '../storages';
+import { STORAGE_NAME } from '../tokens';
 import {
   AUTHORIZATION_CODE_CONFIG,
   AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS,
   AUTHORIZATION_CODE_SERVICE_TOKENS,
   AUTHORIZATION_CODE_STORAGE,
   provideHierarchization,
-  STORAGE_NAME,
-} from '../tokens';
-import { AuthorizationCodeConfig, StateStorage } from '../types';
+} from '../tokens/internal';
+import { AuthorizationCodeConfig, StateStorage, TypeOfToken } from '../types';
 import {
   AccessTokenExtensionFeature,
   AccessTokenFeatureKind,
@@ -28,8 +28,7 @@ export function withAuthorizationCode(
 ): AccessTokenExtensionFeature {
   return {
     kind: AccessTokenFeatureKind.AccessTokenExtensionFeature,
-    internal: false,
-    providers: ({ accessTokenServiceToken }) => {
+    providers: ({ accessTokenServiceToken, storageNameToken }) => {
       const token = new InjectionToken<AuthorizationCodeService>(
         `${accessTokenServiceToken}:authorization-code`,
       );
@@ -44,15 +43,18 @@ export function withAuthorizationCode(
               providers: [
                 {
                   provide: AccessTokenService,
-                  useExisting: accessTokenServiceToken,
+                  useExisting:
+                    accessTokenServiceToken satisfies InjectionToken<AccessTokenService>,
                 },
                 {
                   provide: AUTHORIZATION_CODE_CONFIG,
-                  useValue: config,
+                  useValue: config satisfies TypeOfToken<
+                    typeof AUTHORIZATION_CODE_CONFIG
+                  >,
                 },
                 {
                   provide: STORAGE_NAME,
-                  useFactory: () => `${inject(accessTokenServiceToken).id}`,
+                  useExisting: storageNameToken satisfies typeof STORAGE_NAME,
                 },
                 {
                   provide: AUTHORIZATION_CODE_STORAGE,
@@ -73,7 +75,7 @@ export function withAuthorizationCode(
         ),
         {
           provide: AuthorizationCodeService,
-          useExisting: token,
+          useExisting: token satisfies InjectionToken<AuthorizationCodeService>,
         },
       ];
     },

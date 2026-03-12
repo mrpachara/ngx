@@ -1,17 +1,21 @@
 import {
   inject,
   Injectable,
+  Injector,
   linkedSignal,
   resource,
+  ResourceRef,
   ResourceStreamItem,
   signal,
+  WritableSignal,
 } from '@angular/core';
 import {
+  ACCESS_TOKEN_ID,
   AccessTokenResponse,
   AccessTokenResponseExtractor,
   AccessTokenResponseUpdatedData,
   deserializeJose,
-  EXTRACTOR_ID,
+  IdKey,
   IdTokenClaims,
   IdTokenInfo,
   isJwt,
@@ -42,9 +46,17 @@ function isIdTokenResponse(
   return typeof accessTokenResponse.id_token === 'string';
 }
 
-@Injectable()
+interface ReactiveData {
+  readonly version: WritableSignal<number | undefined>;
+  readonly infoResource: ResourceRef<IdTokenInfo | null | undefined>;
+  readonly claimsResource: ResourceRef<IdTokenClaims | null | undefined>;
+}
+
+@Injectable({
+  providedIn: 'root',
+})
 export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenResponse> {
-  readonly #id = inject(EXTRACTOR_ID);
+  private readonly defaultId = inject(ACCESS_TOKEN_ID);
 
   private readonly storage = inject(ID_TOKEN_STORAGE);
 
@@ -52,35 +64,66 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
 
   private readonly verification = inject(ID_TOKEN_VERIFICATION);
 
-  get id() {
-    return this.#id;
+  private readonly injector = inject(Injector);
+
+  readonly #reactiveDataMap = new Map<IdKey, ReactiveData>();
+
+  #getReactiveData(id: IdKey): ReactiveData {
+    const reactiveData = this.#reactiveDataMap.get(id);
+
+    if (typeof reactiveData !== 'undefined') {
+      return reactiveData;
+    }
+
+    const version = signal<number | undefined>(undefined);
+    const infoResource = resource({
+      params: version,
+      loader: async () => await this.loadInfo(id),
+      injector: this.injector,
+    });
+    const claimsResource = resource({
+      params: version,
+      loader: async () => await this.loadClaims(id),
+      injector: this.injector,
+    });
+
+    const newReactiveData = {
+      version,
+      infoResource,
+      claimsResource,
+    } as const satisfies ReactiveData;
+
+    this.#reactiveDataMap.set(id, newReactiveData);
+
+    return newReactiveData;
   }
 
-  readonly #version = signal<number | undefined>(undefined);
+  #initializeVersion<T>(id: IdKey, value: T): T {
+    const { version } = this.#getReactiveData(id);
 
-  #initializeVersion<T>(value: T): T {
-    this.#version.update((version) =>
-      typeof version === 'undefined' ? 0 : version,
-    );
+    version.update((version) => (typeof version === 'undefined' ? 0 : version));
     return value;
   }
 
-  #updateVersion(value: number): void {
-    this.#version.update((version) =>
-      value > (version ?? -Infinity) ? value : version,
+  #updateVersion(id: IdKey, value: number): void {
+    const { version } = this.#getReactiveData(id);
+
+    version.update((version) =>
+      typeof version === 'undefined' || value > version ? value : version,
     );
   }
 
   async update(
+    id: IdKey,
     updatedData: AccessTokenResponseUpdatedData<IdTokenResponse>,
   ): Promise<void> {
     switch (updatedData.accessTokenResponse) {
       case storedData:
-        return this.#updateVersion(updatedData.timestamp);
+        return this.#updateVersion(id, updatedData.timestamp);
       case removedData:
-        await this.storage.clear();
+        await this.storage.clear(id);
 
-        return this.#updateVersion(updatedData.timestamp);
+        return this.#updateVersion(id, updatedData.timestamp);
       default:
         if (isIdTokenResponse(updatedData.accessTokenResponse)) {
           try {
@@ -91,11 +134,12 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
             if (isJwt(idTokenInfo, 'JWS')) {
               await this.verification(idTokenInfo);
 
-              const oldClaims = await this.loadClaims();
+              const oldClaims = await this.loadClaims(id);
 
               await Promise.all([
-                this.storage.store('info', idTokenInfo),
+                this.storage.store(id, 'info', idTokenInfo),
                 this.storage.store(
+                  id,
                   'claims',
                   oldClaims
                     ? this.claimsTransformer(oldClaims, idTokenInfo.payload)
@@ -103,69 +147,65 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
                 ),
               ]);
             } else {
-              throw new IdTokenEncryptedError(this.id);
+              throw new IdTokenEncryptedError(id);
             }
           } catch (error) {
             console.error(error);
 
-            await this.storage.clear();
+            await this.storage.clear(id);
           }
 
-          return this.#updateVersion(updatedData.timestamp);
+          return this.#updateVersion(id, updatedData.timestamp);
+        } else {
+          // TODO: check IdToken from _access token_.
         }
     }
   }
 
-  readonly #idTokenInfoResource = resource({
-    params: this.#version,
-    loader: async () => await this.loadInfo(),
-  });
-
-  async loadInfo(): Promise<IdTokenInfo | null> {
-    return this.#initializeVersion(await this.storage.load('info'));
+  async loadInfo(id = this.defaultId): Promise<IdTokenInfo | null> {
+    return this.#initializeVersion(id, await this.storage.load(id, 'info'));
   }
 
-  infoResource() {
+  infoResource(id = this.defaultId) {
+    const { infoResource } = this.#getReactiveData(id);
+
     return resource({
       stream: async () => {
-        const initializedValue = await this.loadInfo();
+        const initializedValue = await this.loadInfo(id);
 
         return linkedSignal({
-          source: this.#idTokenInfoResource.snapshot,
+          source: infoResource.snapshot,
           computation: (source, previous): ResourceStreamItem<IdTokenInfo> => {
             return source.status === 'error'
               ? { error: source.error }
               : typeof source.value !== 'undefined'
                 ? source.value !== null
                   ? { value: source.value }
-                  : { error: new IdTokenInfoNotFoundError(this.id) }
+                  : { error: new IdTokenInfoNotFoundError(id) }
                 : typeof previous !== 'undefined'
                   ? previous.value
                   : initializedValue !== null
                     ? { value: initializedValue }
-                    : { error: new IdTokenInfoNotFoundError(this.id) };
+                    : { error: new IdTokenInfoNotFoundError(id) };
           },
         });
       },
     }).asReadonly();
   }
 
-  readonly #idTokenClaimsResource = resource({
-    params: this.#version,
-    loader: async () => await this.loadClaims(),
-  });
-
-  async loadClaims(): Promise<IdTokenClaims | null> {
-    return this.#initializeVersion(await this.storage.load('claims'));
+  async loadClaims(id = this.defaultId): Promise<IdTokenClaims | null> {
+    return this.#initializeVersion(id, await this.storage.load(id, 'claims'));
   }
 
-  claimsResource() {
+  claimsResource(id = this.defaultId) {
+    const { claimsResource } = this.#getReactiveData(id);
+
     return resource({
       stream: async () => {
-        const initializedValue = await this.loadClaims();
+        const initializedValue = await this.loadClaims(id);
 
         return linkedSignal({
-          source: this.#idTokenClaimsResource.snapshot,
+          source: claimsResource.snapshot,
           computation: (
             source,
             previous,
@@ -175,12 +215,12 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
               : typeof source.value !== 'undefined'
                 ? source.value !== null
                   ? { value: source.value }
-                  : { error: new IdTokenClaimsNotFoundError(this.id) }
+                  : { error: new IdTokenClaimsNotFoundError(id) }
                 : typeof previous !== 'undefined'
                   ? previous.value
                   : initializedValue !== null
                     ? { value: initializedValue }
-                    : { error: new IdTokenClaimsNotFoundError(this.id) };
+                    : { error: new IdTokenClaimsNotFoundError(id) };
           },
         });
       },

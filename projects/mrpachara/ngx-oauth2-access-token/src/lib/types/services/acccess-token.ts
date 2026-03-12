@@ -30,6 +30,8 @@ export interface AccessTokenResponseUpdatedData<
 export interface AccessTokenResponseExtractor<
   T extends AccessTokenResponse = AccessTokenResponse,
 > {
-  readonly id: IdKey;
-  update(updatedData: AccessTokenResponseUpdatedData<T>): Promise<void>;
+  update(
+    id: IdKey,
+    updatedData: AccessTokenResponseUpdatedData<T>,
+  ): Promise<void>;
 }

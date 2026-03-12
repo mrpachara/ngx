@@ -7,7 +7,7 @@ import { inject, Injectable } from '@angular/core';
 import { catchError, firstValueFrom, pipe, throwError } from 'rxjs';
 import { Oauth2ClientResponseError } from '../errors';
 import { assignRequestData, takeUntilAbortSignal } from '../helpers';
-import { OAT_REQUEST } from '../tokens';
+import { OAT_REQUEST } from '../tokens/internal';
 import {
   AccessTokenRequest,
   AccessTokenResponse,

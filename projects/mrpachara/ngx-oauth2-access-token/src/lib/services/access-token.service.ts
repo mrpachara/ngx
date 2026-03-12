@@ -15,11 +15,8 @@ import {
 } from '../errors';
 import { validateAndTransformScopes } from '../helpers';
 import { libPrefix } from '../predefined';
-import {
-  ACCESS_TOKEN_CONFIG,
-  ACCESS_TOKEN_RESPONSE_EXTRACTORS,
-  ACCESS_TOKEN_STORAGE,
-} from '../tokens';
+import { ACCESS_TOKEN_RESPONSE_EXTRACTORS } from '../tokens';
+import { ACCESS_TOKEN_CONFIG, ACCESS_TOKEN_STORAGE } from '../tokens/internal';
 import {
   AccessTokenConfig,
   AccessTokenInfo,
@@ -66,7 +63,9 @@ function configure(config: AccessTokenConfig) {
 /** Network latency time in units of **miliseconds** */
 const networkLatencyTime = 10_000;
 
-Injectable();
+Injectable({
+  providedIn: 'root',
+});
 export class AccessTokenService {
   private readonly config = configure(inject(ACCESS_TOKEN_CONFIG));
 
@@ -87,19 +86,7 @@ export class AccessTokenService {
     ...(this.config.clientSecret ? { secret: this.config.clientSecret } : {}),
   } as const satisfies Oauth2ClientCredentials;
 
-  private readonly extractors = [
-    ...(inject(ACCESS_TOKEN_RESPONSE_EXTRACTORS, {
-      optional: true,
-    }) ?? []),
-  ].map((extractor) => {
-    if (extractor.id !== this.id) {
-      throw new Error(
-        `Extractor '${extractor.id}' mismatches AccessTokenService '${this.id}'.`,
-      );
-    }
-
-    return extractor;
-  });
+  private readonly extractors = inject(ACCESS_TOKEN_RESPONSE_EXTRACTORS);
 
   readonly #version = signal<number | undefined>(undefined);
 
@@ -113,7 +100,7 @@ export class AccessTokenService {
 
   #updateVersion(value: number): void {
     this.#version.update((version) =>
-      value > (version ?? -Infinity) ? value : version,
+      typeof version === 'undefined' || value > version ? value : version,
     );
   }
 
@@ -142,7 +129,7 @@ export class AccessTokenService {
           case 'external-store': {
             Promise.allSettled(
               this.extractors.map((extractor) =>
-                extractor.update({
+                extractor.update(this.id, {
                   timestamp: message.timestamp,
                   accessTokenResponse: storedData,
                 }),
@@ -173,7 +160,7 @@ export class AccessTokenService {
     //       storage is updated before sub-sequence events.
     await Promise.allSettled(
       this.extractors.map((extractor) =>
-        extractor.update({
+        extractor.update(this.id, {
           timestamp: now,
           accessTokenResponse,
         }),

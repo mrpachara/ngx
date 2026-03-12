@@ -2,10 +2,10 @@ import { CodeChallengeMethod } from '../standards';
 
 /** Authorization code configuration. */
 export interface AuthorizationCodeConfig {
-  /** The URL of authorization code (consent screen) end point, it is REQUIRED. */
+  /** The URL of authorization code (consent screen) end point. */
   readonly authorizationCodeUrl: string;
 
-  /** The redirect URI (callback URL) that matchs with client, it is REQUIRED. */
+  /** The redirect URI (callback URL) that matches with client. */
   readonly redirectUri: string;
 
   /** If authorization code requires _PKCE_, specify the challenge method here. */
