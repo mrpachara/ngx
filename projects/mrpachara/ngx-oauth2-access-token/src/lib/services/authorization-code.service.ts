@@ -10,7 +10,7 @@ import {
 import {
   AUTHORIZATION_CODE_CONFIG,
   AUTHORIZATION_CODE_STORAGE,
-} from '../tokens/internal';
+} from '../tokens';
 import {
   AdditionalParams,
   AuthorizationCodeConfig,
@@ -44,9 +44,9 @@ function configure(config: AuthorizationCodeConfig) {
 export class AuthorizationCodeService {
   private readonly config = configure(inject(AUTHORIZATION_CODE_CONFIG));
 
-  private readonly accessTokenService = inject(AccessTokenService);
-
   private readonly storage = inject(AUTHORIZATION_CODE_STORAGE);
+
+  private readonly accessTokenService = inject(AccessTokenService);
 
   get id() {
     return this.accessTokenService.id;

@@ -5,19 +5,7 @@ import {
   isDevMode,
 } from '@angular/core';
 import { AccessTokenService } from '../../services';
-import { AccessTokenConfig, AccessTokenStorage } from '../../types';
 import { IdKey } from '../common';
-
-// TODO: move required token for service to public api
-/** The injection token for access-token service config */
-export const ACCESS_TOKEN_CONFIG = new InjectionToken<AccessTokenConfig>(
-  'access-token-config',
-);
-
-/** The injection token for access-token storage */
-export const ACCESS_TOKEN_STORAGE = new InjectionToken<AccessTokenStorage>(
-  'access-token-storage',
-);
 
 /** The injection token for access token service tokens */
 export const ACCESS_TOKEN_SERVICE_TOKENS = new InjectionToken<

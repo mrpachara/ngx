@@ -5,9 +5,23 @@ import {
   isDevMode,
 } from '@angular/core';
 import { AccessTokenService } from '../services';
-import { AccessTokenResponseExtractor } from '../types';
+import {
+  AccessTokenConfig,
+  AccessTokenResponseExtractor,
+  AccessTokenStorage,
+} from '../types';
 import { IdKey } from './common';
 import { ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS } from './internal/access-token';
+
+/** The injection token for access-token service config */
+export const ACCESS_TOKEN_CONFIG = new InjectionToken<AccessTokenConfig>(
+  'access-token-config',
+);
+
+/** The injection token for access-token storage */
+export const ACCESS_TOKEN_STORAGE = new InjectionToken<AccessTokenStorage>(
+  'access-token-storage',
+);
 
 /** The injection token for access-token storage */
 export const ACCESS_TOKEN_RESPONSE_EXTRACTORS = new InjectionToken<

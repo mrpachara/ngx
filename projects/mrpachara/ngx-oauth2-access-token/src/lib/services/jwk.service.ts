@@ -6,7 +6,8 @@ import {
   SupportedJwkAlgNotFoundError,
 } from '../errors';
 import { findJwk } from '../helpers';
-import { JWK_CONFIG, JWT_VERIFIERS, OAT_REQUEST } from '../tokens/internal';
+import { JWK_CONFIG, JWT_VERIFIERS } from '../tokens';
+import { OAT_REQUEST } from '../tokens/internal';
 import { JwkConfig, JwkSet, JwsInfo, JwtInfo, PickOptional } from '../types';
 
 /** Default JWK configuration */

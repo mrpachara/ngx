@@ -9,12 +9,16 @@ import {
 import { libPrefix } from '../predefined';
 import { AccessTokenService } from '../services';
 import { AccessTokenIndexedDbStorage } from '../storages';
-import { ACCESS_TOKEN_ID, IdKey, STORAGE_NAME } from '../tokens';
 import {
   ACCESS_TOKEN_CONFIG,
+  ACCESS_TOKEN_ID,
+  ACCESS_TOKEN_STORAGE,
+  IdKey,
+  STORAGE_NAME,
+} from '../tokens';
+import {
   ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS,
   ACCESS_TOKEN_SERVICE_TOKENS,
-  ACCESS_TOKEN_STORAGE,
   provideHierarchization,
 } from '../tokens/internal';
 import { AccessTokenConfig, AccessTokenStorage, TypeOfToken } from '../types';

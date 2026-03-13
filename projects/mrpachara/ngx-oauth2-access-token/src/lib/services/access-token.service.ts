@@ -15,8 +15,11 @@ import {
 } from '../errors';
 import { validateAndTransformScopes } from '../helpers';
 import { libPrefix } from '../predefined';
-import { ACCESS_TOKEN_RESPONSE_EXTRACTORS } from '../tokens';
-import { ACCESS_TOKEN_CONFIG, ACCESS_TOKEN_STORAGE } from '../tokens/internal';
+import {
+  ACCESS_TOKEN_CONFIG,
+  ACCESS_TOKEN_RESPONSE_EXTRACTORS,
+  ACCESS_TOKEN_STORAGE,
+} from '../tokens';
 import {
   AccessTokenConfig,
   AccessTokenInfo,

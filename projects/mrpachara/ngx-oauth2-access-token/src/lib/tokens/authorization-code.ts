@@ -1,7 +1,22 @@
-import { inject, InjectOptions, isDevMode } from '@angular/core';
+import {
+  inject,
+  InjectionToken,
+  InjectOptions,
+  isDevMode,
+} from '@angular/core';
 import { AuthorizationCodeService } from '../services';
+import { AuthorizationCodeConfig, StateStorage } from '../types';
 import { IdKey } from './common';
 import { AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS } from './internal/authorization-code';
+
+/** The injection token for authorization-code service config */
+export const AUTHORIZATION_CODE_CONFIG =
+  new InjectionToken<AuthorizationCodeConfig>('authorization-code-config');
+
+/** The injection token for authorization-code storage */
+export const AUTHORIZATION_CODE_STORAGE = new InjectionToken<StateStorage>(
+  'authorization-code-storage',
+);
 
 /**
  * Inject AuthorizationCodeService from the given id.
