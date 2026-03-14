@@ -44,6 +44,7 @@ export function toUint8Array(value: string, utf8 = false): Uint8Array {
  *
  * @param serial Serialized content
  * @returns JSON Web information with unknown payload type
+ * @throws JoseDeserializationError
  */
 export function deserializeJose<
   P = unknown,

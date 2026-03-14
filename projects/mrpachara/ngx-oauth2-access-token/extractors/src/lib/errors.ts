@@ -1,5 +1,9 @@
 import { IdKey } from '@mrpachara/ngx-oauth2-access-token';
-import { IdTokenClaims } from '@mrpachara/ngx-oauth2-access-token/standard';
+import {
+  IdTokenClaims,
+  IdTokenInfo,
+  JoseInfo,
+} from '@mrpachara/ngx-oauth2-access-token/standard';
 
 export class IdTokenInfoNotFoundError extends Error {
   constructor(id: IdKey, options?: ErrorOptions) {
@@ -15,23 +19,44 @@ export class IdTokenClaimsNotFoundError extends Error {
   }
 }
 
+export class IdTokenExpiredError extends Error {
+  override readonly cause!: IdTokenInfo;
+
+  constructor(id: IdKey, idTokenInfo: IdTokenInfo) {
+    super(`ID token of '${id}' has expired.`, {
+      cause: idTokenInfo,
+    });
+    this.name = this.constructor.name;
+  }
+}
+
 export class IdTokenClaimsExpiredError extends Error {
   override readonly cause!: IdTokenClaims;
 
   constructor(id: IdKey, idTokenClaims: IdTokenClaims) {
-    super(`ID token of '${id}' has expired.`, {
+    super(`ID token claims of '${id}' has expired.`, {
       cause: idTokenClaims,
     });
     this.name = this.constructor.name;
   }
 }
 
-export class IdTokenEncryptedError extends Error {
-  constructor(id: IdKey, options?: ErrorOptions) {
-    super(
-      `ID token of '${id}' must be JWT and cannot be encrypted token.`,
-      options,
-    );
+export class InvalidIdTokenPayloadError extends Error {
+  override readonly cause!: JoseInfo;
+
+  constructor(id: IdKey, info: JoseInfo) {
+    super(`ID token of '${id}' is invalid payload.`, { cause: info });
+    this.name = this.constructor.name;
+  }
+}
+
+export class EncryptedIdTokenError extends Error {
+  override readonly cause!: JoseInfo;
+
+  constructor(id: IdKey, info: JoseInfo) {
+    super(`ID token of '${id}' must be JWT and is not encrypted token.`, {
+      cause: info,
+    });
     this.name = this.constructor.name;
   }
 }

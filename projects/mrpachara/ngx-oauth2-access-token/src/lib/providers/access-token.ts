@@ -122,6 +122,7 @@ export function provideAccessToken<N extends string>(
   ]);
 }
 
+// TODO: simpify featur name
 // ------------- Avaliable Features -----------------
 export type AccessTokenFeature =
   | StorageNameFeature

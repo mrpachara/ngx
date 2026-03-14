@@ -59,7 +59,7 @@ export interface IdTokenClaims extends JwtClaims, UserInfoClaims {
    * PAPE](https://openid.net/specs/openid-provider-authentication-policy-extension-1_0.html)
    * `auth_time` response parameter.)
    */
-  readonly auth_time: number;
+  readonly auth_time?: number;
 
   /**
    * String value used to associate a Client session with an ID Token, and to

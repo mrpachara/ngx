@@ -26,10 +26,12 @@ import {
   JwtHeader,
 } from '@mrpachara/ngx-oauth2-access-token/standard';
 import {
+  EncryptedIdTokenError,
   IdTokenClaimsExpiredError,
   IdTokenClaimsNotFoundError,
-  IdTokenEncryptedError,
+  IdTokenExpiredError,
   IdTokenInfoNotFoundError,
+  InvalidIdTokenPayloadError,
 } from '../errors';
 import {
   ID_TOKEN_CLAIMS_TRANSFORMER,
@@ -47,6 +49,18 @@ function isIdTokenResponse(
   accessTokenResponse: IdTokenResponse,
 ): accessTokenResponse is IdTokenResponse & Required<IdTokenRespodable> {
   return typeof accessTokenResponse.id_token === 'string';
+}
+
+function isIdTokenPayload(
+  payload: Partial<IdTokenClaims>,
+): payload is IdTokenClaims {
+  return (
+    typeof payload.iss === 'string' &&
+    typeof payload.sub === 'string' &&
+    (typeof payload.aud === 'string' || Array.isArray(payload.aud)) &&
+    typeof payload.exp === 'number' &&
+    typeof payload.iat === 'number'
+  );
 }
 
 interface ReactiveData {
@@ -127,41 +141,48 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
         await this.storage.clear(id);
 
         return this.#updateVersion(id, updatedData.timestamp);
-      default:
-        if (isIdTokenResponse(updatedData.accessTokenResponse)) {
-          try {
-            const idTokenInfo = deserializeJose<IdTokenClaims, JwtHeader>(
-              updatedData.accessTokenResponse.id_token,
-            );
+      default: {
+        const [hasIdToken, idToken] = isIdTokenResponse(
+          updatedData.accessTokenResponse,
+        )
+          ? ([true, updatedData.accessTokenResponse.id_token] as const)
+          : ([false, updatedData.accessTokenResponse.access_token] as const);
 
-            if (isJwt(idTokenInfo, 'JWS')) {
-              await this.verification(idTokenInfo);
+        try {
+          const idTokenInfo = deserializeJose<IdTokenClaims, JwtHeader>(
+            idToken,
+          );
 
-              const oldClaims = await this.loadClaims(id);
-
-              await Promise.all([
-                this.storage.store(id, 'info', idTokenInfo),
-                this.storage.store(
-                  id,
-                  'claims',
-                  oldClaims
-                    ? this.claimsTransformer(oldClaims, idTokenInfo.payload)
-                    : idTokenInfo.payload,
-                ),
-              ]);
-            } else {
-              throw new IdTokenEncryptedError(id);
+          if (isJwt(idTokenInfo, 'JWS')) {
+            if (!isIdTokenPayload(idTokenInfo.payload)) {
+              throw new InvalidIdTokenPayloadError(id, idTokenInfo);
             }
-          } catch (error) {
-            console.error(error);
 
-            await this.storage.clear(id);
+            await this.verification(idTokenInfo);
+
+            const oldClaims = await this.loadClaims(id);
+
+            await Promise.all([
+              this.storage.store(id, 'info', idTokenInfo),
+              this.storage.store(
+                id,
+                'claims',
+                oldClaims
+                  ? this.claimsTransformer(oldClaims, idTokenInfo.payload)
+                  : idTokenInfo.payload,
+              ),
+            ]);
+          } else {
+            throw new EncryptedIdTokenError(id, idTokenInfo);
           }
-
-          return this.#updateVersion(id, updatedData.timestamp);
-        } else {
-          // TODO: check IdToken from _access token_.
+        } catch (error) {
+          if (hasIdToken) {
+            console.error(error);
+          }
         }
+
+        return this.#updateVersion(id, updatedData.timestamp);
+      }
     }
   }
 
@@ -183,7 +204,9 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
               ? { error: source.error }
               : typeof source.value !== 'undefined'
                 ? source.value !== null
-                  ? { value: source.value }
+                  ? source.value.payload.exp < Date.now() / 1_000
+                    ? { error: new IdTokenExpiredError(id, source.value) }
+                    : { value: source.value }
                   : { error: new IdTokenInfoNotFoundError(id) }
                 : typeof previous !== 'undefined'
                   ? previous.value

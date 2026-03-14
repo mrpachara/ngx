@@ -22,7 +22,11 @@ import {
   ID_TOKEN_STORAGE,
   ID_TOKEN_VERIFICATION,
 } from './tokens';
-import { IdTokenClaimsTransformer, IdTokenStorage } from './types';
+import {
+  IdTokenClaimsTransformer,
+  IdTokenStorage,
+  IdTokenVerification,
+} from './types';
 
 export function provideIdTokenExtractor(
   ...features: IdTokenFeature[]
@@ -107,14 +111,33 @@ export function withIdTokenStorage(
   };
 }
 
-// TODO: separate to 2 feature, from JwkDispatcher and manual factory
 /**
  * Provide ID Token verification.
  *
  * @param factory
  * @returns
  */
-export function withIdTokenVerification(): IdTokenVerificationFeature {
+export function withIdTokenVerification(
+  factory: () => IdTokenVerification,
+): IdTokenVerificationFeature {
+  return {
+    kind: IdTokenFeatureKind.IdTokenInternalFeature,
+    providers: [
+      {
+        provide: ID_TOKEN_VERIFICATION,
+        useFactory: factory,
+      },
+    ],
+  };
+}
+
+/**
+ * Provide ID Token `JwkDispatcher` verification.
+ *
+ * @param factory
+ * @returns
+ */
+export function withIdTokenJwkDispatcherVerification(): IdTokenVerificationFeature {
   return {
     kind: IdTokenFeatureKind.IdTokenInternalFeature,
     providers: [

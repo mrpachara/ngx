@@ -14,7 +14,7 @@ import {
 import {
   provideIdTokenExtractor,
   withClaimmsTransformer,
-  withIdTokenVerification,
+  withIdTokenJwkDispatcherVerification,
 } from '@mrpachara/ngx-oauth2-access-token/extractors';
 import { provideJwkDispatcher } from '@mrpachara/ngx-oauth2-access-token/jwk';
 import {
@@ -68,7 +68,7 @@ export const appConfig: ApplicationConfig = {
     ),
 
     provideIdTokenExtractor(
-      withIdTokenVerification(),
+      withIdTokenJwkDispatcherVerification(),
       withClaimmsTransformer(() => (oldClaims, newClaims) => {
         if (oldClaims.sub === newClaims.sub) {
           return {

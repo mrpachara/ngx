@@ -10,4 +10,5 @@ export type IdTokenClaimsTransformer = <
   newClaims: T,
 ) => T;
 
+/** The function for verifying ID Token must throw `Error` when fail. */
 export type IdTokenVerification = (idTokenInfo: IdTokenInfo) => Promise<void>;
