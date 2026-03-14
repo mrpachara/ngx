@@ -13,7 +13,9 @@ const keys = {
   refresh: refreshTokenObjectStoreName,
 } as const;
 
-Injectable();
+Injectable({
+  providedIn: 'root',
+});
 export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
   readonly #connection = inject(AccessTokenIndexedDbConnection);
 

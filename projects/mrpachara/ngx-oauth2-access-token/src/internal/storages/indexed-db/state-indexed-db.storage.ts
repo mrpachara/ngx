@@ -8,7 +8,9 @@ import { StateStorage, StoredStateData } from '../../../lib/types';
 import { IndexedStateData, stateObjectStoreName } from './state';
 import { StateIndexedDbConnection } from './state-indexed-db.connection';
 
-Injectable();
+Injectable({
+  providedIn: 'root',
+});
 export class StateIndexedDbStorage implements StateStorage {
   readonly #connection = inject(StateIndexedDbConnection);
 
