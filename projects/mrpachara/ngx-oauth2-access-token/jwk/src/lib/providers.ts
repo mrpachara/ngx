@@ -4,10 +4,10 @@ import {
   Injector,
   makeEnvironmentProviders,
 } from '@angular/core';
-import { libPrefix } from '../predefined';
-import { JwkDispatcher, JwkService } from '../services';
-import { JWK_CONFIG, JWK_SERVICES, JWT_VERIFIERS } from '../tokens';
-import { JwkConfigs, JwtVerifier, TypeOfToken } from '../types';
+import { libPrefix, TypeOfToken } from '@mrpachara/ngx-oauth2-access-token';
+import { JwkDispatcher, JwkService } from './services';
+import { JWK_CONFIG, JWK_SERVICES, JWT_VERIFIERS } from './tokens';
+import { JwkConfigs, JwtVerifier } from './types';
 
 /**
  * Provide JWK dispatcher.

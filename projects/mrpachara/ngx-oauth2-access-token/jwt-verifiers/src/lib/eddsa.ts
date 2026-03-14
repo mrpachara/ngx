@@ -1,4 +1,4 @@
-import { JwtVerifier } from '@mrpachara/ngx-oauth2-access-token';
+import { JwtVerifier } from '@mrpachara/ngx-oauth2-access-token/jwk';
 import {
   isJwkEddsa,
   Jwk,

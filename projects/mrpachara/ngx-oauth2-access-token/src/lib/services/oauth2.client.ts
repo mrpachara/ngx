@@ -10,9 +10,9 @@ import {
   takeUntilAbortSignal,
 } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { catchError, firstValueFrom, pipe, throwError } from 'rxjs';
-import { OAT_REQUEST } from '../../internal/tokens';
 import { Oauth2ClientResponseError } from '../errors';
 import { assignRequestData } from '../helpers';
+import { OAT_REQUEST } from '../tokens';
 import { AdditionalParams, Oauth2ClientCredentials } from '../types';
 
 @Injectable({

@@ -8,7 +8,6 @@ import {
   AdditionalParams,
   createIdKey,
   provideAccessToken,
-  provideJwkDispatcher,
   Scopes,
   withAuthorizationCode,
 } from '@mrpachara/ngx-oauth2-access-token';
@@ -17,6 +16,7 @@ import {
   withClaimmsTransformer,
   withIdTokenVerification,
 } from '@mrpachara/ngx-oauth2-access-token/extractors';
+import { provideJwkDispatcher } from '@mrpachara/ngx-oauth2-access-token/jwk';
 import {
   verifyEcdsa,
   verifyEddsa,

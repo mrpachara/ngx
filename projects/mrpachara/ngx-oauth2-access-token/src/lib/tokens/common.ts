@@ -1,8 +1,11 @@
 import { HttpContextToken } from '@angular/common/http';
 import { InjectionToken } from '@angular/core';
 
-/** The injection token for _access token_ ID */
-export const ACCESS_TOKEN_ID = new InjectionToken<IdKey>('access-token-id');
+/**
+ * The token for `HttpClient` indicates that the request comes from library. It
+ * is useful for HTTP request interceptors.
+ */
+export const OAT_REQUEST = new HttpContextToken(() => false);
 
 /**
  * The token for `HttpClient` indicates that the request requires _access
@@ -11,6 +14,9 @@ export const ACCESS_TOKEN_ID = new InjectionToken<IdKey>('access-token-id');
 export const WITH_ACCESS_TOKEN = new HttpContextToken<IdKey | boolean>(
   () => false,
 );
+
+/** The injection token for _access token_ ID */
+export const ACCESS_TOKEN_ID = new InjectionToken<IdKey>('access-token-id');
 
 const idKeyName = Symbol('id-key-name');
 
@@ -45,6 +51,12 @@ class IdKeyImplementation<N extends string> implements IdKey<N> {
 
 const existingIdName = new Set<string>();
 
+/**
+ * Create ID for configuration.
+ *
+ * @param name
+ * @returns
+ */
 export function createIdKey<N extends string>(name: N): IdKey<N> {
   if (name.trim() === '') {
     throw new Error(`ID MUST be non-empty string`);

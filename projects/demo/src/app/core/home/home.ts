@@ -10,9 +10,9 @@ import { Router } from '@angular/router';
 import {
   injectAccessTokenService,
   injectAuthorizationCodeService,
-  JwkDispatcher,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { IdTokenExtractor } from '@mrpachara/ngx-oauth2-access-token/extractors';
+import { JwkDispatcher } from '@mrpachara/ngx-oauth2-access-token/jwk';
 import {
   deserializeJose,
   isJwt,

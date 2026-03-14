@@ -1,5 +1,6 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
+import { OAT_REQUEST } from '@mrpachara/ngx-oauth2-access-token';
 import {
   findJwk,
   JwkSet,
@@ -10,7 +11,6 @@ import {
 } from '@mrpachara/ngx-oauth2-access-token/standard';
 import { PickOptional } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { firstValueFrom, Observable } from 'rxjs';
-import { OAT_REQUEST } from '../../internal/tokens';
 import { JWK_CONFIG, JWT_VERIFIERS } from '../tokens';
 import { JwkConfig } from '../types';
 

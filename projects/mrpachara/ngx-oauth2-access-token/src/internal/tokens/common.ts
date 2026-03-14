@@ -1,11 +1,4 @@
-import { HttpContextToken } from '@angular/common/http';
 import { inject, InjectionToken, Provider, Type } from '@angular/core';
-
-/**
- * The token for `HttpClient` indicates that the request comes from library. It
- * is useful for HTTP request interceptors.
- */
-export const OAT_REQUEST = new HttpContextToken(() => false);
 
 export function provideHierarchization<T>(
   parentToken: InjectionToken<T[]> | Type<T>,

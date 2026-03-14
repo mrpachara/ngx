@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
-import { JwkService } from '../services';
-import { JwkConfig, JwtVerifier } from '../types';
+import { JwkService } from './services';
+import { JwkConfig, JwtVerifier } from './types';
 
 /** The injection token for jwk service config */
 export const JWK_CONFIG = new InjectionToken<JwkConfig>('jwk-config');

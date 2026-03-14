@@ -13,6 +13,7 @@
     "utility/**/*.ts",
     "standard/**/*.ts",
     "src/**/*.ts",
+    "jwk/**/*.ts",
     "jwt-verifiers/**/*.ts",
     "extractors/**/*.ts"
   ],

@@ -8,9 +8,9 @@ import {
 } from '@angular/core';
 import {
   ACCESS_TOKEN_RESPONSE_EXTRACTORS,
-  JwkDispatcher,
   libPrefix,
 } from '@mrpachara/ngx-oauth2-access-token';
+import { JwkDispatcher } from '@mrpachara/ngx-oauth2-access-token/jwk';
 import {
   IdTokenInfo,
   JwtVerificationFailedError,
