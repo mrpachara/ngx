@@ -12,3 +12,9 @@ export interface KeyableDataStorage<M extends object> {
   remove<const K extends keyof M>(key: K): Promise<M[K] | null>;
   clear(): Promise<void>;
 }
+
+export type StorageVersionChangedReloader = (info: {
+  readonly serviceName: string;
+  readonly oldVersion: number;
+  readonly newVersoin: number | null;
+}) => void | Promise<void>;

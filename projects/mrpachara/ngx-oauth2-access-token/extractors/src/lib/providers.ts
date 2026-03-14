@@ -15,8 +15,8 @@ import {
   IdTokenInfo,
   JwtVerificationFailedError,
 } from '@mrpachara/ngx-oauth2-access-token/standard';
+import { IdTokenIndexedDbStorage } from '../internal/storage';
 import { IdTokenExtractor } from './services';
-import { IdTokenIndexedDbStorage } from './storages';
 import {
   ID_TOKEN_CLAIMS_TRANSFORMER,
   ID_TOKEN_STORAGE,

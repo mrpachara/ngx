@@ -1,5 +1,6 @@
 import { APP_ID, inject, Injectable } from '@angular/core';
 import { libPrefix } from '../../../lib/predefined';
+import { STORAGE_VERSION_CHANGED_RELOADER } from '../../../lib/tokens';
 import { stateObjectStoreName } from './state';
 
 @Injectable({
@@ -13,6 +14,8 @@ export class StateIndexedDbConnection {
   }
 
   constructor() {
+    const reloader = inject(STORAGE_VERSION_CHANGED_RELOADER);
+
     const dbOpenRequest = indexedDB.open(
       `${inject(APP_ID)}-${libPrefix}-state-storage`,
       1,
@@ -46,8 +49,14 @@ export class StateIndexedDbConnection {
 
           const db = dbOpenRequest.result;
 
-          // TODO: notify needed reload
-          db.addEventListener('versionchange', () => db.close());
+          db.addEventListener('versionchange', async (ev) => {
+            db.close();
+            await reloader({
+              serviceName: 'state',
+              oldVersion: ev.oldVersion,
+              newVersoin: ev.newVersion,
+            });
+          });
 
           resolve(db);
         },

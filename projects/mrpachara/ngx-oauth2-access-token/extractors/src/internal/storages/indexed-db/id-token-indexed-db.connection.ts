@@ -1,5 +1,8 @@
 import { APP_ID, inject, Injectable } from '@angular/core';
-import { libPrefix } from '@mrpachara/ngx-oauth2-access-token';
+import {
+  libPrefix,
+  STORAGE_VERSION_CHANGED_RELOADER,
+} from '@mrpachara/ngx-oauth2-access-token';
 import {
   idTokenClaimsObjectStoreName,
   idTokenInfoObjectStoreName,
@@ -16,6 +19,8 @@ export class IdTokenIndexedDbConnection {
   }
 
   constructor() {
+    const reloader = inject(STORAGE_VERSION_CHANGED_RELOADER);
+
     const dbOpenRequest = indexedDB.open(
       `${inject(APP_ID)}-${libPrefix}-id-token-storage`,
       1,
@@ -47,8 +52,14 @@ export class IdTokenIndexedDbConnection {
 
           const db = dbOpenRequest.result;
 
-          // TODO: notify needed reload
-          db.addEventListener('versionchange', () => db.close());
+          db.addEventListener('versionchange', async (ev) => {
+            db.close();
+            await reloader({
+              serviceName: 'id-token',
+              oldVersion: ev.oldVersion,
+              newVersoin: ev.newVersion,
+            });
+          });
 
           resolve(db);
         },
