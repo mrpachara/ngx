@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { fromEvent, Observable, pipe, take, takeUntil } from 'rxjs';
 import { DeepReadonly } from '../types';
 
@@ -42,6 +43,12 @@ export function deepFreeze<T>(value: T): DeepReadonly<T> {
 
 export function isArray<T>(obj: T): obj is Extract<T, readonly unknown[]> {
   return Array.isArray(obj);
+}
+
+export function isError<T = unknown>(
+  obj: unknown,
+): obj is Error & { readonly error?: Partial<T> } {
+  return obj instanceof Error || obj instanceof HttpErrorResponse;
 }
 
 export async function sleep(ms: number, signal?: AbortSignal): Promise<void> {

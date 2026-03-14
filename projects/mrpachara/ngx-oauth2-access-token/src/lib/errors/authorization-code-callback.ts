@@ -1,7 +1,7 @@
-export interface CallbackErrorCause {
-  error: string;
-  error_description?: string;
-  stateData?: unknown;
+import { Oauth2ErrorResponse } from '../types';
+
+export interface CallbackErrorCause extends Oauth2ErrorResponse {
+  readonly stateData?: unknown;
 }
 
 export class CallbackError extends Error {

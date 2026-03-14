@@ -1,18 +1,15 @@
-import {
-  HttpClient,
-  HttpContext,
-  HttpErrorResponse,
-} from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { catchError, firstValueFrom, pipe, throwError } from 'rxjs';
 import { Oauth2ClientResponseError } from '../errors';
-import { assignRequestData, takeUntilAbortSignal } from '../helpers';
+import { assignRequestData, isError, takeUntilAbortSignal } from '../helpers';
 import { OAT_REQUEST } from '../tokens/internal';
 import {
   AccessTokenRequest,
   AccessTokenResponse,
   AdditionalParams,
   Oauth2ClientCredentials,
+  Oauth2ErrorResponse,
 } from '../types';
 
 @Injectable({
@@ -58,8 +55,8 @@ export class Oauth2Client {
   }
 
   /**
-   * Fetch the new access token. The method **DO NOT** store the new access
-   * token. The new access token **MUST** be stored manually.
+   * Fetch a new _access token_. The method **DOES NOT** store the new access
+   * token. The new _access token_ **MUST** be stored manually.
    *
    * @param url The _access token_ URL
    * @param request The requesting parameters
@@ -92,25 +89,20 @@ export class Oauth2Client {
             throwError(
               () =>
                 new Oauth2ClientResponseError(
-                  error instanceof HttpErrorResponse
+                  isError<Oauth2ErrorResponse>(error)
                     ? {
-                        error: error.error['error'] ?? error.name,
+                        error: error.error?.error ?? error.name,
                         error_description:
-                          error.error['error_description'] ?? error.message,
+                          error.error?.error_description ?? error.message,
                       }
-                    : error instanceof Error
-                      ? {
-                          error: error.name,
-                          error_description: error.message,
-                        }
-                      : {
-                          error: 'unknown',
-                          error_description: `${
-                            typeof error === 'object'
-                              ? JSON.stringify(error)
-                              : error
-                          }`,
-                        },
+                    : {
+                        error: 'unknown',
+                        error_description: `${
+                          typeof error === 'object'
+                            ? JSON.stringify(error)
+                            : error
+                        }`,
+                      },
                   error,
                 ),
             ),

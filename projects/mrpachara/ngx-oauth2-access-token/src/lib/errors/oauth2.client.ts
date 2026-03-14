@@ -1,9 +1,8 @@
+import { Oauth2ErrorResponse } from '../types';
+
 export class Oauth2ClientResponseError extends Error {
   constructor(
-    readonly error: {
-      readonly error: string;
-      readonly error_description: string;
-    },
+    readonly error: Required<Oauth2ErrorResponse>,
     override readonly cause: unknown,
   ) {
     super(error.error_description, { cause });
