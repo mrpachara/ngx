@@ -21,7 +21,7 @@ import {
   verifyEcdsa,
   verifyEddsa,
   verifyRsassa,
-} from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
+} from '@mrpachara/ngx-oauth2-access-token/jwk/verifiers';
 import { clientId, clientSecret } from '../../secrets/oauth-client';
 import { routes } from '../app.routes';
 

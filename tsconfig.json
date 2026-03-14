@@ -16,8 +16,8 @@
       "@mrpachara/ngx-oauth2-access-token/jwk": [
         "./dist/mrpachara/ngx-oauth2-access-token/jwk"
       ],
-      "@mrpachara/ngx-oauth2-access-token/jwt-verifiers": [
-        "./dist/mrpachara/ngx-oauth2-access-token/jwt-verifiers"
+      "@mrpachara/ngx-oauth2-access-token/jwk/verifiers": [
+        "./dist/mrpachara/ngx-oauth2-access-token/jwk/verifiers"
       ],
       "@mrpachara/ngx-oauth2-access-token/extractors": [
         "./dist/mrpachara/ngx-oauth2-access-token/extractors"

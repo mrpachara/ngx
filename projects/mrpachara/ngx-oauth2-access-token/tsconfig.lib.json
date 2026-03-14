@@ -14,7 +14,7 @@
     "standard/**/*.ts",
     "src/**/*.ts",
     "jwk/**/*.ts",
-    "jwt-verifiers/**/*.ts",
+    "jwk/verifiers/**/*.ts",
     "extractors/**/*.ts"
   ],
   "exclude": ["**/*.spec.ts"]

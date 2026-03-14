@@ -16,7 +16,7 @@ import {
   withIdTokenVerification,
 } from '@mrpachara/ngx-oauth2-access-token/extractors';
 import { provideJwkDispatcher } from '@mrpachara/ngx-oauth2-access-token/jwk';
-import { verifyEddsa } from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
+import { verifyEddsa } from '@mrpachara/ngx-oauth2-access-token/jwk/verifiers';
 import { routes } from '../app.routes';
 
 export const demoOauth = createIdKey('my');

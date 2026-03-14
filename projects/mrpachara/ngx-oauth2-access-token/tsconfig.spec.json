@@ -15,8 +15,8 @@
     "src/**/*.spec.ts",
     "jwk/src/**/*.d.ts",
     "jwk/src/**/*.spec.ts",
-    "jwt-verifiers/src/**/*.d.ts",
-    "jwt-verifiers/src/**/*.spec.ts",
+    "jwk/verifiers/src/**/*.d.ts",
+    "jwk/verifiers/src/**/*.spec.ts",
     "extractors/src/**/*.d.ts",
     "extractors/src/**/*.spec.ts"
   ]
