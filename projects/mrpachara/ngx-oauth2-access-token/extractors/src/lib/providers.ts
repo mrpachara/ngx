@@ -28,8 +28,14 @@ import {
   IdTokenVerification,
 } from './types';
 
+/**
+ * Provide _id token_ extractor.
+ *
+ * @param features
+ * @returns
+ */
 export function provideIdTokenExtractor(
-  ...features: IdTokenFeature[]
+  ...features: Feature[]
 ): EnvironmentProviders {
   const token = new InjectionToken<IdTokenExtractor>(
     `${libPrefix}-id-token-extractor:internal`,
@@ -65,30 +71,27 @@ export function provideIdTokenExtractor(
 }
 
 // ------------- Avaliable Features -----------------
-export type IdTokenFeature =
-  | IdTokenStorageFeature
-  | IdTokenVerificationFeature
-  | IdTokenClaimsTransformerFeature;
+type Feature =
+  | StorageFeature
+  | VerificationFeature
+  | ClaimsTransformationFeature;
 
 // ------------- Enum -----------------
-export enum IdTokenFeatureKind {
-  IdTokenInternalFeature = 'ID_TOKEN:INTERNAL_FEATURE',
+export enum FeatureKind {
+  InternalFeature = 'INTERNAL_FEATURE',
 }
 
 // ------------- Type -----------------
-export interface IdTokenFeatureType<K extends IdTokenFeatureKind> {
+interface FeatureType<K extends FeatureKind> {
   readonly kind: K;
   readonly providers: readonly Provider[];
 }
 // ------------- Features -----------------
-export type IdTokenStorageFeature =
-  IdTokenFeatureType<IdTokenFeatureKind.IdTokenInternalFeature>;
+type StorageFeature = FeatureType<FeatureKind.InternalFeature>;
 
-export type IdTokenVerificationFeature =
-  IdTokenFeatureType<IdTokenFeatureKind.IdTokenInternalFeature>;
+type VerificationFeature = FeatureType<FeatureKind.InternalFeature>;
 
-export type IdTokenClaimsTransformerFeature =
-  IdTokenFeatureType<IdTokenFeatureKind.IdTokenInternalFeature>;
+type ClaimsTransformationFeature = FeatureType<FeatureKind.InternalFeature>;
 
 // ------------- Feature Functions -----------------
 /**
@@ -97,11 +100,9 @@ export type IdTokenClaimsTransformerFeature =
  * @param factory
  * @returns
  */
-export function withIdTokenStorage(
-  factory: () => IdTokenStorage,
-): IdTokenStorageFeature {
+export function withStorage(factory: () => IdTokenStorage): StorageFeature {
   return {
-    kind: IdTokenFeatureKind.IdTokenInternalFeature,
+    kind: FeatureKind.InternalFeature,
     providers: [
       {
         provide: ID_TOKEN_STORAGE,
@@ -117,11 +118,11 @@ export function withIdTokenStorage(
  * @param factory
  * @returns
  */
-export function withIdTokenVerification(
+export function withVerification(
   factory: () => IdTokenVerification,
-): IdTokenVerificationFeature {
+): VerificationFeature {
   return {
-    kind: IdTokenFeatureKind.IdTokenInternalFeature,
+    kind: FeatureKind.InternalFeature,
     providers: [
       {
         provide: ID_TOKEN_VERIFICATION,
@@ -137,9 +138,9 @@ export function withIdTokenVerification(
  * @param factory
  * @returns
  */
-export function withIdTokenJwkDispatcherVerification(): IdTokenVerificationFeature {
+export function withJwkVerification(): VerificationFeature {
   return {
-    kind: IdTokenFeatureKind.IdTokenInternalFeature,
+    kind: FeatureKind.InternalFeature,
     providers: [
       {
         provide: ID_TOKEN_VERIFICATION,
@@ -160,16 +161,16 @@ export function withIdTokenJwkDispatcherVerification(): IdTokenVerificationFeatu
 }
 
 /**
- * Provide claims transformer.
+ * Provide claims transformation.
  *
  * @param factory
  * @returns
  */
-export function withClaimmsTransformer(
+export function withClaimmsTransformation(
   factory: () => IdTokenClaimsTransformer,
-): IdTokenClaimsTransformerFeature {
+): ClaimsTransformationFeature {
   return {
-    kind: IdTokenFeatureKind.IdTokenInternalFeature,
+    kind: FeatureKind.InternalFeature,
     providers: [
       {
         provide: ID_TOKEN_CLAIMS_TRANSFORMER,

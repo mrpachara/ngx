@@ -287,4 +287,5 @@ export function withAuthorizationCode(
 }
 // ------------- Avaliable Features -----------------
 type AuthorizationCodeFeature =
-  DeferredTokenStorageFeature<AuthorizationCodeStorage>;
+  | StorageNameFeature
+  | DeferredTokenStorageFeature<AuthorizationCodeStorage>;
