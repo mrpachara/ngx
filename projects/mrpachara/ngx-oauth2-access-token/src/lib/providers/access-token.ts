@@ -6,9 +6,14 @@ import {
   makeEnvironmentProviders,
   Provider,
 } from '@angular/core';
+import { AccessTokenIndexedDbStorage } from '../../internal/storages';
+import {
+  ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS,
+  ACCESS_TOKEN_SERVICE_TOKENS,
+  provideHierarchization,
+} from '../../internal/tokens';
 import { libPrefix } from '../predefined';
 import { AccessTokenService } from '../services';
-import { AccessTokenIndexedDbStorage } from '../storages';
 import {
   ACCESS_TOKEN_CONFIG,
   ACCESS_TOKEN_ID,
@@ -16,11 +21,6 @@ import {
   IdKey,
   STORAGE_NAME,
 } from '../tokens';
-import {
-  ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS,
-  ACCESS_TOKEN_SERVICE_TOKENS,
-  provideHierarchization,
-} from '../tokens/internal';
 import { AccessTokenConfig, AccessTokenStorage, TypeOfToken } from '../types';
 
 /**

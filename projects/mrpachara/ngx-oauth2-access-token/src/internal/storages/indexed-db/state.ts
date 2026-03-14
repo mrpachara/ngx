@@ -1,4 +1,4 @@
-import { StoredStateData } from '../../types';
+import { StoredStateData } from '../../../lib/types';
 
 export interface IndexedStateData<T> {
   readonly name: string;

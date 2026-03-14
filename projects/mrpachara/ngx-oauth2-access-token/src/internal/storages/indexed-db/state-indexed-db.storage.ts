@@ -3,8 +3,8 @@ import {
   promisifyRequest,
   promisifyTransaction,
 } from '@mrpachara/ngx-oauth2-access-token/utility';
-import { STORAGE_NAME } from '../../tokens';
-import { StateStorage, StoredStateData } from '../../types';
+import { STORAGE_NAME } from '../../../lib/tokens';
+import { StateStorage, StoredStateData } from '../../../lib/types';
 import { IndexedStateData, stateObjectStoreName } from './state';
 import { StateIndexedDbConnection } from './state-indexed-db.connection';
 

@@ -1,4 +1,3 @@
-// TODO: move to extractor sub entry
 import { JwtClaims } from './jwt.claims';
 import { UserInfoClaims } from './user-info.claims';
 

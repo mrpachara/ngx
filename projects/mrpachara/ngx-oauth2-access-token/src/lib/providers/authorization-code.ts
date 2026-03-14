@@ -1,16 +1,16 @@
 import { inject, InjectionToken, Injector, Provider } from '@angular/core';
+import { StateIndexedDbStorage } from '../../internal/storages';
+import {
+  AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS,
+  AUTHORIZATION_CODE_SERVICE_TOKENS,
+  provideHierarchization,
+} from '../../internal/tokens';
 import { AccessTokenService, AuthorizationCodeService } from '../services';
-import { StateIndexedDbStorage } from '../storages';
 import {
   AUTHORIZATION_CODE_CONFIG,
   AUTHORIZATION_CODE_STORAGE,
   STORAGE_NAME,
 } from '../tokens';
-import {
-  AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS,
-  AUTHORIZATION_CODE_SERVICE_TOKENS,
-  provideHierarchization,
-} from '../tokens/internal';
 import { AuthorizationCodeConfig, StateStorage, TypeOfToken } from '../types';
 import {
   AccessTokenExtensionFeature,

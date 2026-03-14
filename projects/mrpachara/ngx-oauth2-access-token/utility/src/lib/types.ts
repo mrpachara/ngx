@@ -47,7 +47,9 @@ export type Nonprovided<T, K extends keyof T> = UndefinedOnly<T, K>;
 
 /** Mak all properties and nested properties of T readonly */
 export type DeepReadonly<T> = T extends Primitive
-  ? Readonly<T>
-  : {
-      readonly [P in keyof T]: DeepReadonly<T[P]>;
-    };
+  ? T
+  : T extends (infer U)[]
+    ? readonly DeepReadonly<U>[]
+    : T extends object
+      ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+      : T;

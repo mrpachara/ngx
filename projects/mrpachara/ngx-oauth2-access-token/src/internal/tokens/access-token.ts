@@ -1,12 +1,11 @@
-// TODO: move out of lib, e.g. src/internal
 import {
   inject,
   InjectionToken,
   InjectOptions,
   isDevMode,
 } from '@angular/core';
-import { AccessTokenService } from '../../services';
-import { IdKey } from '../common';
+import { AccessTokenService } from '../../lib/services';
+import { IdKey } from '../../lib/tokens';
 
 /** The injection token for access token service tokens */
 export const ACCESS_TOKEN_SERVICE_TOKENS = new InjectionToken<

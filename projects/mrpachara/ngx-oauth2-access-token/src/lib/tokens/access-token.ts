@@ -4,6 +4,7 @@ import {
   InjectOptions,
   isDevMode,
 } from '@angular/core';
+import { ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS } from '../../internal/tokens';
 import { AccessTokenService } from '../services';
 import {
   AccessTokenConfig,
@@ -11,7 +12,6 @@ import {
   AccessTokenStorage,
 } from '../types';
 import { IdKey } from './common';
-import { ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS } from './internal/access-token';
 
 /** The injection token for access-token service config */
 export const ACCESS_TOKEN_CONFIG = new InjectionToken<AccessTokenConfig>(

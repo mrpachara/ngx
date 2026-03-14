@@ -10,8 +10,8 @@ import {
 } from '@mrpachara/ngx-oauth2-access-token/standard';
 import { PickOptional } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { firstValueFrom, Observable } from 'rxjs';
+import { OAT_REQUEST } from '../../internal/tokens';
 import { JWK_CONFIG, JWT_VERIFIERS } from '../tokens';
-import { OAT_REQUEST } from '../tokens/internal';
 import { JwkConfig } from '../types';
 
 /** Default JWK configuration */

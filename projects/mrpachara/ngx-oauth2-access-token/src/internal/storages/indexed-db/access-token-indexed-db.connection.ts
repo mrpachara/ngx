@@ -1,5 +1,5 @@
 import { APP_ID, inject, Injectable } from '@angular/core';
-import { libPrefix } from '../../predefined';
+import { libPrefix } from '../../../lib/predefined';
 import {
   accessTokenObjectStoreName,
   refreshTokenObjectStoreName,

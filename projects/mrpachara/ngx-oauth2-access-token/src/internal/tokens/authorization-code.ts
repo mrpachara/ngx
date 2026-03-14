@@ -1,6 +1,6 @@
 import { InjectionToken } from '@angular/core';
-import { AuthorizationCodeService } from '../../services';
-import { IdKey } from '../common';
+import { AuthorizationCodeService } from '../../lib/services';
+import { IdKey } from '../../lib/tokens';
 
 /** The injection token for authorization code tokens */
 export const AUTHORIZATION_CODE_SERVICE_TOKENS = new InjectionToken<

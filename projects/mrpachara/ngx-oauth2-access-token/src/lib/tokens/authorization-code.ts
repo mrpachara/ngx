@@ -4,10 +4,10 @@ import {
   InjectOptions,
   isDevMode,
 } from '@angular/core';
+import { AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS } from '../../internal/tokens';
 import { AuthorizationCodeService } from '../services';
 import { AuthorizationCodeConfig, StateStorage } from '../types';
 import { IdKey } from './common';
-import { AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS } from './internal/authorization-code';
 
 /** The injection token for authorization-code service config */
 export const AUTHORIZATION_CODE_CONFIG =
