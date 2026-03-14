@@ -1,4 +1,7 @@
-import { IdTokenClaims, IdTokenInfo } from '@mrpachara/ngx-oauth2-access-token';
+import {
+  IdTokenClaims,
+  IdTokenInfo,
+} from '@mrpachara/ngx-oauth2-access-token/standard';
 
 export type IdTokenClaimsTransformer = <
   T extends IdTokenClaims = IdTokenClaims,

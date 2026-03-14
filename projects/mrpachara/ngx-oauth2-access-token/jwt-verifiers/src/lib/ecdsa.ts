@@ -1,10 +1,10 @@
+import { JwtVerifier } from '@mrpachara/ngx-oauth2-access-token';
 import {
   isJwkEcdsa,
   Jwk,
   JwsInfo,
   JwtInfo,
-  JwtVerifier,
-} from '@mrpachara/ngx-oauth2-access-token';
+} from '@mrpachara/ngx-oauth2-access-token/standard';
 import { toJsonWebKey } from './helpers';
 
 export default (async (

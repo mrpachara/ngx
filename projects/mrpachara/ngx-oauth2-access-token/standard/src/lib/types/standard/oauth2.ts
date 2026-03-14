@@ -1,4 +1,4 @@
-import { MakeNever } from '../utils';
+import { MakeNever } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { CompactJws } from './jws';
 
 /** Base Grant */
@@ -30,8 +30,7 @@ interface Scopable {
 }
 
 /** Authorization Code Grant */
-export interface AuthorizationCodeGrantAccessTokenRequest
-  extends AccessTokenRequest {
+export interface AuthorizationCodeGrantAccessTokenRequest extends AccessTokenRequest {
   readonly grant_type: 'authorization_code';
 
   /** REQUIRED. The authorization code received from the authorization server. */
@@ -57,8 +56,7 @@ export interface AuthorizationCodeGrantAccessTokenRequest
 
 /** Resource Owner Password Credentials Grant */
 export interface PasswordGrantAccessTokenRequest
-  extends AccessTokenRequest,
-    Scopable {
+  extends AccessTokenRequest, Scopable {
   readonly grant_type: 'password';
 
   /** REQUIRED. The resource owner username. */
@@ -70,14 +68,12 @@ export interface PasswordGrantAccessTokenRequest
 
 /** Client Credentials Grant */
 export interface ClientGrantAccessTokenRequest
-  extends AccessTokenRequest,
-    Scopable {
+  extends AccessTokenRequest, Scopable {
   readonly grant_type: 'client_credentials';
 }
 
 /** Refreshing an Access Token Grant */
-export interface RefreshTokenGrantAccessTokenRequest
-  extends AccessTokenRequest {
+export interface RefreshTokenGrantAccessTokenRequest extends AccessTokenRequest {
   readonly grant_type: 'refresh_token';
 
   /** REQUIRED. The refresh token issued to the client. */

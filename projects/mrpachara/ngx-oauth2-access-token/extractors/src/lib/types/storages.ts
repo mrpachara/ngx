@@ -1,8 +1,8 @@
+import { IdKey } from '@mrpachara/ngx-oauth2-access-token';
 import {
-  IdKey,
   IdTokenClaims,
   IdTokenInfo,
-} from '@mrpachara/ngx-oauth2-access-token';
+} from '@mrpachara/ngx-oauth2-access-token/standard';
 
 /** Stored ID Token Info */
 export type StoredIdTokenInfo = IdTokenInfo;

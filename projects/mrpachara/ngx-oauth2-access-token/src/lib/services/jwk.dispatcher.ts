@@ -1,8 +1,12 @@
 // TODO: move to a new sub-entry point, e.g., jwk
 import { inject, Injectable } from '@angular/core';
-import { MatchedIssuerNotFoundError, NonprovidedIssuerError } from '../errors';
+import {
+  JwsInfo,
+  JwtInfo,
+  MatchedIssuerNotFoundError,
+  NonprovidedIssuerError,
+} from '@mrpachara/ngx-oauth2-access-token/standard';
 import { JWK_SERVICES } from '../tokens';
-import { JwsInfo, JwtInfo } from '../types';
 import { JwkService } from './jwk.service';
 
 /** JWK Dispatcher */

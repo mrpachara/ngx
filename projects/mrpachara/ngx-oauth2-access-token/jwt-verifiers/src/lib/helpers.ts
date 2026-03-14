@@ -1,4 +1,4 @@
-import { Jwk } from '@mrpachara/ngx-oauth2-access-token';
+import { Jwk } from '@mrpachara/ngx-oauth2-access-token/standard';
 
 export function toJsonWebKey(jwk: Jwk): JsonWebKey {
   const { key_ops, ...rest } = jwk;

@@ -1,4 +1,4 @@
-import { Oauth2ErrorResponse } from '../types';
+import { Oauth2ErrorResponse } from '@mrpachara/ngx-oauth2-access-token/standard';
 
 export interface CallbackErrorCause extends Oauth2ErrorResponse {
   readonly stateData?: unknown;

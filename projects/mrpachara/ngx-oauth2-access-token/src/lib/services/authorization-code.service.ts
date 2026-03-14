@@ -1,24 +1,21 @@
 import { inject, Injectable } from '@angular/core';
-import { StateExpiredError, StateNotFoundError } from '../errors';
 import {
-  assignRequestData,
+  AuthorizationCodeRequest,
+  WithoutCodeChallengeRequest,
+} from '@mrpachara/ngx-oauth2-access-token/standard';
+import {
   base64UrlEncode,
+  PickOptionalExcept,
   randomString,
   sha256,
-  validateAndTransformScopes,
-} from '../helpers';
+} from '@mrpachara/ngx-oauth2-access-token/utility';
+import { StateExpiredError, StateNotFoundError } from '../errors';
+import { assignRequestData, validateAndTransformScopes } from '../helpers';
 import {
   AUTHORIZATION_CODE_CONFIG,
   AUTHORIZATION_CODE_STORAGE,
 } from '../tokens';
-import {
-  AdditionalParams,
-  AuthorizationCodeConfig,
-  AuthorizationCodeRequest,
-  PickOptionalExcept,
-  Scopes,
-  WithoutCodeChallengeRequest,
-} from '../types';
+import { AdditionalParams, AuthorizationCodeConfig, Scopes } from '../types';
 import { AccessTokenService } from './access-token.service';
 
 /** Default authorization code configuration */

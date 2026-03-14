@@ -1,5 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { IdKey, promisifyRequest } from '@mrpachara/ngx-oauth2-access-token';
+import { IdKey } from '@mrpachara/ngx-oauth2-access-token';
+import { promisifyRequest } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { IdTokenStorage, StoredIdTokenKeyMap } from '../../types';
 import { IdTokenIndexedDbConnection } from './id-token-indexed-db.connection';
 import {

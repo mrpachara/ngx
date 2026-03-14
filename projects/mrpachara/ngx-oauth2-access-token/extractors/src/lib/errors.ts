@@ -1,4 +1,5 @@
-import { IdKey, IdTokenClaims } from '@mrpachara/ngx-oauth2-access-token';
+import { IdKey } from '@mrpachara/ngx-oauth2-access-token';
+import { IdTokenClaims } from '@mrpachara/ngx-oauth2-access-token/standard';
 
 export class IdTokenInfoNotFoundError extends Error {
   constructor(id: IdKey, options?: ErrorOptions) {

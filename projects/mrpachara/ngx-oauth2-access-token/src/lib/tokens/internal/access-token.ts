@@ -1,3 +1,4 @@
+// TODO: move out of lib, e.g. src/internal
 import {
   inject,
   InjectionToken,

@@ -1,6 +1,6 @@
+import { isArray } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { InvalidScopeError } from '../errors';
 import { AdditionalParams, Scopes } from '../types';
-import { isArray } from './utility';
 
 /**
  * Validate and transform array of scopes to string.

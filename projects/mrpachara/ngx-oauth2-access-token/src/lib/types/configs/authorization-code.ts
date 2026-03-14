@@ -1,4 +1,4 @@
-import { CodeChallengeMethod } from '../standards';
+import { CodeChallengeMethod } from '@mrpachara/ngx-oauth2-access-token/standard';
 
 /** Authorization code configuration. */
 export interface AuthorizationCodeConfig {

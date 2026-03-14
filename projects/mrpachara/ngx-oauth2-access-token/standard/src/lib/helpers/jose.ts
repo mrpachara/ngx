@@ -1,3 +1,4 @@
+import { base64UrlDecode } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { JoseDeserializationError } from '../errors';
 import {
   JoseHeader,
@@ -9,7 +10,6 @@ import {
   JwsInfo,
   JwtInfo,
 } from '../types';
-import { base64UrlDecode } from './crypto';
 
 function tryCatch<RC>(projector: () => RC): RC | undefined;
 function tryCatch<RC, RE>(

@@ -1,5 +1,5 @@
+import { AccessTokenResponse } from '@mrpachara/ngx-oauth2-access-token/standard';
 import { IdKey } from '../../tokens';
-import { AccessTokenResponse } from '../standards';
 
 interface AccessTokenMessageType<T extends string> {
   readonly type: T;

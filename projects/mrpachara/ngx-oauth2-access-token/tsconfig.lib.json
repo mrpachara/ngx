@@ -9,6 +9,12 @@
     "inlineSources": true,
     "types": []
   },
-  "include": ["src/**/*.ts", "extractors/**/*.ts", "jwt-verifiers/**/*.ts"],
+  "include": [
+    "utility/**/*.ts",
+    "standard/**/*.ts",
+    "src/**/*.ts",
+    "jwt-verifiers/**/*.ts",
+    "extractors/**/*.ts"
+  ],
   "exclude": ["**/*.spec.ts"]
 }

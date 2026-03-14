@@ -8,13 +8,15 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import {
-  deserializeJose,
   injectAccessTokenService,
   injectAuthorizationCodeService,
-  isJwt,
   JwkDispatcher,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { IdTokenExtractor } from '@mrpachara/ngx-oauth2-access-token/extractors';
+import {
+  deserializeJose,
+  isJwt,
+} from '@mrpachara/ngx-oauth2-access-token/standard';
 import { demoOauth, params, scopes } from '../../app.config';
 
 function extractErrorMessage(error: Error | undefined): string | null {

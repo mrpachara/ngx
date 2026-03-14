@@ -1,14 +1,18 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { firstValueFrom, Observable } from 'rxjs';
 import {
+  findJwk,
+  JwkSet,
+  JwsInfo,
+  JwtInfo,
   MatchedJwkNotFoundError,
   SupportedJwkAlgNotFoundError,
-} from '../errors';
-import { findJwk } from '../helpers';
+} from '@mrpachara/ngx-oauth2-access-token/standard';
+import { PickOptional } from '@mrpachara/ngx-oauth2-access-token/utility';
+import { firstValueFrom, Observable } from 'rxjs';
 import { JWK_CONFIG, JWT_VERIFIERS } from '../tokens';
 import { OAT_REQUEST } from '../tokens/internal';
-import { JwkConfig, JwkSet, JwsInfo, JwtInfo, PickOptional } from '../types';
+import { JwkConfig } from '../types';
 
 /** Default JWK configuration */
 const defaultJwkConfig: PickOptional<JwkConfig> = {} as const;

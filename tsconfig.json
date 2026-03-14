@@ -4,6 +4,12 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
+      "@mrpachara/ngx-oauth2-access-token/utility": [
+        "./dist/mrpachara/ngx-oauth2-access-token/utility"
+      ],
+      "@mrpachara/ngx-oauth2-access-token/standard": [
+        "./dist/mrpachara/ngx-oauth2-access-token/standard"
+      ],
       "@mrpachara/ngx-oauth2-access-token": [
         "./dist/mrpachara/ngx-oauth2-access-token"
       ],

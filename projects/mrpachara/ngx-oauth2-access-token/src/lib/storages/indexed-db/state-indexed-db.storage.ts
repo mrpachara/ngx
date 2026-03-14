@@ -1,5 +1,8 @@
 import { inject, Injectable } from '@angular/core';
-import { promisifyRequest, promisifyTransaction } from '../../helpers';
+import {
+  promisifyRequest,
+  promisifyTransaction,
+} from '@mrpachara/ngx-oauth2-access-token/utility';
 import { STORAGE_NAME } from '../../tokens';
 import { StateStorage, StoredStateData } from '../../types';
 import { IndexedStateData, stateObjectStoreName } from './state';

@@ -8,11 +8,13 @@ import {
 } from '@angular/core';
 import {
   ACCESS_TOKEN_RESPONSE_EXTRACTORS,
-  IdTokenInfo,
   JwkDispatcher,
-  JwtVerificationFailedError,
   libPrefix,
 } from '@mrpachara/ngx-oauth2-access-token';
+import {
+  IdTokenInfo,
+  JwtVerificationFailedError,
+} from '@mrpachara/ngx-oauth2-access-token/standard';
 import { IdTokenExtractor } from './services';
 import { IdTokenIndexedDbStorage } from './storages';
 import {

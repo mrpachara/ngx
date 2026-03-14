@@ -7,11 +7,15 @@
     "types": ["vitest/globals"]
   },
   "include": [
+    "utility/src/**/*.d.ts",
+    "utility/src/**/*.spec.ts",
+    "standard/src/**/*.d.ts",
+    "standard/src/**/*.spec.ts",
     "src/**/*.d.ts",
     "src/**/*.spec.ts",
-    "extractors/src/**/*.d.ts",
-    "extractors/src/**/*.spec.ts",
     "jwt-verifiers/src/**/*.d.ts",
-    "jwt-verifiers/src/**/*.spec.ts"
+    "jwt-verifiers/src/**/*.spec.ts",
+    "extractors/src/**/*.d.ts",
+    "extractors/src/**/*.spec.ts"
   ]
 }

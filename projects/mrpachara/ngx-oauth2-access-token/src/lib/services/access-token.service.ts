@@ -9,6 +9,18 @@ import {
   signal,
 } from '@angular/core';
 import {
+  AccessTokenResponse,
+  AuthorizationCodeGrantAccessTokenRequest,
+  ClientGrantAccessTokenRequest,
+  ExtensionGrantAccessTokenRequest,
+  ExtensionWithDataGrant,
+  ExtensionWithoutDataGrant,
+  PasswordGrantAccessTokenRequest,
+  RefreshTokenGrantAccessTokenRequest,
+  StandardGrantType,
+} from '@mrpachara/ngx-oauth2-access-token/standard';
+import { PickOptionalExcept } from '@mrpachara/ngx-oauth2-access-token/utility';
+import {
   AccessTokenNotFoundError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
@@ -24,20 +36,10 @@ import {
   AccessTokenConfig,
   AccessTokenInfo,
   AccessTokenMessage,
-  AccessTokenResponse,
   AdditionalParams,
-  AuthorizationCodeGrantAccessTokenRequest,
-  ClientGrantAccessTokenRequest,
-  ExtensionGrantAccessTokenRequest,
-  ExtensionWithDataGrant,
-  ExtensionWithoutDataGrant,
   Oauth2ClientCredentials,
-  PasswordGrantAccessTokenRequest,
-  PickOptionalExcept,
-  RefreshTokenGrantAccessTokenRequest,
   removedData,
   Scopes,
-  StandardGrantType,
   storedData,
 } from '../types';
 import { Oauth2Client } from './oauth2.client';

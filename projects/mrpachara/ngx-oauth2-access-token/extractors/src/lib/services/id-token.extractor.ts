@@ -11,18 +11,20 @@ import {
 } from '@angular/core';
 import {
   ACCESS_TOKEN_ID,
-  AccessTokenResponse,
   AccessTokenResponseExtractor,
   AccessTokenResponseUpdatedData,
-  deserializeJose,
   IdKey,
+  removedData,
+  storedData,
+} from '@mrpachara/ngx-oauth2-access-token';
+import {
+  AccessTokenResponse,
+  deserializeJose,
   IdTokenClaims,
   IdTokenInfo,
   isJwt,
   JwtHeader,
-  removedData,
-  storedData,
-} from '@mrpachara/ngx-oauth2-access-token';
+} from '@mrpachara/ngx-oauth2-access-token/standard';
 import {
   IdTokenClaimsExpiredError,
   IdTokenClaimsNotFoundError,

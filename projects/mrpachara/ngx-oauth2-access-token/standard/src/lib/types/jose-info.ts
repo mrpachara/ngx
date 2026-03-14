@@ -6,7 +6,7 @@ import {
   JwsHeader,
   JwtClaims,
   JwtHeader,
-} from './standards';
+} from './standard';
 
 /** The JSON Web with JOSE header information */
 export interface JoseInfo<
@@ -31,8 +31,10 @@ export interface JosePayloadableInfo<
 }
 
 /** The JWS information */
-export interface JwsInfo<P = unknown, H extends JwsHeader = JwsHeader>
-  extends JosePayloadableInfo<P, H, CompactJws> {
+export interface JwsInfo<
+  P = unknown,
+  H extends JwsHeader = JwsHeader,
+> extends JosePayloadableInfo<P, H, CompactJws> {
   /** The JWS signature */
   readonly signature: Readonly<Uint8Array<ArrayBuffer>>;
 
@@ -41,8 +43,10 @@ export interface JwsInfo<P = unknown, H extends JwsHeader = JwsHeader>
 }
 
 /** The JWE information */
-export interface JweInfo<H extends JweHeader = JweHeader>
-  extends JoseInfo<H, CompactJws> {
+export interface JweInfo<H extends JweHeader = JweHeader> extends JoseInfo<
+  H,
+  CompactJws
+> {
   readonly encryptedKey: Readonly<Uint8Array<ArrayBuffer>>;
 
   readonly initializationVector: Readonly<Uint8Array<ArrayBuffer>>;

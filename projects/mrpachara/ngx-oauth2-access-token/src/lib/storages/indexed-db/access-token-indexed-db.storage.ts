@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { promisifyRequest } from '../../helpers';
+import { promisifyRequest } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { STORAGE_NAME } from '../../tokens';
 import { AccessTokenStorage, StoredAccessTokenMap } from '../../types';
 import {

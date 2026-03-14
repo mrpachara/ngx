@@ -1,16 +1,19 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, firstValueFrom, pipe, throwError } from 'rxjs';
-import { Oauth2ClientResponseError } from '../errors';
-import { assignRequestData, isError, takeUntilAbortSignal } from '../helpers';
-import { OAT_REQUEST } from '../tokens/internal';
 import {
   AccessTokenRequest,
   AccessTokenResponse,
-  AdditionalParams,
-  Oauth2ClientCredentials,
   Oauth2ErrorResponse,
-} from '../types';
+} from '@mrpachara/ngx-oauth2-access-token/standard';
+import {
+  isError,
+  takeUntilAbortSignal,
+} from '@mrpachara/ngx-oauth2-access-token/utility';
+import { catchError, firstValueFrom, pipe, throwError } from 'rxjs';
+import { Oauth2ClientResponseError } from '../errors';
+import { assignRequestData } from '../helpers';
+import { OAT_REQUEST } from '../tokens/internal';
+import { AdditionalParams, Oauth2ClientCredentials } from '../types';
 
 @Injectable({
   providedIn: 'root',
