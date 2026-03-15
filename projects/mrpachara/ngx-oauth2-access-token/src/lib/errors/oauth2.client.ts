@@ -1,13 +1,11 @@
+import { Oauth2ErrorResponse } from '@mrpachara/ngx-oauth2-access-token/standard';
+
 export class Oauth2ClientResponseError extends Error {
   constructor(
-    name: string,
-    errorObject: {
-      error: string;
-      error_description: string;
-    },
-    options?: ErrorOptions,
+    readonly error: Required<Oauth2ErrorResponse>,
+    override readonly cause: unknown,
   ) {
-    super(errorObject.error_description, options);
-    this.name = `client ${name}: ${errorObject.error}`;
+    super(error.error_description, { cause });
+    this.name = error.error;
   }
 }

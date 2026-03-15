@@ -1,0 +1,94 @@
+import {
+  ChangeDetectionStrategy,
+  Component,
+  InjectionToken,
+  OnInit,
+  Provider,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+
+import { authorizationCodeCallback } from '../../helpers';
+import { AuthorizationCodeService } from '../../services';
+import { IdKey, injectAuthorizationCodeService } from '../../tokens';
+
+export interface AuthorizationCodeCallbackData<T = unknown> {
+  readonly id?: IdKey;
+  readonly actionFactory?: () => (stateData: T) => Promise<void> | void;
+}
+
+const AUTHORIZATION_CODE_CALLBACK_DATA =
+  new InjectionToken<AuthorizationCodeCallbackData>(
+    'authorization-code-callback-data',
+  );
+
+export function provideAuthorizationCodeCallbackData<T>(
+  factory: () => AuthorizationCodeCallbackData<T>,
+): Provider[] {
+  return [{ provide: AUTHORIZATION_CODE_CALLBACK_DATA, useFactory: factory }];
+}
+
+interface MessageInfo {
+  type: 'info' | 'error';
+  message: string;
+}
+
+/**
+ * The simple component for handling authorization code callback URL processes.
+ * It can work with `withComponentInputBinding()`.
+ */
+@Component({
+  selector: 'oat-authorization-code-callback',
+  imports: [],
+  templateUrl: './autorization-code-callback.html',
+  styleUrls: ['./autorization-code-callback.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AuthorizationCodeCallback<T> implements OnInit {
+  private readonly data = inject<AuthorizationCodeCallbackData<T>>(
+    AUTHORIZATION_CODE_CALLBACK_DATA,
+  );
+
+  private readonly authorizationCodeService = this.data.id
+    ? injectAuthorizationCodeService(this.data.id)
+    : inject(AuthorizationCodeService);
+
+  private readonly action = this.data.actionFactory?.();
+
+  readonly state = input<string>();
+
+  readonly code = input<string>();
+
+  readonly error = input<string>();
+
+  readonly errro_description = input<string>();
+
+  protected readonly messageInfo = signal<MessageInfo | undefined>(undefined);
+
+  protected readonly messageClass = computed(
+    () => `oat-cl-${this.messageInfo()?.type ?? 'none'}` as const,
+  );
+
+  async ngOnInit(): Promise<void> {
+    try {
+      const stateData = await authorizationCodeCallback<T>(
+        this.state(),
+        this.code(),
+        this.error(),
+        this.errro_description(),
+        this.authorizationCodeService,
+      );
+
+      await this.action?.(stateData);
+    } catch (err) {
+      this.messageInfo.set({
+        type: 'error',
+        message: `${err}`,
+      });
+
+      console.error(err);
+    }
+  }
+}

@@ -2,28 +2,30 @@ import { provideHttpClient, withFetch } from '@angular/common/http';
 import {
   ApplicationConfig,
   provideBrowserGlobalErrorListeners,
-  provideZonelessChangeDetection,
 } from '@angular/core';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
   AdditionalParams,
+  createIdKey,
   provideAccessToken,
-  provideJwkDispatcher,
   Scopes,
   withAuthorizationCode,
-  withClaimmsTransformer,
-  withIdTokenExtractor,
 } from '@mrpachara/ngx-oauth2-access-token';
+import {
+  provideIdTokenExtractor,
+  withClaimmsTransformation,
+  withJwkVerification,
+} from '@mrpachara/ngx-oauth2-access-token/extractors';
+import { provideJwkDispatcher } from '@mrpachara/ngx-oauth2-access-token/jwk';
 import {
   verifyEcdsa,
   verifyEddsa,
   verifyRsassa,
-} from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
-import { withIdTokenVerification } from 'projects/mrpachara/ngx-oauth2-access-token/src/public-api';
+} from '@mrpachara/ngx-oauth2-access-token/jwk/verifiers';
 import { clientId, clientSecret } from '../../secrets/oauth-client';
 import { routes } from '../app.routes';
 
-export const demoOauth = Symbol('google');
+export const demoOauth = createIdKey('google');
 
 export const scopes: Scopes = ['profile', 'email', 'openid'];
 
@@ -35,7 +37,6 @@ export const params: AdditionalParams = {
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideZonelessChangeDetection(),
 
     // NOTE: withComponentInputBinding() will atomatically bind
     //       query strings to component inputs.
@@ -55,19 +56,6 @@ export const appConfig: ApplicationConfig = {
         redirectUri: 'http://localhost:4200/google/authorization',
         pkce: 'S256',
       }),
-      withIdTokenExtractor(
-        withIdTokenVerification(),
-        withClaimmsTransformer(() => (oldClaims, newClaims) => {
-          if (oldClaims.sub === newClaims.sub) {
-            return {
-              ...oldClaims,
-              ...newClaims,
-            };
-          } else {
-            return newClaims;
-          }
-        }),
-      ),
     ),
 
     provideJwkDispatcher(
@@ -77,6 +65,20 @@ export const appConfig: ApplicationConfig = {
         },
       },
       [verifyRsassa, verifyEcdsa, verifyEddsa],
+    ),
+
+    provideIdTokenExtractor(
+      withJwkVerification(),
+      withClaimmsTransformation(() => (oldClaims, newClaims) => {
+        if (oldClaims.sub === newClaims.sub) {
+          return {
+            ...oldClaims,
+            ...newClaims,
+          };
+        } else {
+          return newClaims;
+        }
+      }),
     ),
   ],
 };

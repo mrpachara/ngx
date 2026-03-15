@@ -1,28 +1,25 @@
 import { inject, Injectable } from '@angular/core';
-import { StateExpiredError, StateNotFoundError } from '../errors';
 import {
-  assignRequestData,
+  AuthorizationCodeRequest,
+  WithoutCodeChallengeRequest,
+} from '@mrpachara/ngx-oauth2-access-token/standard';
+import {
   base64UrlEncode,
+  PickOptionalExcept,
   randomString,
   sha256,
-  validateAndTransformScopes,
-} from '../helpers';
+} from '@mrpachara/ngx-oauth2-access-token/utility';
+import { StateExpiredError, StateNotFoundError } from '../errors';
+import { assignRequestData, validateAndTransformScopes } from '../helpers';
 import {
   AUTHORIZATION_CODE_CONFIG,
   AUTHORIZATION_CODE_STORAGE,
 } from '../tokens';
-import {
-  AdditionalParams,
-  AuthorizationCodeConfig,
-  AuthorizationCodeRequest,
-  PickOptionalExcept,
-  Scopes,
-  WithoutCodeChallengeRequest,
-} from '../types';
+import { AdditionalParams, AuthorizationCodeConfig, Scopes } from '../types';
 import { AccessTokenService } from './access-token.service';
 
 /** Default authorization code configuration */
-const defaultAuthorizationCodeConfig: PickOptionalExcept<
+const defaultConfiguration: PickOptionalExcept<
   AuthorizationCodeConfig,
   'pkce'
 > = {
@@ -33,32 +30,26 @@ const defaultAuthorizationCodeConfig: PickOptionalExcept<
 
 function configure(config: AuthorizationCodeConfig) {
   return {
-    ...defaultAuthorizationCodeConfig,
+    ...defaultConfiguration,
     ...config,
   } as const;
 }
 
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class AuthorizationCodeService {
   private readonly config = configure(inject(AUTHORIZATION_CODE_CONFIG));
 
-  private readonly accessTokenService = inject(AccessTokenService);
-
   private readonly storage = inject(AUTHORIZATION_CODE_STORAGE);
+
+  private readonly accessTokenService = inject(AccessTokenService);
 
   get id() {
     return this.accessTokenService.id;
   }
 
-  get name() {
-    return this.accessTokenService.name;
-  }
-
-  readonly #init$: Promise<void>;
-
-  constructor() {
-    this.#init$ = this.storage.removeExpired();
-  }
+  readonly #init$ = this.storage.removeExpired();
 
   /**
    * Generate authorization code url.
@@ -127,7 +118,7 @@ export class AuthorizationCodeService {
   }
 
   /**
-   * Exchange _authorization code_ for the new _access token_. Use fetch from
+   * Exchange _authorization code_ for a new _access token_. Use fetch from
    * `AccessTokenService` that stores the new _access token_.
    *
    * @param state The state for exchanging
@@ -139,13 +130,17 @@ export class AuthorizationCodeService {
   async exchangeCode<T>(
     state: string,
     code: string,
-    { params = undefined as AdditionalParams | undefined } = {},
+    {
+      params,
+    }: {
+      readonly params?: AdditionalParams;
+    } = {},
   ): Promise<T> {
     await this.#init$;
 
     const storedStateData = await this.storage.remove<T>(state);
 
-    if (typeof storedStateData === 'undefined') {
+    if (storedStateData === null) {
       throw new StateNotFoundError();
     }
 
@@ -160,8 +155,8 @@ export class AuthorizationCodeService {
       code,
       this.config.redirectUri,
       {
-        codeVerifier,
-        params,
+        ...(codeVerifier ? { codeVerifier } : {}),
+        ...(params ? { params } : {}),
       },
     );
 
@@ -180,10 +175,7 @@ export class AuthorizationCodeService {
 
     const storedStateData = await this.storage.remove<T>(state);
 
-    if (
-      typeof storedStateData === 'undefined' ||
-      storedStateData.expiresAt <= Date.now()
-    ) {
+    if (storedStateData === null || storedStateData.expiresAt <= Date.now()) {
       return undefined;
     }
 

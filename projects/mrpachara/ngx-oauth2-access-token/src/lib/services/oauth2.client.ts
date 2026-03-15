@@ -1,101 +1,52 @@
-import {
-  HttpClient,
-  HttpContext,
-  HttpErrorResponse,
-} from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import { catchError, firstValueFrom, throwError } from 'rxjs';
-import { Oauth2ClientResponseError } from '../errors';
-import { assignRequestData, takeUntilAbortignal } from '../helpers';
-import {
-  OAUTH2_CLIENT_CONFIG,
-  OAUTH2_CLIENT_ERROR_TRANSFORMER,
-  SKIP_ASSIGNING_ACCESS_TOKEN,
-} from '../tokens';
 import {
   AccessTokenRequest,
   AccessTokenResponse,
-  AdditionalParams,
-  Oauth2ClientConfig,
-  PickOptionalExcept,
-} from '../types';
+  Oauth2ErrorResponse,
+} from '@mrpachara/ngx-oauth2-access-token/standard';
+import {
+  isError,
+  takeUntilAbortSignal,
+} from '@mrpachara/ngx-oauth2-access-token/utility';
+import { catchError, firstValueFrom, pipe, throwError } from 'rxjs';
+import { Oauth2ClientResponseError } from '../errors';
+import { assignRequestData } from '../helpers';
+import { OAT_REQUEST } from '../tokens';
+import { AdditionalParams, Oauth2ClientCredentials } from '../types';
 
-const defaultOauth2ClientConfig: PickOptionalExcept<
-  Oauth2ClientConfig,
-  'clientSecret'
-> = {
-  clientCredentialsInParams: false,
-} as const;
-
-const existingNameSet = new Set<string>();
-
-function configure(config: Oauth2ClientConfig) {
-  if (typeof config.id.description === 'undefined') {
-    throw new Error(`oauth2 client id MUST has description`);
-  }
-
-  if (existingNameSet.has(config.id.description)) {
-    throw new Error(
-      `Non-unique oauth2 client id description '${config.id.description}'`,
-    );
-  }
-
-  existingNameSet.add(config.id.description);
-
-  return {
-    ...defaultOauth2ClientConfig,
-    ...config,
-  } as const;
-}
-
-@Injectable()
+@Injectable({
+  providedIn: 'root',
+})
 export class Oauth2Client {
-  private readonly config = configure(inject(OAUTH2_CLIENT_CONFIG));
-
-  private readonly errorTransformer = inject(OAUTH2_CLIENT_ERROR_TRANSFORMER);
-
   private readonly http = inject(HttpClient);
 
-  get id() {
-    return this.config.id;
-  }
-
-  get name() {
-    return this.config.id.description!;
-  }
-
-  /** The client id of Oauth2Cient */
-  get clientId() {
-    return this.config.clientId;
-  }
-
   private generateHeaderAndBody(
+    credentials: Oauth2ClientCredentials,
     request: AccessTokenRequest,
-    { params = {} as AdditionalParams } = {},
+    { params = {} as AdditionalParams, credentialsInParams = false } = {},
   ) {
     const formData = new FormData();
 
-    if (this.config.clientCredentialsInParams) {
+    if (credentialsInParams) {
       return {
         headers: undefined,
         body: assignRequestData(
           formData,
           {
             ...request,
-            client_id: this.config.clientId,
-            ...(typeof this.config.clientSecret === 'undefined'
-              ? {}
-              : {
-                  client_secret: this.config.clientSecret,
-                }),
+            client_id: credentials.id,
+            ...(credentials.secret
+              ? {
+                  client_secret: credentials.secret,
+                }
+              : {}),
           },
           { params },
         ),
       };
     } else {
-      const authData = btoa(
-        `${this.config.clientId}:${this.config.clientSecret ?? ''}`,
-      );
+      const authData = btoa(`${credentials.id}:${credentials.secret ?? ''}`);
 
       return {
         headers: {
@@ -107,50 +58,55 @@ export class Oauth2Client {
   }
 
   /**
-   * Fetch the new access token. The method **DO NOT** store the new access
-   * token. The new access token **MUST** be stored manually.
+   * Fetch a new _access token_. The method **DOES NOT** store the new access
+   * token. The new _access token_ **MUST** be stored manually.
    *
+   * @param url The _access token_ URL
    * @param request The requesting parameters
    * @returns The `Promise` of access token response
    */
   async fetchAccessToken<RES extends AccessTokenResponse = AccessTokenResponse>(
+    url: string,
+    credentials: Oauth2ClientCredentials,
     request: AccessTokenRequest,
     {
       params = {} as AdditionalParams,
+      credentialsInParams = false,
       signal = undefined as AbortSignal | undefined,
     } = {},
   ): Promise<RES> {
-    const { headers, body } = this.generateHeaderAndBody(request, { params });
+    const { headers, body } = this.generateHeaderAndBody(credentials, request, {
+      params,
+      credentialsInParams,
+    });
 
     return await firstValueFrom(
       this.http
-        .post<RES>(this.config.accessTokenUrl, body, {
-          headers: headers,
-          context: new HttpContext().set(SKIP_ASSIGNING_ACCESS_TOKEN, true),
+        .post<RES>(url, body, {
+          ...(headers ? { headers } : {}),
+          context: new HttpContext().set(OAT_REQUEST, true),
         })
         .pipe(
-          takeUntilAbortignal(signal),
-          catchError((err) =>
+          signal ? takeUntilAbortSignal(signal) : pipe(),
+          catchError((error) =>
             throwError(
               () =>
                 new Oauth2ClientResponseError(
-                  this.name,
-                  err instanceof HttpErrorResponse
-                    ? this.errorTransformer(err)
-                    : err instanceof Error
-                      ? {
-                          error: err.name,
-                          error_description: err.message,
-                        }
-                      : {
-                          error: 'Unknown',
-                          error_description: `${
-                            typeof err === 'object' ? JSON.stringify(err) : err
-                          }`,
-                        },
-                  {
-                    cause: err,
-                  },
+                  isError<Oauth2ErrorResponse>(error)
+                    ? {
+                        error: error.error?.error ?? error.name,
+                        error_description:
+                          error.error?.error_description ?? error.message,
+                      }
+                    : {
+                        error: 'unknown',
+                        error_description: `${
+                          typeof error === 'object'
+                            ? JSON.stringify(error)
+                            : error
+                        }`,
+                      },
+                  error,
                 ),
             ),
           ),

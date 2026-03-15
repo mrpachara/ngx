@@ -1,28 +1,22 @@
-import { CodeChallengeMethod } from '../standards';
+import { CodeChallengeMethod } from '@mrpachara/ngx-oauth2-access-token/standard';
 
 /** Authorization code configuration. */
 export interface AuthorizationCodeConfig {
-  /** The URL of authorization code (consent screen) end point, it is REQUIRED. */
+  /** The URL of authorization code (consent screen) end point. */
   readonly authorizationCodeUrl: string;
 
-  /** The redirect URI (callback URL) that matchs with client, it is REQUIRED. */
+  /** The redirect URI (callback URL) that matches with client. */
   readonly redirectUri: string;
 
-  /**
-   * If authorization code requires _PKCE_, specify the challenge method here.
-   * The default value is `'none'`.
-   */
+  /** If authorization code requires _PKCE_, specify the challenge method here. */
   readonly pkce?: CodeChallengeMethod;
 
-  /**
-   * The _life-time_ of `state`, the default value is `600_000` miliseconds (10
-   * minutes).
-   */
+  /** The _time-to-live_ of `state`. */
   readonly stateTtl?: number;
 
-  /** The code verifier length, the default value is `56`. */
+  /** The code verifier length. */
   readonly codeVerifierLength?: number;
 
-  /** The state length, the default value is `32`. */
+  /** The state length. */
   readonly stateLength?: number;
 }

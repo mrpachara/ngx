@@ -1,14 +1,12 @@
-import { AccessTokenResponse } from '../standards';
+import { AccessTokenResponse } from '@mrpachara/ngx-oauth2-access-token/standard';
+import { IdKey } from '../../tokens';
 
 interface AccessTokenMessageType<T extends string> {
   readonly type: T;
   readonly timestamp: number;
 }
 
-export interface AccessTokenMessage
-  extends AccessTokenMessageType<'external-storing'> {
-  readonly ready: boolean;
-}
+export type AccessTokenMessage = AccessTokenMessageType<'external-store'>;
 
 /** Access token information */
 export interface AccessTokenInfo {
@@ -26,12 +24,14 @@ export interface AccessTokenResponseUpdatedData<
   T extends AccessTokenResponse = AccessTokenResponse,
 > {
   readonly timestamp: number;
-  readonly accessTokenResponse: T | typeof removedData | typeof storedData;
+  readonly accessTokenResponse: T | typeof storedData | typeof removedData;
 }
 
 export interface AccessTokenResponseExtractor<
   T extends AccessTokenResponse = AccessTokenResponse,
 > {
-  readonly id: symbol;
-  update(updatedData: AccessTokenResponseUpdatedData<T>): Promise<void>;
+  update(
+    id: IdKey,
+    updatedData: AccessTokenResponseUpdatedData<T>,
+  ): Promise<void>;
 }

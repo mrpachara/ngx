@@ -1,7 +1,7 @@
-export interface CallbackErrorCause {
-  error: string;
-  error_description?: string;
-  stateData?: unknown;
+import { Oauth2ErrorResponse } from '@mrpachara/ngx-oauth2-access-token/standard';
+
+export interface CallbackErrorCause extends Oauth2ErrorResponse {
+  readonly stateData?: unknown;
 }
 
 export class CallbackError extends Error {

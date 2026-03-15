@@ -4,14 +4,23 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
+      "@mrpachara/ngx-oauth2-access-token/utility": [
+        "./dist/mrpachara/ngx-oauth2-access-token/utility"
+      ],
+      "@mrpachara/ngx-oauth2-access-token/standard": [
+        "./dist/mrpachara/ngx-oauth2-access-token/standard"
+      ],
       "@mrpachara/ngx-oauth2-access-token": [
         "./dist/mrpachara/ngx-oauth2-access-token"
       ],
-      "@mrpachara/ngx-oauth2-access-token/jwt-verifiers": [
-        "./dist/mrpachara/ngx-oauth2-access-token/jwt-verifiers"
+      "@mrpachara/ngx-oauth2-access-token/jwk": [
+        "./dist/mrpachara/ngx-oauth2-access-token/jwk"
       ],
-      "@mrpachara/ngx-oauth2-access-token/jwt-verifiers/*": [
-        "./dist/mrpachara/ngx-oauth2-access-token/jwt-verifiers/*"
+      "@mrpachara/ngx-oauth2-access-token/jwk/verifiers": [
+        "./dist/mrpachara/ngx-oauth2-access-token/jwk/verifiers"
+      ],
+      "@mrpachara/ngx-oauth2-access-token/extractors": [
+        "./dist/mrpachara/ngx-oauth2-access-token/extractors"
       ]
     },
     "outDir": "./dist/out-tsc",
@@ -29,14 +38,15 @@
     "importHelpers": true,
     "target": "ES2022",
     "module": "preserve",
-    "useDefineForClassFields": false
+    "exactOptionalPropertyTypes": true
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
     "typeCheckHostBindings": true,
-    "strictTemplates": true
+    "strictTemplates": true,
+    "strictStandalone": true
   },
   "files": [],
   "references": [

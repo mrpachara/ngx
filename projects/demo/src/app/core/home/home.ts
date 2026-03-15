@@ -8,13 +8,15 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import {
-  deserializeJose,
   injectAccessTokenService,
   injectAuthorizationCodeService,
-  injectIdTokenExtractor,
-  isJwt,
-  JwkDispatcher,
 } from '@mrpachara/ngx-oauth2-access-token';
+import { IdTokenExtractor } from '@mrpachara/ngx-oauth2-access-token/extractors';
+import { JwkDispatcher } from '@mrpachara/ngx-oauth2-access-token/jwk';
+import {
+  deserializeJose,
+  isJwt,
+} from '@mrpachara/ngx-oauth2-access-token/standard';
 import { demoOauth, params, scopes } from '../../app.config';
 
 function extractErrorMessage(error: Error | undefined): string | null {
@@ -43,13 +45,12 @@ export class Home {
   private readonly accessTokenService = injectAccessTokenService(demoOauth);
   private readonly authorizationCodeService =
     injectAuthorizationCodeService(demoOauth);
-  private readonly idTokenExtractor = injectIdTokenExtractor(demoOauth);
+  private readonly idTokenExtractor = inject(IdTokenExtractor);
 
   private readonly jwkDispatcher = inject(JwkDispatcher);
 
   // AccessToken
-  protected accessTokenResource =
-    this.accessTokenService.accessTokenResponseResource();
+  protected accessTokenResource = this.accessTokenService.responseResource();
 
   protected readonly errorAccessTokenMessage = computed(() =>
     extractErrorMessage(this.accessTokenResource.error()),

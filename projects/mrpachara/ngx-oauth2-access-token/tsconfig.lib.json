@@ -10,10 +10,12 @@
     "types": []
   },
   "include": [
+    "utility/**/*.ts",
+    "standard/**/*.ts",
     "src/**/*.ts",
-    "jwt-verifiers/src/**/*.ts"
+    "jwk/**/*.ts",
+    "jwk/verifiers/**/*.ts",
+    "extractors/**/*.ts"
   ],
-  "exclude": [
-    "**/*.spec.ts"
-  ]
+  "exclude": ["**/*.spec.ts"]
 }

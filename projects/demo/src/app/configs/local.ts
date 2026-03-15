@@ -6,17 +6,20 @@ import {
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
   AdditionalParams,
+  createIdKey,
   provideAccessToken,
-  provideJwkDispatcher,
   Scopes,
   withAuthorizationCode,
-  withIdTokenExtractor,
-  withIdTokenVerification,
 } from '@mrpachara/ngx-oauth2-access-token';
-import { verifyEddsa } from '@mrpachara/ngx-oauth2-access-token/jwt-verifiers';
+import {
+  provideIdTokenExtractor,
+  withJwkVerification,
+} from '@mrpachara/ngx-oauth2-access-token/extractors';
+import { provideJwkDispatcher } from '@mrpachara/ngx-oauth2-access-token/jwk';
+import { verifyEddsa } from '@mrpachara/ngx-oauth2-access-token/jwk/verifiers';
 import { routes } from '../app.routes';
 
-export const demoOauth = Symbol('my');
+export const demoOauth = createIdKey('my');
 
 export const scopes: Scopes = ['basic'];
 
@@ -43,7 +46,6 @@ export const appConfig: ApplicationConfig = {
         redirectUri: 'http://localhost:4200/google/authorization',
         pkce: 'S256',
       }),
-      withIdTokenExtractor(withIdTokenVerification()),
     ),
 
     provideJwkDispatcher(
@@ -54,5 +56,7 @@ export const appConfig: ApplicationConfig = {
       },
       [verifyEddsa],
     ),
+
+    provideIdTokenExtractor(withJwkVerification()),
   ],
 };

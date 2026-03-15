@@ -1,10 +1,9 @@
 import { inject } from '@angular/core';
 import { Router, Routes } from '@angular/router';
 import {
-  AuthorizationCodeCallbackComponent,
+  AuthorizationCodeCallback,
   provideAuthorizationCodeCallbackData,
 } from '@mrpachara/ngx-oauth2-access-token';
-import { demoOauth } from './app.config';
 import { Home } from './core/home/home';
 
 export const routes: Routes = [
@@ -16,16 +15,16 @@ export const routes: Routes = [
     path: 'google/authorization',
     providers: [
       provideAuthorizationCodeCallbackData<{ intendedUrl: string }>(() => ({
-        id: demoOauth,
-        processFactory: () => {
+        // id: demoOauth,
+        actionFactory: () => {
           const router = inject(Router);
 
           return ({ intendedUrl }) => {
-            router.navigateByUrl(intendedUrl);
+            router.navigateByUrl(intendedUrl, { replaceUrl: true });
           };
         },
       })),
     ],
-    component: AuthorizationCodeCallbackComponent,
+    component: AuthorizationCodeCallback,
   },
 ];

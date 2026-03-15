@@ -1,50 +1,73 @@
-import { inject, InjectionToken, isDevMode } from '@angular/core';
+import {
+  inject,
+  InjectionToken,
+  InjectOptions,
+  isDevMode,
+} from '@angular/core';
+import { AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS } from '../../internal/tokens';
 import { AuthorizationCodeService } from '../services';
-import { AuthorizationCodeConfig, StateStorage } from '../types';
+import { AuthorizationCodeConfig, AuthorizationCodeStorage } from '../types';
+import { IdKey } from './common';
 
 /** The injection token for authorization-code service config */
 export const AUTHORIZATION_CODE_CONFIG =
   new InjectionToken<AuthorizationCodeConfig>('authorization-code-config');
 
 /** The injection token for authorization-code storage */
-export const AUTHORIZATION_CODE_STORAGE = new InjectionToken<StateStorage>(
-  'authorization-code-storage',
-);
-
-/** The injection token for authorization code tokens */
-export const AUTHORIZATION_CODE_SERVICE_TOKENS = new InjectionToken<
-  {
-    readonly id: symbol;
-    readonly token: InjectionToken<AuthorizationCodeService>;
-  }[]
->('authorization-code-tokens', {
-  providedIn: 'root',
-  factory: () => [],
-});
-
-/** The injection token for authorization code hierarchized tokens */
-export const AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS =
-  new InjectionToken<
-    {
-      readonly id: symbol;
-      readonly token: InjectionToken<AuthorizationCodeService>;
-    }[]
-  >('authorization-code-hierarachized-tokens', {
-    providedIn: 'root',
-    factory: () => [],
-  });
+export const AUTHORIZATION_CODE_STORAGE =
+  new InjectionToken<AuthorizationCodeStorage>('authorization-code-storage');
 
 /**
  * Inject AuthorizationCodeService from the given id.
  *
- * @param id AuthorizationCodeService id symbol.
+ * @param id AuthorizationCodeService id.
  * @returns AuthorizationCodeService from the given id.
  * @throws If is not found.
  * @publicApi
  */
 export function injectAuthorizationCodeService(
-  id: symbol,
-): AuthorizationCodeService {
+  id: IdKey,
+): AuthorizationCodeService;
+
+/**
+ * Inject AuthorizationCodeService from the given id.
+ *
+ * @param id AuthorizationCodeService id.
+ * @param options Control how injection is executed. Options correspond to
+ *   injection strategies that can be specified with parameter decorators
+ *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
+ * @returns AuthorizationCodeService from the given id.
+ * @throws If is not found.
+ * @publicApi
+ */
+export function injectAuthorizationCodeService(
+  id: IdKey,
+  options: InjectOptions & {
+    optional?: false;
+  },
+): AuthorizationCodeService;
+
+/**
+ * Inject AuthorizationCodeService from the given id.
+ *
+ * @param id AuthorizationCodeService id.
+ * @param options Control how injection is executed. Options correspond to
+ *   injection strategies that can be specified with parameter decorators
+ *   `@Host`, `@Self`, `@SkipSelf`, and `@Optional`.
+ * @returns AuthorizationCodeService from the given id, `null` if the token is
+ *   not found.
+ * @throws If is not found.
+ * @publicApi
+ */
+export function injectAuthorizationCodeService(
+  id: IdKey,
+  options: InjectOptions,
+): AuthorizationCodeService | null;
+
+export function injectAuthorizationCodeService(
+  id: IdKey,
+  options?: InjectOptions,
+): AuthorizationCodeService | null {
   const tokenItems = inject(AUTHORIZATION_CODE_SERVICE_HIERARCHIZED_TOKENS);
 
   const tokenItem = tokenItems.find((tokenItem) => tokenItem.id === id);
@@ -57,10 +80,12 @@ export function injectAuthorizationCodeService(
       );
     }
 
-    throw new Error(
-      `AuthorizationCodeService '${id.description ?? '[unknown]'}' is not found.`,
-    );
+    throw new Error(`AuthorizationCodeService '${id}' is not found.`);
   }
 
-  return inject(tokenItem.token);
+  if (typeof options === 'undefined') {
+    return inject(tokenItem.token);
+  } else {
+    return inject(tokenItem.token, options);
+  }
 }

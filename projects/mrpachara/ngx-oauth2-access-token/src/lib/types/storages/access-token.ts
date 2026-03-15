@@ -1,4 +1,4 @@
-import { AccessTokenResponse } from '../../types';
+import { AccessTokenResponse } from '@mrpachara/ngx-oauth2-access-token/standard';
 import { KeyableDataStorage, StoredData } from './commons';
 
 /** Stored access token */
