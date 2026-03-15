@@ -57,13 +57,13 @@ export class AuthorizationCodeCallback<T> implements OnInit {
 
   private readonly action = this.data.actionFactory?.();
 
-  protected readonly state = input<string>();
+  readonly state = input<string>();
 
-  protected readonly code = input<string>();
+  readonly code = input<string>();
 
-  protected readonly error = input<string>();
+  readonly error = input<string>();
 
-  protected readonly error_description = input<string>();
+  readonly error_description = input<string>();
 
   protected readonly messageInfo = signal<MessageInfo | undefined>(undefined);
 

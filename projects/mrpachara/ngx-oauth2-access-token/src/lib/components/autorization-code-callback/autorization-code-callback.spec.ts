@@ -25,7 +25,7 @@ describe('AuthorizationCodeCallback', () => {
         [state]="state"
         [code]="code"
         [error]="error"
-        [errro_description]="errro_description"
+        [error_description]="error_description"
       ></oat-authorization-code-callback>
     `,
   })
@@ -33,7 +33,7 @@ describe('AuthorizationCodeCallback', () => {
     state = '';
     code = '';
     error = '';
-    errro_description = '';
+    error_description = '';
   }
 
   let hostFixture: ComponentFixture<TestHostComponent>;
