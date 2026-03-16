@@ -4,9 +4,12 @@ import {
   inject,
   Injectable,
   linkedSignal,
+  Resource,
   resource,
-  ResourceStreamItem,
+  resourceFromSnapshots,
+  ResourceSnapshot,
   signal,
+  untracked,
 } from '@angular/core';
 import {
   AccessTokenResponse,
@@ -44,18 +47,23 @@ import {
 } from '../types';
 import { Oauth2Client } from './oauth2.client';
 
+/** Default _access token_ TTL, `1_800` seconds (30 minutes) */
+const defaultAccessTokenTtl = 1_800;
+
+/** Default _refresh token_ TTL, `2_592_000` seconds (30 days) */
+const defaultRefreshTokenTtl = 2_592_000;
+
+/** Network latency time in units of **milliseconds** */
+const networkLatencyTime = 10_000;
+
 /** Default access token configuration */
 const defaultConfiguration: PickOptionalExcept<
   AccessTokenConfig,
   'clientSecret'
 > = {
   clientCredentialsInParams: false,
-
-  /** `600_000` miliseconds (10 minutes) */
-  accessTokenTtl: 600_000,
-
-  /** `2_592_000_000` miliseconds (30 days) */
-  refreshTokenTtl: 2_592_000_000,
+  accessTokenTtl: defaultAccessTokenTtl,
+  refreshTokenTtl: defaultRefreshTokenTtl,
 } as const;
 
 function configure(config: AccessTokenConfig) {
@@ -65,8 +73,57 @@ function configure(config: AccessTokenConfig) {
   } as const;
 }
 
-/** Network latency time in units of **miliseconds** */
-const networkLatencyTime = 10_000;
+/**
+ * Extract _access token_ TTL from `AccessTokenResponse` in units of
+ * **milliseconds**.
+ *
+ * @param accessTokenResponse
+ * @param config
+ * @returns
+ */
+function extractAccessTokenTtl(
+  accessTokenResponse: AccessTokenResponse,
+  config: ReturnType<typeof configure>,
+): number {
+  return (
+    (typeof accessTokenResponse.expires_in === 'number'
+      ? accessTokenResponse.expires_in
+      : config.accessTokenTtl) * 1_000
+  );
+}
+
+/**
+ * Extract _refresh token_ TTL from `AccessTokenResponse` in units of
+ * **milliseconds**.
+ *
+ * @param accessTokenResponse
+ * @param config
+ * @returns
+ */
+function extractRefreshTokenTtl(
+  accessTokenResponse: AccessTokenResponse,
+  config: ReturnType<typeof configure>,
+): number {
+  if (typeof config.refreshTokenTtl === 'number') {
+    return config.refreshTokenTtl * 1_000;
+  }
+
+  const claimValue = (
+    accessTokenResponse as AccessTokenResponse & {
+      readonly [config.refreshTokenTtl]?: number;
+    }
+  )[config.refreshTokenTtl];
+
+  if (typeof claimValue === 'number') {
+    return claimValue * 1_000;
+  }
+
+  console.warn(
+    `The claim '${config.refreshTokenTtl}' is expected to be a number but got a value with type '${typeof claimValue}'. Use the default refresh token TTL instead.`,
+  );
+
+  return defaultRefreshTokenTtl * 1_000;
+}
 
 Injectable({
   providedIn: 'root',
@@ -356,29 +413,19 @@ export class AccessTokenService {
     const now = Date.now();
     if (accessTokenResponse.refresh_token) {
       await this.storage.store('refresh', {
-        expiresAt: now + this.config.refreshTokenTtl - networkLatencyTime,
+        expiresAt:
+          now +
+          (extractAccessTokenTtl(accessTokenResponse, this.config) -
+            networkLatencyTime),
         data: accessTokenResponse.refresh_token,
       });
-    } else {
-      // NOTE: extends _refresh token_ TTL.
-      const storedRefreshToken = await this.storage.load('refresh');
-
-      if (storedRefreshToken) {
-        await this.storage.store('refresh', {
-          expiresAt: now + this.config.refreshTokenTtl - networkLatencyTime,
-          data: storedRefreshToken.data,
-        });
-      }
     }
 
     await this.storage.store('access', {
       expiresAt:
         now +
-        (typeof accessTokenResponse.expires_in === 'undefined' ||
-        accessTokenResponse.expires_in === null
-          ? this.config.accessTokenTtl
-          : accessTokenResponse.expires_in * 1_000) -
-        networkLatencyTime,
+        (extractRefreshTokenTtl(accessTokenResponse, this.config) -
+          networkLatencyTime),
       data: accessTokenResponse,
     });
 
@@ -386,14 +433,16 @@ export class AccessTokenService {
   }
 
   /**
-   * Try to laod access token response from storage:
+   * Try to laod _access token_ response from storage:
    *
-   * 1. If not found or expired then try to get the new one from _refresh token_.
-   * 2. If failed then try to get from `fetchNewAccessToken`.
-   * 3. If failed then return `null`.
+   * 1. If _access token_ was **not found** or **expired** then try to get the new
+   *    one from _refresh token_.
+   * 2. If getting by _refresh token_ **failed** then return `null`.
    */
   async loadAccessTokenResponse(): Promise<AccessTokenResponse | null> {
     return await navigator.locks.request(this.#syncName, async () => {
+      let isTriedToRefresh = false;
+
       while (true) {
         const storedAccessToken = await this.storage.load('access');
 
@@ -401,16 +450,19 @@ export class AccessTokenService {
           return this.#initializeVersion(storedAccessToken.data);
         }
 
-        const storedRefreshToken = await this.storage.load('refresh');
-
-        if (storedRefreshToken && storedRefreshToken.expiresAt > Date.now()) {
-          try {
-            await this.fetch('refresh_token');
-
-            continue;
-          } catch (err) {
-            console.warn(err);
+        try {
+          if (isTriedToRefresh) {
+            throw new Error(
+              `Getting refresh token is successful but the new access token is invalid.`,
+            );
           }
+
+          isTriedToRefresh = true;
+          await this.fetch('refresh_token');
+
+          continue;
+        } catch (err) {
+          console.warn(err);
         }
 
         return this.#initializeVersion(null);
@@ -453,33 +505,49 @@ export class AccessTokenService {
   /**
    * Create AccessTokenResponse _resource_.
    *
+   * It triggers **_eager_** loading of _access token_ response if it is
+   * uninitialized and updates whenever the _access token_ response is updated.
+   * It also provides the current value of _access token_ response **without**
+   * failing to `loading` _state_ if it is already available in snapshots.
+   *
    * @returns
    */
-  responseResource() {
-    return resource({
-      stream: async () => {
-        const initializedValue = await this.loadAccessTokenResponse();
+  responseResource(): Resource<AccessTokenResponse | undefined> {
+    if (typeof untracked(this.#version) === 'undefined') {
+      this.loadAccessTokenResponse();
+    }
 
-        return linkedSignal({
-          source: this.#accessTokenResponseResource.snapshot,
-          computation: (
-            source,
-            previous,
-          ): ResourceStreamItem<AccessTokenResponse> => {
-            return source.status === 'error'
-              ? { error: source.error }
-              : typeof source.value !== 'undefined'
-                ? source.value !== null
-                  ? { value: source.value }
-                  : { error: new AccessTokenNotFoundError(this.id) }
-                : typeof previous !== 'undefined'
-                  ? previous.value
-                  : initializedValue !== null
-                    ? { value: initializedValue }
-                    : { error: new AccessTokenNotFoundError(this.id) };
-          },
-        });
-      },
-    }).asReadonly();
+    return resourceFromSnapshots(
+      linkedSignal({
+        source: this.#accessTokenResponseResource.snapshot,
+        computation: (
+          source,
+          previous,
+        ): ResourceSnapshot<AccessTokenResponse | undefined> => {
+          if (source.status === 'error') {
+            return source;
+          } else {
+            if (typeof source.value === 'undefined') {
+              return typeof previous?.value !== 'undefined'
+                ? previous.value
+                : {
+                    status: source.status,
+                    value: source.value,
+                  };
+            } else {
+              return source.value === null
+                ? {
+                    status: 'error',
+                    error: new AccessTokenNotFoundError(this.id),
+                  }
+                : {
+                    status: 'resolved',
+                    value: source.value,
+                  };
+            }
+          }
+        },
+      }),
+    );
   }
 }

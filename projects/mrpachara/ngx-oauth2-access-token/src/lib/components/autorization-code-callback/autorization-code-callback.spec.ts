@@ -1,8 +1,7 @@
-import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 import { vi } from 'vitest';
 
+import { inputBinding, signal } from '@angular/core';
 import { authorizationCodeCallback } from '../../helpers';
 import {
   AuthorizationCodeCallback,
@@ -17,28 +16,13 @@ vi.mock('../../helpers', () => ({
 const mockAuthorizationCodeCallback = vi.mocked(authorizationCodeCallback);
 
 describe('AuthorizationCodeCallback', () => {
-  @Component({
-    standalone: true,
-    imports: [AuthorizationCodeCallback],
-    template: `
-      <oat-authorization-code-callback
-        [state]="state"
-        [code]="code"
-        [error]="error"
-        [error_description]="error_description"
-      ></oat-authorization-code-callback>
-    `,
-  })
-  class TestHostComponent {
-    state = '';
-    code = '';
-    error = '';
-    error_description = '';
-  }
-
-  let hostFixture: ComponentFixture<TestHostComponent>;
-  let host: TestHostComponent;
+  let fixture: ComponentFixture<AuthorizationCodeCallback<unknown>>;
   let component: AuthorizationCodeCallback<unknown>;
+
+  const code = signal<string | undefined>(undefined);
+  const state = signal<string | undefined>(undefined);
+  const error = signal<string | undefined>(undefined);
+  const error_description = signal<string | undefined>(undefined);
 
   const mockData = {
     actionFactory: vi.fn(() => vi.fn()),
@@ -46,21 +30,32 @@ describe('AuthorizationCodeCallback', () => {
 
   const mockAction = vi.fn();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockData.actionFactory.mockReturnValue(mockAction);
     mockAuthorizationCodeCallback.mockReset();
     mockAction.mockReset();
 
-    TestBed.configureTestingModule({
-      imports: [TestHostComponent],
-      providers: provideAuthorizationCodeCallbackData(() => mockData),
-    });
+    code.set(undefined);
+    state.set(undefined);
+    error.set(undefined);
+    error_description.set(undefined);
 
-    hostFixture = TestBed.createComponent(TestHostComponent);
-    host = hostFixture.componentInstance;
-    component = hostFixture.debugElement.query(
-      By.directive(AuthorizationCodeCallback),
-    ).componentInstance;
+    await TestBed.configureTestingModule({
+      imports: [AuthorizationCodeCallback],
+      providers: provideAuthorizationCodeCallbackData(() => mockData),
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(AuthorizationCodeCallback, {
+      bindings: [
+        inputBinding('code', code),
+        inputBinding('state', state),
+        inputBinding('error', error),
+        inputBinding('error_description', error_description),
+      ],
+    });
+    component = fixture.componentInstance;
+
+    await fixture.whenStable();
   });
 
   it('should create', () => {
@@ -72,10 +67,10 @@ describe('AuthorizationCodeCallback', () => {
       const stateData = { user: 'test' };
       mockAuthorizationCodeCallback.mockResolvedValue(stateData);
 
-      host.state = 'the-state';
-      host.code = 'the-code';
+      state.set('the-state');
+      code.set('the-code');
 
-      hostFixture.detectChanges();
+      fixture.detectChanges();
       await component.ngOnInit();
 
       expect(mockAuthorizationCodeCallback).toHaveBeenCalledWith(
@@ -90,13 +85,13 @@ describe('AuthorizationCodeCallback', () => {
     });
 
     it('should display error message when callback rejects', async () => {
-      const error = new Error('failure');
-      mockAuthorizationCodeCallback.mockRejectedValue(error);
+      const mockError = new Error('failure');
+      mockAuthorizationCodeCallback.mockRejectedValue(mockError);
 
-      host.state = 'state';
-      host.error = 'access_denied';
+      state.set('state');
+      error.set('access_denied');
 
-      hostFixture.detectChanges();
+      fixture.detectChanges();
       await component.ngOnInit();
 
       expect(component['messageInfo']()).toEqual({

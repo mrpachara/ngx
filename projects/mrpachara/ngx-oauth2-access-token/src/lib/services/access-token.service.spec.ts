@@ -1,7 +1,8 @@
-import { APP_ID } from '@angular/core';
+import { APP_ID, Injector, runInInjectionContext } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AccessTokenResponse } from '@mrpachara/ngx-oauth2-access-token/standard';
 import { vi } from 'vitest';
+import { AccessTokenNotFoundError } from '../errors';
 
 import {
   ACCESS_TOKEN_CONFIG,
@@ -12,6 +13,19 @@ import { createIdKey } from '../tokens/common';
 import { AccessTokenConfig } from '../types';
 import { AccessTokenService } from './access-token.service';
 import { Oauth2Client } from './oauth2.client';
+
+// Mock the global navigator.locks API
+vi.stubGlobal('navigator', {
+  ...navigator,
+  locks: {
+    request: vi.fn(async (name, optionsOrCallback, callback) => {
+      const cb =
+        typeof optionsOrCallback === 'function' ? optionsOrCallback : callback;
+      return await cb({ name }); // Immediately grant the lock
+    }),
+    query: vi.fn().mockResolvedValue({ held: [], pending: [] }),
+  },
+});
 
 // Mock dependencies
 const mockStorage = {
@@ -54,8 +68,8 @@ describe('AccessTokenService', () => {
 
     service = TestBed.inject(AccessTokenService);
 
-    // Reset mocks
-    vi.clearAllMocks();
+    // Reset mocks (also clears mock implementations)
+    vi.resetAllMocks();
   });
 
   it('should be created', () => {
@@ -132,9 +146,7 @@ describe('AccessTokenService', () => {
         expiresAt: Date.now() + 10000,
         data: 'old-refresh',
       };
-      mockStorage.load
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(storedRefresh);
+      mockStorage.load.mockResolvedValueOnce(storedRefresh);
 
       const response: AccessTokenResponse = {
         access_token: 'new-token',
@@ -164,7 +176,7 @@ describe('AccessTokenService', () => {
       mockStorage.load.mockResolvedValue(null);
 
       await expect(service.fetch('refresh_token')).rejects.toThrow(
-        'Refresh token not found',
+        "Refresh token of 'test' is not found.",
       );
     });
   });
@@ -194,13 +206,22 @@ describe('AccessTokenService', () => {
         expires_in: 3600,
       };
 
-      mockStorage.load
-        .mockResolvedValueOnce(expiredAccess)
-        .mockResolvedValueOnce(validRefresh)
-        .mockResolvedValueOnce({
-          expiresAt: Date.now() + 10000,
-          data: newResponse,
-        });
+      let accessCallCount = 0;
+
+      mockStorage.load.mockImplementation(async (key: string) => {
+        if (key === 'access') {
+          accessCallCount += 1;
+          return accessCallCount === 1
+            ? expiredAccess
+            : {
+                expiresAt: Date.now() + 10000,
+                data: newResponse,
+              };
+        }
+
+        // Always return a valid refresh token if asked
+        return validRefresh;
+      });
 
       mockClient.fetchAccessToken.mockResolvedValue(newResponse);
 
@@ -218,6 +239,94 @@ describe('AccessTokenService', () => {
     });
   });
 
+  describe('loadAccessTokenInfo', () => {
+    it('should return token info when access token present', async () => {
+      const stored = {
+        expiresAt: Date.now() + 10000,
+        data: { access_token: 'token', token_type: 'bearer' },
+      };
+      mockStorage.load.mockResolvedValue(stored);
+
+      const result = await service.loadAccessTokenInfo();
+
+      expect(result).toEqual({ type: 'bearer', token: 'token' });
+    });
+
+    it('should return null when no access token available', async () => {
+      mockStorage.load.mockResolvedValue(null);
+
+      const result = await service.loadAccessTokenInfo();
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('responseResource', () => {
+    it('should yield access token response when available', async () => {
+      const stored = {
+        expiresAt: Date.now() + 10000,
+        data: { access_token: 'token', token_type: 'bearer' },
+      };
+      mockStorage.load.mockResolvedValue(stored);
+
+      const injector = TestBed.inject(Injector);
+
+      runInInjectionContext(injector, () => {
+        const resource = service.responseResource();
+
+        expect(resource.value()).toEqual({ value: stored.data });
+      });
+    });
+
+    it('should yield AccessTokenNotFoundError when no access token available', async () => {
+      mockStorage.load.mockResolvedValue(null);
+
+      const injector = TestBed.inject(Injector);
+
+      runInInjectionContext(injector, () => {
+        const resource = service.responseResource();
+
+        expect(resource.value()).toEqual({
+          error: new AccessTokenNotFoundError(testConfig.id),
+        });
+      });
+    });
+
+    it('should update value when access token becomes available', async () => {
+      const tokenResponse: AccessTokenResponse = {
+        access_token: 'stream-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+      };
+
+      let stored: { expiresAt: number; data: AccessTokenResponse } | null =
+        null;
+
+      mockStorage.load.mockImplementation(async () => stored);
+      mockStorage.store.mockImplementation(async (_key, value) => {
+        stored = value as { expiresAt: number; data: AccessTokenResponse };
+      });
+
+      mockClient.fetchAccessToken.mockResolvedValue(tokenResponse);
+
+      const injector = TestBed.inject(Injector);
+
+      runInInjectionContext(injector, async () => {
+        const resource = service.responseResource();
+
+        // Initially there is no token available.
+        expect(resource.value()).toThrow(
+          `Access token of '${testConfig.id}' is not found.`,
+        );
+
+        // Trigger a fetch to populate the token.
+        await service.fetch('client_credentials');
+
+        expect(resource.value()).toEqual({ value: tokenResponse });
+      });
+    });
+  });
+
   describe('clearTokens', () => {
     it('should clear storage and notify extractors', async () => {
       await service.clearTokens();
@@ -229,6 +338,4 @@ describe('AccessTokenService', () => {
       });
     });
   });
-
-  // Add more tests as needed for loadAccessTokenInfo, responseResource, etc.
 });

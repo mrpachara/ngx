@@ -5,6 +5,7 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { EmptyError } from 'rxjs';
 
+import { provideHttpClient } from '@angular/common/http';
 import { Oauth2ClientResponseError } from '../errors';
 import { OAT_REQUEST } from '../tokens';
 import { Oauth2Client } from './oauth2.client';
@@ -15,7 +16,7 @@ describe('Oauth2Client', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(Oauth2Client);

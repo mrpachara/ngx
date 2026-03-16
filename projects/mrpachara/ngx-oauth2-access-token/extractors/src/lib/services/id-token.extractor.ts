@@ -190,6 +190,7 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
     return this.#initializeVersion(id, await this.storage.load(id, 'info'));
   }
 
+  // TODO: Use resourceFromSnapshots to avoid loading if the info is already available in snapshots.
   infoResource(id = this.defaultId) {
     const { infoResource } = this.#getReactiveData(id);
 
@@ -223,6 +224,7 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
     return this.#initializeVersion(id, await this.storage.load(id, 'claims'));
   }
 
+  // TODO: Use resourceFromSnapshots to avoid loading if the claims are already available in snapshots.
   claimsResource(id = this.defaultId) {
     const { claimsResource } = this.#getReactiveData(id);
 
