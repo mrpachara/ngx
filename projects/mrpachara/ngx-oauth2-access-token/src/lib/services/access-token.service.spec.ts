@@ -2,7 +2,11 @@ import { APP_ID, ApplicationRef, ResourceStatus } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AccessTokenResponse } from '@mrpachara/ngx-oauth2-access-token/standard';
 import { vi } from 'vitest';
-import { AccessTokenNotFoundError, RefreshTokenNotFoundError } from '../errors';
+import {
+  AccessTokenNotFoundError,
+  RefreshTokenExpiredError,
+  RefreshTokenNotFoundError,
+} from '../errors';
 
 import {
   ACCESS_TOKEN_CONFIG,
@@ -12,6 +16,10 @@ import {
 import { createIdKey } from '../tokens/common';
 import { AccessTokenConfig } from '../types';
 import { AccessTokenService } from './access-token.service';
+import {
+  defaultRefreshTokenTtl,
+  networkLatencyTime,
+} from './access-token.service.default';
 import { Oauth2Client } from './oauth2.client';
 
 // Mock the global navigator.locks API
@@ -44,14 +52,16 @@ const mockExtractors = [
   },
 ];
 
-const testConfig: AccessTokenConfig = {
-  id: createIdKey('test'),
-  clientId: 'test-client',
-  clientSecret: 'test-secret',
-  accessTokenUrl: 'https://example.com/token',
-};
+const id = createIdKey('test');
 
-describe('AccessTokenService', () => {
+describe('AccessTokenService: simple configuration', () => {
+  const testConfig: AccessTokenConfig = {
+    id,
+    clientId: 'test-client',
+    clientSecret: 'test-secret',
+    accessTokenUrl: 'https://example.com/token',
+  };
+
   let service: AccessTokenService;
 
   beforeEach(() => {
@@ -77,99 +87,357 @@ describe('AccessTokenService', () => {
   });
 
   describe('fetch', () => {
-    it('should fetch access token for client_credentials grant', async () => {
-      const response: AccessTokenResponse = {
-        access_token: 'test-token',
-        token_type: 'bearer',
-        expires_in: 3_600,
-      };
+    describe('should fetch access token for client_credentials grant', () => {
+      it('respond without refresh token', async () => {
+        const now = Date.now();
 
-      mockClient.fetchAccessToken.mockResolvedValue(response);
+        const response: AccessTokenResponse = {
+          access_token: 'test-token',
+          token_type: 'bearer',
+          expires_in: 3_600,
+        };
 
-      await service.fetch('client_credentials');
+        mockClient.fetchAccessToken.mockResolvedValue(response);
 
-      expect(mockClient.fetchAccessToken).toHaveBeenCalledWith(
-        testConfig.accessTokenUrl,
-        { id: testConfig.clientId, secret: testConfig.clientSecret },
-        { grant_type: 'client_credentials' },
-        {
-          params: undefined,
-          credentialsInParams: false,
-        },
-      );
+        await service.fetch('client_credentials');
 
-      expect(mockStorage.store).toHaveBeenCalledWith('access', {
-        expiresAt: expect.any(Number),
-        data: response,
+        expect(mockClient.fetchAccessToken).toHaveBeenCalledWith(
+          testConfig.accessTokenUrl,
+          { id: testConfig.clientId, secret: testConfig.clientSecret },
+          { grant_type: 'client_credentials' },
+          {
+            params: undefined,
+            credentialsInParams: false,
+          },
+        );
+
+        expect(mockStorage.store).toHaveBeenCalledTimes(1);
+
+        expect(mockStorage.store).toHaveBeenCalledWith('access', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value >
+                now +
+                  response.expires_in! * 1_000 -
+                  networkLatencyTime -
+                  1_000 &&
+              value <
+                now + response.expires_in! * 1_000 - networkLatencyTime + 1_000,
+          ), // allow 1s clock skew
+          data: response,
+        });
+
+        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+          timestamp: expect.any(Number),
+          accessTokenResponse: response,
+        });
       });
 
-      expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
-        timestamp: expect.any(Number),
-        accessTokenResponse: response,
+      it('respond with refresh token', async () => {
+        const now = Date.now();
+
+        const response: AccessTokenResponse = {
+          access_token: 'test-token',
+          token_type: 'bearer',
+          expires_in: 3_600,
+          refresh_token: 'refresh-token',
+        };
+
+        mockClient.fetchAccessToken.mockResolvedValue(response);
+
+        await service.fetch('client_credentials');
+
+        expect(mockClient.fetchAccessToken).toHaveBeenCalledWith(
+          testConfig.accessTokenUrl,
+          { id: testConfig.clientId, secret: testConfig.clientSecret },
+          { grant_type: 'client_credentials' },
+          {
+            params: undefined,
+            credentialsInParams: false,
+          },
+        );
+
+        expect(mockStorage.store).toHaveBeenCalledTimes(2);
+
+        expect(mockStorage.store).toHaveBeenCalledWith('access', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value >
+                now +
+                  response.expires_in! * 1_000 -
+                  networkLatencyTime -
+                  1_000 &&
+              value <
+                now + response.expires_in! * 1_000 - networkLatencyTime + 1_000,
+          ), // allow 1s clock skew
+          data: response,
+        });
+
+        const refreshTokenTtl = service['config'].refreshTokenTtl;
+
+        assert(typeof refreshTokenTtl === 'number');
+
+        const expectedRefreshTokenTtl =
+          now + refreshTokenTtl * 1_000 - networkLatencyTime;
+
+        expect(mockStorage.store).toHaveBeenCalledWith('refresh', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value > expectedRefreshTokenTtl - 1_000 &&
+              value < expectedRefreshTokenTtl + 1_000,
+          ), // allow 1s clock skew
+          data: response.refresh_token,
+        });
+
+        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+          timestamp: expect.any(Number),
+          accessTokenResponse: response,
+        });
       });
     });
 
-    it('should fetch access token for authorization_code grant', async () => {
-      const response: AccessTokenResponse = {
-        access_token: 'test-token',
-        token_type: 'bearer',
-        expires_in: 3_600,
-        refresh_token: 'refresh-token',
-      };
+    describe('should fetch access token for authorization_code grant', () => {
+      it('respond without refresh token', async () => {
+        const now = Date.now();
 
-      mockClient.fetchAccessToken.mockResolvedValue(response);
+        const response: AccessTokenResponse = {
+          access_token: 'test-token',
+          token_type: 'bearer',
+          expires_in: 3_600,
+        };
 
-      await service.fetch('authorization_code', 'code', 'redirect-uri');
+        mockClient.fetchAccessToken.mockResolvedValue(response);
 
-      expect(mockClient.fetchAccessToken).toHaveBeenCalledWith(
-        testConfig.accessTokenUrl,
-        { id: testConfig.clientId, secret: testConfig.clientSecret },
-        {
-          grant_type: 'authorization_code',
-          code: 'code',
-          redirect_uri: 'redirect-uri',
-        },
-        {
-          params: undefined,
-          credentialsInParams: false,
-        },
-      );
+        await service.fetch('authorization_code', 'code', 'redirect-uri');
 
-      expect(mockStorage.store).toHaveBeenCalledWith('refresh', {
-        expiresAt: expect.any(Number),
-        data: 'refresh-token',
+        expect(mockClient.fetchAccessToken).toHaveBeenCalledWith(
+          testConfig.accessTokenUrl,
+          { id: testConfig.clientId, secret: testConfig.clientSecret },
+          {
+            grant_type: 'authorization_code',
+            code: 'code',
+            redirect_uri: 'redirect-uri',
+          },
+          {
+            params: undefined,
+            credentialsInParams: false,
+          },
+        );
+
+        expect(mockStorage.store).toHaveBeenCalledTimes(1);
+
+        expect(mockStorage.store).toHaveBeenCalledWith('access', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value >
+                now +
+                  response.expires_in! * 1_000 -
+                  networkLatencyTime -
+                  1_000 &&
+              value <
+                now + response.expires_in! * 1_000 - networkLatencyTime + 1_000,
+          ), // allow 1s clock skew
+          data: response,
+        });
+
+        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+          timestamp: expect.any(Number),
+          accessTokenResponse: response,
+        });
+      });
+
+      it('respond with refresh token', async () => {
+        const now = Date.now();
+
+        const response: AccessTokenResponse = {
+          access_token: 'test-token',
+          token_type: 'bearer',
+          expires_in: 3_600,
+          refresh_token: 'refresh-token',
+        };
+
+        mockClient.fetchAccessToken.mockResolvedValue(response);
+
+        await service.fetch('authorization_code', 'code', 'redirect-uri');
+
+        expect(mockClient.fetchAccessToken).toHaveBeenCalledWith(
+          testConfig.accessTokenUrl,
+          { id: testConfig.clientId, secret: testConfig.clientSecret },
+          {
+            grant_type: 'authorization_code',
+            code: 'code',
+            redirect_uri: 'redirect-uri',
+          },
+          {
+            params: undefined,
+            credentialsInParams: false,
+          },
+        );
+
+        expect(mockStorage.store).toHaveBeenCalledTimes(2);
+
+        expect(mockStorage.store).toHaveBeenCalledWith('access', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value >
+                now +
+                  response.expires_in! * 1_000 -
+                  networkLatencyTime -
+                  1_000 &&
+              value <
+                now + response.expires_in! * 1_000 - networkLatencyTime + 1_000,
+          ), // allow 1s clock skew
+          data: response,
+        });
+
+        const refreshTokenTtl = service['config'].refreshTokenTtl;
+
+        assert(typeof refreshTokenTtl === 'number');
+
+        const expectedRefreshTokenTtl =
+          now + refreshTokenTtl * 1_000 - networkLatencyTime;
+
+        expect(mockStorage.store).toHaveBeenCalledWith('refresh', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value > expectedRefreshTokenTtl - 1_000 &&
+              value < expectedRefreshTokenTtl + 1_000,
+          ), // allow 1s clock skew
+          data: response.refresh_token,
+        });
+
+        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+          timestamp: expect.any(Number),
+          accessTokenResponse: response,
+        });
       });
     });
 
-    it('should fetch access token for refresh_token grant', async () => {
-      const storedRefresh = {
-        expiresAt: Date.now() + 10_000,
-        data: 'old-refresh',
-      };
-      mockStorage.load.mockResolvedValueOnce(storedRefresh);
+    describe('should fetch access token for refresh_token grant', () => {
+      it('respond without refresh token', async () => {
+        const now = Date.now();
 
-      const response: AccessTokenResponse = {
-        access_token: 'new-token',
-        token_type: 'bearer',
-        expires_in: 3_600,
-      };
+        const storedRefresh = {
+          expiresAt: Date.now() + 10_000,
+          data: 'old-refresh',
+        };
+        mockStorage.load.mockResolvedValueOnce(storedRefresh);
 
-      mockClient.fetchAccessToken.mockResolvedValue(response);
+        const response: AccessTokenResponse = {
+          access_token: 'new-token',
+          token_type: 'bearer',
+          expires_in: 3_600,
+        };
 
-      await service.fetch('refresh_token');
+        mockClient.fetchAccessToken.mockResolvedValue(response);
 
-      expect(mockClient.fetchAccessToken).toHaveBeenCalledWith(
-        testConfig.accessTokenUrl,
-        { id: testConfig.clientId, secret: testConfig.clientSecret },
-        {
-          grant_type: 'refresh_token',
-          refresh_token: 'old-refresh',
-        },
-        {
-          params: undefined,
-          credentialsInParams: false,
-        },
-      );
+        await service.fetch('refresh_token');
+
+        expect(mockClient.fetchAccessToken).toHaveBeenCalledWith(
+          testConfig.accessTokenUrl,
+          { id: testConfig.clientId, secret: testConfig.clientSecret },
+          {
+            grant_type: 'refresh_token',
+            refresh_token: 'old-refresh',
+          },
+          {
+            params: undefined,
+            credentialsInParams: false,
+          },
+        );
+
+        expect(mockStorage.store).toHaveBeenCalledTimes(1);
+
+        expect(mockStorage.store).toHaveBeenCalledWith('access', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value >
+                now +
+                  response.expires_in! * 1_000 -
+                  networkLatencyTime -
+                  1_000 &&
+              value <
+                now + response.expires_in! * 1_000 - networkLatencyTime + 1_000,
+          ), // allow 1s clock skew
+          data: response,
+        });
+
+        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+          timestamp: expect.any(Number),
+          accessTokenResponse: response,
+        });
+      });
+
+      it('respond with refresh token', async () => {
+        const now = Date.now();
+
+        const storedRefresh = {
+          expiresAt: Date.now() + 10_000,
+          data: 'old-refresh',
+        };
+        mockStorage.load.mockResolvedValueOnce(storedRefresh);
+
+        const response: AccessTokenResponse = {
+          access_token: 'new-token',
+          token_type: 'bearer',
+          expires_in: 3_600,
+          refresh_token: 'refresh-token',
+        };
+
+        mockClient.fetchAccessToken.mockResolvedValue(response);
+
+        await service.fetch('refresh_token');
+
+        expect(mockClient.fetchAccessToken).toHaveBeenCalledWith(
+          testConfig.accessTokenUrl,
+          { id: testConfig.clientId, secret: testConfig.clientSecret },
+          {
+            grant_type: 'refresh_token',
+            refresh_token: 'old-refresh',
+          },
+          {
+            params: undefined,
+            credentialsInParams: false,
+          },
+        );
+
+        expect(mockStorage.store).toHaveBeenCalledTimes(2);
+
+        expect(mockStorage.store).toHaveBeenCalledWith('access', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value >
+                now +
+                  response.expires_in! * 1_000 -
+                  networkLatencyTime -
+                  1_000 &&
+              value <
+                now + response.expires_in! * 1_000 - networkLatencyTime + 1_000,
+          ), // allow 1s clock skew
+          data: response,
+        });
+
+        const refreshTokenTtl = service['config'].refreshTokenTtl;
+
+        assert(typeof refreshTokenTtl === 'number');
+
+        const expectedRefreshTokenTtl =
+          now + refreshTokenTtl * 1_000 - networkLatencyTime;
+
+        expect(mockStorage.store).toHaveBeenCalledWith('refresh', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value > expectedRefreshTokenTtl - 1_000 &&
+              value < expectedRefreshTokenTtl + 1_000,
+          ), // allow 1s clock skew
+          data: response.refresh_token,
+        });
+
+        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+          timestamp: expect.any(Number),
+          accessTokenResponse: response,
+        });
+      });
     });
 
     it('should throw RefreshTokenNotFoundError if no refresh token', async () => {
@@ -177,6 +445,17 @@ describe('AccessTokenService', () => {
 
       await expect(service.fetch('refresh_token')).rejects.toThrow(
         RefreshTokenNotFoundError,
+      );
+    });
+
+    it('should throw RefreshTokenExpiredError if refresh token expired', async () => {
+      mockStorage.load.mockResolvedValue({
+        expiresAt: Date.now() - 1_000,
+        data: 'expired-refresh',
+      });
+
+      await expect(service.fetch('refresh_token')).rejects.toThrow(
+        RefreshTokenExpiredError,
       );
     });
   });
@@ -282,11 +561,11 @@ describe('AccessTokenService', () => {
     });
 
     it('should yield AccessTokenNotFoundError when no access token available', async () => {
-      const applicationRef = TestBed.inject(ApplicationRef);
-
       mockStorage.load.mockResolvedValue(null);
 
       const resource = service.responseResource();
+
+      const applicationRef = TestBed.inject(ApplicationRef);
 
       // Initially there is no token available.
       expect(resource.status()).toEqual('loading' satisfies ResourceStatus);
@@ -297,8 +576,6 @@ describe('AccessTokenService', () => {
     });
 
     it('should update value when access token becomes available', async () => {
-      const applicationRef = TestBed.inject(ApplicationRef);
-
       const tokenResponse: AccessTokenResponse = {
         access_token: 'stream-token',
         token_type: 'bearer',
@@ -316,6 +593,8 @@ describe('AccessTokenService', () => {
       mockClient.fetchAccessToken.mockResolvedValue(tokenResponse);
 
       const resource = service.responseResource();
+
+      const applicationRef = TestBed.inject(ApplicationRef);
 
       // Initially there is no token available.
       expect(resource.status()).toEqual('loading' satisfies ResourceStatus);
@@ -339,6 +618,173 @@ describe('AccessTokenService', () => {
       expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
         timestamp: expect.any(Number),
         accessTokenResponse: expect.any(Symbol), // removedData
+      });
+    });
+  });
+});
+
+describe('AccessTokenService: refreshTokenTtl from response claim configuration', () => {
+  type AccessTokenResponseWithRefreshTtl = AccessTokenResponse & {
+    refresh_token_expires_in?: number;
+  };
+
+  const testConfig: AccessTokenConfig = {
+    id,
+    clientId: 'test-client',
+    clientSecret: 'test-secret',
+    accessTokenUrl: 'https://example.com/token',
+    refreshTokenTtl: 'refresh_token_expires_in',
+  };
+
+  let service: AccessTokenService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        AccessTokenService,
+        { provide: APP_ID, useValue: 'test-app' },
+        { provide: ACCESS_TOKEN_CONFIG, useValue: testConfig },
+        { provide: ACCESS_TOKEN_STORAGE, useValue: mockStorage },
+        { provide: ACCESS_TOKEN_RESPONSE_EXTRACTORS, useValue: mockExtractors },
+        { provide: Oauth2Client, useValue: mockClient },
+      ],
+    });
+
+    service = TestBed.inject(AccessTokenService);
+
+    // Reset mocks (also clears mock implementations)
+    vi.resetAllMocks();
+  });
+
+  it('should be created', () => {
+    expect(service).toBeTruthy();
+  });
+
+  describe('fetch', () => {
+    describe('should fetch access token for client_credentials grant', () => {
+      it('respond with refresh token TTL', async () => {
+        const now = Date.now();
+
+        const response: AccessTokenResponseWithRefreshTtl = {
+          access_token: 'test-token',
+          token_type: 'bearer',
+          expires_in: 3_600,
+          refresh_token: 'refresh-token',
+          refresh_token_expires_in: 10_000,
+        };
+
+        mockClient.fetchAccessToken.mockResolvedValue(response);
+
+        await service.fetch('client_credentials');
+
+        expect(mockClient.fetchAccessToken).toHaveBeenCalledWith(
+          testConfig.accessTokenUrl,
+          { id: testConfig.clientId, secret: testConfig.clientSecret },
+          { grant_type: 'client_credentials' },
+          {
+            params: undefined,
+            credentialsInParams: false,
+          },
+        );
+
+        expect(mockStorage.store).toHaveBeenCalledTimes(2);
+
+        expect(mockStorage.store).toHaveBeenCalledWith('access', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value >
+                now +
+                  response.expires_in! * 1_000 -
+                  networkLatencyTime -
+                  1_000 &&
+              value <
+                now + response.expires_in! * 1_000 - networkLatencyTime + 1_000,
+          ), // allow 1s clock skew
+          data: response,
+        });
+
+        const refreshTokenTtl = service['config'].refreshTokenTtl;
+
+        assert(typeof refreshTokenTtl === 'string');
+
+        const expectedRefreshTokenTtl =
+          now + response.refresh_token_expires_in! * 1_000 - networkLatencyTime;
+
+        expect(mockStorage.store).toHaveBeenCalledWith('refresh', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value > expectedRefreshTokenTtl - 1_000 &&
+              value < expectedRefreshTokenTtl + 1_000,
+          ), // allow 1s clock skew
+          data: response.refresh_token,
+        });
+
+        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+          timestamp: expect.any(Number),
+          accessTokenResponse: response,
+        });
+      });
+
+      it('respond without refresh token TTL', async () => {
+        const now = Date.now();
+
+        const response: AccessTokenResponseWithRefreshTtl = {
+          access_token: 'test-token',
+          token_type: 'bearer',
+          expires_in: 3_600,
+          refresh_token: 'refresh-token',
+        };
+
+        mockClient.fetchAccessToken.mockResolvedValue(response);
+
+        await service.fetch('client_credentials');
+
+        expect(mockClient.fetchAccessToken).toHaveBeenCalledWith(
+          testConfig.accessTokenUrl,
+          { id: testConfig.clientId, secret: testConfig.clientSecret },
+          { grant_type: 'client_credentials' },
+          {
+            params: undefined,
+            credentialsInParams: false,
+          },
+        );
+
+        expect(mockStorage.store).toHaveBeenCalledTimes(2);
+
+        expect(mockStorage.store).toHaveBeenCalledWith('access', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value >
+                now +
+                  response.expires_in! * 1_000 -
+                  networkLatencyTime -
+                  1_000 &&
+              value <
+                now + response.expires_in! * 1_000 - networkLatencyTime + 1_000,
+          ), // allow 1s clock skew
+          data: response,
+        });
+
+        const refreshTokenTtl = service['config'].refreshTokenTtl;
+
+        assert(typeof refreshTokenTtl === 'string');
+
+        const expectedRefreshTokenTtl =
+          now + defaultRefreshTokenTtl * 1_000 - networkLatencyTime;
+
+        expect(mockStorage.store).toHaveBeenCalledWith('refresh', {
+          expiresAt: expect.toSatisfy(
+            (value) =>
+              value > expectedRefreshTokenTtl - 1_000 &&
+              value < expectedRefreshTokenTtl + 1_000,
+          ), // allow 1s clock skew
+          data: response.refresh_token,
+        });
+
+        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+          timestamp: expect.any(Number),
+          accessTokenResponse: response,
+        });
       });
     });
   });

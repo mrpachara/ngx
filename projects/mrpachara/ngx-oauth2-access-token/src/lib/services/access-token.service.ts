@@ -22,7 +22,6 @@ import {
   RefreshTokenGrantAccessTokenRequest,
   StandardGrantType,
 } from '@mrpachara/ngx-oauth2-access-token/standard';
-import { PickOptionalExcept } from '@mrpachara/ngx-oauth2-access-token/utility';
 import {
   AccessTokenNotFoundError,
   RefreshTokenExpiredError,
@@ -45,26 +44,12 @@ import {
   Scopes,
   storedData,
 } from '../types';
+import {
+  defaultConfiguration,
+  defaultRefreshTokenTtl,
+  networkLatencyTime,
+} from './access-token.service.default';
 import { Oauth2Client } from './oauth2.client';
-
-/** Default _access token_ TTL, `1_800` seconds (30 minutes) */
-const defaultAccessTokenTtl = 1_800;
-
-/** Default _refresh token_ TTL, `2_592_000` seconds (30 days) */
-const defaultRefreshTokenTtl = 2_592_000;
-
-/** Network latency time in units of **milliseconds** */
-const networkLatencyTime = 10_000;
-
-/** Default access token configuration */
-const defaultConfiguration: PickOptionalExcept<
-  AccessTokenConfig,
-  'clientSecret'
-> = {
-  clientCredentialsInParams: false,
-  accessTokenTtl: defaultAccessTokenTtl,
-  refreshTokenTtl: defaultRefreshTokenTtl,
-} as const;
 
 function configure(config: AccessTokenConfig) {
   return {
@@ -411,23 +396,24 @@ export class AccessTokenService {
     );
 
     const now = Date.now();
-    if (accessTokenResponse.refresh_token) {
-      await this.storage.store('refresh', {
-        expiresAt:
-          now +
-          (extractAccessTokenTtl(accessTokenResponse, this.config) -
-            networkLatencyTime),
-        data: accessTokenResponse.refresh_token,
-      });
-    }
 
     await this.storage.store('access', {
       expiresAt:
         now +
-        (extractRefreshTokenTtl(accessTokenResponse, this.config) -
+        (extractAccessTokenTtl(accessTokenResponse, this.config) -
           networkLatencyTime),
       data: accessTokenResponse,
     });
+
+    if (accessTokenResponse.refresh_token) {
+      await this.storage.store('refresh', {
+        expiresAt:
+          now +
+          (extractRefreshTokenTtl(accessTokenResponse, this.config) -
+            networkLatencyTime),
+        data: accessTokenResponse.refresh_token,
+      });
+    }
 
     return await this.#updatedByStorage(accessTokenResponse);
   }
@@ -507,11 +493,11 @@ export class AccessTokenService {
   /**
    * Create `AccessTokenResponse` _resource_.
    *
-   * It triggers **_eager_** loading of _access token_ response, no `idle`
-   * _state_, if it is **uninitialized** and updates whenever the _access token_
-   * response is updated. It also provides the current value of _access token_
-   * response **without** failing to `loading` _state_ if it is already
-   * available in snapshots.
+   * It triggers **_eager_** loading of `AccessTokenResponse`, no `idle`
+   * _state_, if it is **uninitialized** and updates whenever the
+   * `AccessTokenResponse` is updated. It also provides the current value of
+   * `AccessTokenResponse` **without** failing to `loading` _state_ if it is
+   * already available in snapshots.
    *
    * It uses `resourceFromSnapshots()` internally, so it **does not need**
    * _injection context_.
