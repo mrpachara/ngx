@@ -1,8 +1,8 @@
-import { APP_ID, Injector, runInInjectionContext } from '@angular/core';
+import { APP_ID, ApplicationRef, ResourceStatus } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AccessTokenResponse } from '@mrpachara/ngx-oauth2-access-token/standard';
 import { vi } from 'vitest';
-import { AccessTokenNotFoundError } from '../errors';
+import { AccessTokenNotFoundError, RefreshTokenNotFoundError } from '../errors';
 
 import {
   ACCESS_TOKEN_CONFIG,
@@ -81,7 +81,7 @@ describe('AccessTokenService', () => {
       const response: AccessTokenResponse = {
         access_token: 'test-token',
         token_type: 'bearer',
-        expires_in: 3600,
+        expires_in: 3_600,
       };
 
       mockClient.fetchAccessToken.mockResolvedValue(response);
@@ -113,7 +113,7 @@ describe('AccessTokenService', () => {
       const response: AccessTokenResponse = {
         access_token: 'test-token',
         token_type: 'bearer',
-        expires_in: 3600,
+        expires_in: 3_600,
         refresh_token: 'refresh-token',
       };
 
@@ -143,7 +143,7 @@ describe('AccessTokenService', () => {
 
     it('should fetch access token for refresh_token grant', async () => {
       const storedRefresh = {
-        expiresAt: Date.now() + 10000,
+        expiresAt: Date.now() + 10_000,
         data: 'old-refresh',
       };
       mockStorage.load.mockResolvedValueOnce(storedRefresh);
@@ -151,7 +151,7 @@ describe('AccessTokenService', () => {
       const response: AccessTokenResponse = {
         access_token: 'new-token',
         token_type: 'bearer',
-        expires_in: 3600,
+        expires_in: 3_600,
       };
 
       mockClient.fetchAccessToken.mockResolvedValue(response);
@@ -176,7 +176,7 @@ describe('AccessTokenService', () => {
       mockStorage.load.mockResolvedValue(null);
 
       await expect(service.fetch('refresh_token')).rejects.toThrow(
-        "Refresh token of 'test' is not found.",
+        RefreshTokenNotFoundError,
       );
     });
   });
@@ -184,7 +184,7 @@ describe('AccessTokenService', () => {
   describe('loadAccessTokenResponse', () => {
     it('should return stored access token if valid', async () => {
       const stored = {
-        expiresAt: Date.now() + 10000,
+        expiresAt: Date.now() + 10_000,
         data: { access_token: 'token' },
       };
       mockStorage.load.mockResolvedValue(stored);
@@ -196,14 +196,14 @@ describe('AccessTokenService', () => {
 
     it('should refresh if access token expired and refresh available', async () => {
       const expiredAccess = {
-        expiresAt: Date.now() - 1000,
+        expiresAt: Date.now() - 1_000,
         data: { access_token: 'old' },
       };
-      const validRefresh = { expiresAt: Date.now() + 10000, data: 'refresh' };
+      const validRefresh = { expiresAt: Date.now() + 10_000, data: 'refresh' };
       const newResponse: AccessTokenResponse = {
         access_token: 'new',
         token_type: 'bearer',
-        expires_in: 3600,
+        expires_in: 3_600,
       };
 
       let accessCallCount = 0;
@@ -214,7 +214,7 @@ describe('AccessTokenService', () => {
           return accessCallCount === 1
             ? expiredAccess
             : {
-                expiresAt: Date.now() + 10000,
+                expiresAt: Date.now() + 10_000,
                 data: newResponse,
               };
         }
@@ -242,7 +242,7 @@ describe('AccessTokenService', () => {
   describe('loadAccessTokenInfo', () => {
     it('should return token info when access token present', async () => {
       const stored = {
-        expiresAt: Date.now() + 10000,
+        expiresAt: Date.now() + 10_000,
         data: { access_token: 'token', token_type: 'bearer' },
       };
       mockStorage.load.mockResolvedValue(stored);
@@ -263,40 +263,46 @@ describe('AccessTokenService', () => {
 
   describe('responseResource', () => {
     it('should yield access token response when available', async () => {
+      const applicationRef = TestBed.inject(ApplicationRef);
+
       const stored = {
-        expiresAt: Date.now() + 10000,
+        expiresAt: Date.now() + 10_000,
         data: { access_token: 'token', token_type: 'bearer' },
       };
       mockStorage.load.mockResolvedValue(stored);
 
-      const injector = TestBed.inject(Injector);
+      const resource = service.responseResource();
 
-      runInInjectionContext(injector, () => {
-        const resource = service.responseResource();
+      // Initially there is no token available.
+      expect(resource.status()).toEqual('loading' satisfies ResourceStatus);
 
-        expect(resource.value()).toEqual({ value: stored.data });
-      });
+      await applicationRef.whenStable();
+
+      expect(resource.value()).toEqual(stored.data);
     });
 
     it('should yield AccessTokenNotFoundError when no access token available', async () => {
+      const applicationRef = TestBed.inject(ApplicationRef);
+
       mockStorage.load.mockResolvedValue(null);
 
-      const injector = TestBed.inject(Injector);
+      const resource = service.responseResource();
 
-      runInInjectionContext(injector, () => {
-        const resource = service.responseResource();
+      // Initially there is no token available.
+      expect(resource.status()).toEqual('loading' satisfies ResourceStatus);
 
-        expect(resource.value()).toEqual({
-          error: new AccessTokenNotFoundError(testConfig.id),
-        });
-      });
+      await applicationRef.whenStable();
+
+      expect(resource.error()).toBeInstanceOf(AccessTokenNotFoundError);
     });
 
     it('should update value when access token becomes available', async () => {
+      const applicationRef = TestBed.inject(ApplicationRef);
+
       const tokenResponse: AccessTokenResponse = {
         access_token: 'stream-token',
         token_type: 'bearer',
-        expires_in: 3600,
+        expires_in: 3_600,
       };
 
       let stored: { expiresAt: number; data: AccessTokenResponse } | null =
@@ -309,21 +315,19 @@ describe('AccessTokenService', () => {
 
       mockClient.fetchAccessToken.mockResolvedValue(tokenResponse);
 
-      const injector = TestBed.inject(Injector);
+      const resource = service.responseResource();
 
-      runInInjectionContext(injector, async () => {
-        const resource = service.responseResource();
+      // Initially there is no token available.
+      expect(resource.status()).toEqual('loading' satisfies ResourceStatus);
 
-        // Initially there is no token available.
-        expect(resource.value()).toThrow(
-          `Access token of '${testConfig.id}' is not found.`,
-        );
+      await applicationRef.whenStable();
 
-        // Trigger a fetch to populate the token.
-        await service.fetch('client_credentials');
+      // Trigger a fetch to populate the token.
+      await service.fetch('client_credentials');
 
-        expect(resource.value()).toEqual({ value: tokenResponse });
-      });
+      await applicationRef.whenStable();
+
+      expect(resource.value()).toEqual(tokenResponse);
     });
   });
 

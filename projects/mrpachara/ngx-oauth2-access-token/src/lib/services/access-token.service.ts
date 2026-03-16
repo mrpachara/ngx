@@ -461,8 +461,10 @@ export class AccessTokenService {
           await this.fetch('refresh_token');
 
           continue;
-        } catch (err) {
-          console.warn(err);
+        } catch (error) {
+          if (!(error instanceof RefreshTokenNotFoundError)) {
+            console.warn(error);
+          }
         }
 
         return this.#initializeVersion(null);
@@ -503,12 +505,16 @@ export class AccessTokenService {
   });
 
   /**
-   * Create AccessTokenResponse _resource_.
+   * Create `AccessTokenResponse` _resource_.
    *
-   * It triggers **_eager_** loading of _access token_ response if it is
-   * uninitialized and updates whenever the _access token_ response is updated.
-   * It also provides the current value of _access token_ response **without**
-   * failing to `loading` _state_ if it is already available in snapshots.
+   * It triggers **_eager_** loading of _access token_ response, no `idle`
+   * _state_, if it is **uninitialized** and updates whenever the _access token_
+   * response is updated. It also provides the current value of _access token_
+   * response **without** failing to `loading` _state_ if it is already
+   * available in snapshots.
+   *
+   * It uses `resourceFromSnapshots()` internally, so it **does not need**
+   * _injection context_.
    *
    * @returns
    */
@@ -531,8 +537,8 @@ export class AccessTokenService {
               return typeof previous?.value !== 'undefined'
                 ? previous.value
                 : {
-                    status: source.status,
-                    value: source.value,
+                    status: 'loading',
+                    value: undefined,
                   };
             } else {
               return source.value === null
