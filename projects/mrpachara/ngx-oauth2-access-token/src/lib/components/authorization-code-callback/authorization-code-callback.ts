@@ -42,8 +42,8 @@ interface MessageInfo {
 @Component({
   selector: 'oat-authorization-code-callback',
   imports: [],
-  templateUrl: './autorization-code-callback.html',
-  styleUrls: ['./autorization-code-callback.scss'],
+  templateUrl: './authorization-code-callback.html',
+  styleUrls: ['./authorization-code-callback.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AuthorizationCodeCallback<T> implements OnInit {

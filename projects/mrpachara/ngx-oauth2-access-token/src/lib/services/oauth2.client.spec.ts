@@ -1,11 +1,10 @@
+import { provideHttpClient } from '@angular/common/http';
 import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { EmptyError } from 'rxjs';
-
-import { provideHttpClient } from '@angular/common/http';
 import { Oauth2ClientResponseError } from '../errors';
 import { OAT_REQUEST } from '../tokens';
 import { Oauth2Client } from './oauth2.client';

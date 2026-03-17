@@ -1,13 +1,11 @@
 import { APP_ID, ApplicationRef, ResourceStatus } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AccessTokenResponse } from '@mrpachara/ngx-oauth2-access-token/standard';
-import { vi } from 'vitest';
 import {
   AccessTokenNotFoundError,
   RefreshTokenExpiredError,
   RefreshTokenNotFoundError,
 } from '../errors';
-
 import {
   ACCESS_TOKEN_CONFIG,
   ACCESS_TOKEN_RESPONSE_EXTRACTORS,
@@ -65,6 +63,14 @@ describe('AccessTokenService: simple configuration', () => {
   let service: AccessTokenService;
 
   beforeEach(() => {
+    mockStorage.load.mockReset();
+    mockStorage.store.mockReset();
+    mockStorage.clear.mockReset();
+
+    mockClient.fetchAccessToken.mockReset();
+
+    mockExtractors[0].update.mockReset();
+
     TestBed.configureTestingModule({
       providers: [
         AccessTokenService,
@@ -175,7 +181,10 @@ describe('AccessTokenService: simple configuration', () => {
 
         const refreshTokenTtl = service['config'].refreshTokenTtl;
 
-        assert(typeof refreshTokenTtl === 'number');
+        assert(
+          typeof refreshTokenTtl === 'number',
+          'Expected refreshTokenTtl to be a number',
+        );
 
         const expectedRefreshTokenTtl =
           now + refreshTokenTtl * 1_000 - networkLatencyTime;
@@ -292,7 +301,10 @@ describe('AccessTokenService: simple configuration', () => {
 
         const refreshTokenTtl = service['config'].refreshTokenTtl;
 
-        assert(typeof refreshTokenTtl === 'number');
+        assert(
+          typeof refreshTokenTtl === 'number',
+          'Expected refreshTokenTtl to be a number',
+        );
 
         const expectedRefreshTokenTtl =
           now + refreshTokenTtl * 1_000 - networkLatencyTime;
@@ -419,7 +431,10 @@ describe('AccessTokenService: simple configuration', () => {
 
         const refreshTokenTtl = service['config'].refreshTokenTtl;
 
-        assert(typeof refreshTokenTtl === 'number');
+        assert(
+          typeof refreshTokenTtl === 'number',
+          'Expected refreshTokenTtl to be a number',
+        );
 
         const expectedRefreshTokenTtl =
           now + refreshTokenTtl * 1_000 - networkLatencyTime;
@@ -705,7 +720,10 @@ describe('AccessTokenService: refreshTokenTtl from response claim configuration'
 
         const refreshTokenTtl = service['config'].refreshTokenTtl;
 
-        assert(typeof refreshTokenTtl === 'string');
+        assert(
+          typeof refreshTokenTtl === 'string',
+          'Expected refreshTokenTtl to be a string',
+        );
 
         const expectedRefreshTokenTtl =
           now + response.refresh_token_expires_in! * 1_000 - networkLatencyTime;
@@ -767,7 +785,10 @@ describe('AccessTokenService: refreshTokenTtl from response claim configuration'
 
         const refreshTokenTtl = service['config'].refreshTokenTtl;
 
-        assert(typeof refreshTokenTtl === 'string');
+        assert(
+          typeof refreshTokenTtl === 'string',
+          'Expected refreshTokenTtl to be a string',
+        );
 
         const expectedRefreshTokenTtl =
           now + defaultRefreshTokenTtl * 1_000 - networkLatencyTime;

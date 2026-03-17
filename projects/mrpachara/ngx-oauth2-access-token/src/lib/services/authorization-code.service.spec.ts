@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { vi } from 'vitest';
-
+import { StateExpiredError } from '../errors';
 import {
   AUTHORIZATION_CODE_CONFIG,
   AUTHORIZATION_CODE_STORAGE,
@@ -30,7 +29,7 @@ const testConfig: AuthorizationCodeConfig = {
   pkce: 'S256',
 };
 
-describe('AuthorizationCodeService', () => {
+describe('AuthorizationCodeService - with PKCE', () => {
   let service: AuthorizationCodeService;
 
   beforeEach(() => {
@@ -85,36 +84,6 @@ describe('AuthorizationCodeService', () => {
         }),
       );
     });
-
-    it('should generate URL without PKCE if pkce is undefined', async () => {
-      const configWithoutPkce = { ...testConfig, pkce: undefined };
-      TestBed.overrideProvider(AUTHORIZATION_CODE_CONFIG, {
-        useValue: configWithoutPkce,
-      });
-      service = TestBed.inject(AuthorizationCodeService);
-
-      const scopes = ['read'] as Scopes;
-      const stateData = {};
-
-      mockStorage.store.mockResolvedValue(undefined);
-
-      const url = await service.generateUrl(scopes, stateData);
-
-      expect(url.searchParams.has('code_challenge')).toBe(false);
-      expect(url.searchParams.has('code_challenge_method')).toBe(false);
-
-      expect(mockStorage.store).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          expiresAt: expect.any(Number),
-          data: stateData,
-        }),
-      );
-      expect(mockStorage.store).not.toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({ codeVerifier: expect.anything() }),
-      );
-    });
   });
 
   describe('exchangeCode', () => {
@@ -159,7 +128,7 @@ describe('AuthorizationCodeService', () => {
       mockStorage.remove.mockResolvedValue(expiredData);
 
       await expect(service.exchangeCode('expired', 'code')).rejects.toThrow(
-        'State expired',
+        StateExpiredError,
       );
     });
   });
@@ -199,6 +168,54 @@ describe('AuthorizationCodeService', () => {
       const result = await service.clearState('expired');
 
       expect(result).toBeUndefined();
+    });
+  });
+});
+
+describe('AuthorizationCodeService - without PKCE', () => {
+  let service: AuthorizationCodeService;
+
+  beforeEach(() => {
+    const configWithoutPkce = { ...testConfig, pkce: undefined };
+    TestBed.configureTestingModule({
+      providers: [
+        AuthorizationCodeService,
+        { provide: AUTHORIZATION_CODE_CONFIG, useValue: configWithoutPkce },
+        { provide: AUTHORIZATION_CODE_STORAGE, useValue: mockStorage },
+        { provide: AccessTokenService, useValue: mockAccessTokenService },
+      ],
+    });
+
+    service = TestBed.inject(AuthorizationCodeService);
+
+    // Reset mocks
+    vi.clearAllMocks();
+    mockStorage.removeExpired.mockResolvedValue(undefined);
+  });
+
+  describe('generateUrl', () => {
+    it('should generate URL without PKCE if pkce is undefined', async () => {
+      const scopes = ['read'] as Scopes;
+      const stateData = {};
+
+      mockStorage.store.mockResolvedValue(undefined);
+
+      const url = await service.generateUrl(scopes, stateData);
+
+      expect(url.searchParams.has('code_challenge')).toBe(false);
+      expect(url.searchParams.has('code_challenge_method')).toBe(false);
+
+      expect(mockStorage.store).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          expiresAt: expect.any(Number),
+          data: stateData,
+        }),
+      );
+      expect(mockStorage.store).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ codeVerifier: expect.anything() }),
+      );
     });
   });
 });

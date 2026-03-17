@@ -11,7 +11,7 @@ export interface AuthorizationCodeConfig {
   /** If authorization code requires _PKCE_, specify the challenge method here. */
   readonly pkce?: CodeChallengeMethod;
 
-  /** The _time-to-live_ of `state`. */
+  /** The _time-to-live_ (seconds) of `state`. */
   readonly stateTtl?: number;
 
   /** The code verifier length. */

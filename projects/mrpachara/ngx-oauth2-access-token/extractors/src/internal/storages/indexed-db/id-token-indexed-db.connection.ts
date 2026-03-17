@@ -57,7 +57,7 @@ export class IdTokenIndexedDbConnection {
             await reloader({
               serviceName: 'id-token',
               oldVersion: ev.oldVersion,
-              newVersoin: ev.newVersion,
+              newVersion: ev.newVersion,
             });
           });
 

@@ -77,8 +77,8 @@ export class AuthorizationCodeService {
       codeChallenge = undefined,
     } = typeof this.config.pkce === 'undefined'
       ? {}
-      : await (async () => {
-          const codeChallengeMethod = this.config.pkce;
+      : await (async (pkce) => {
+          const codeChallengeMethod = pkce;
           const codeVerifier = randomString(this.config.codeVerifierLength);
           const codeChallenge =
             codeChallengeMethod === 'plain'
@@ -86,7 +86,7 @@ export class AuthorizationCodeService {
               : base64UrlEncode(await sha256(codeVerifier));
 
           return { codeChallengeMethod, codeVerifier, codeChallenge };
-        })();
+        })(this.config.pkce);
 
     const authorizationCodeRequest: AuthorizationCodeRequest = {
       response_type: 'code',
@@ -109,7 +109,7 @@ export class AuthorizationCodeService {
     assignRequestData(url.searchParams, authorizationCodeRequest, { params });
 
     await this.storage.store<T>(state, {
-      expiresAt: Date.now() + this.config.stateTtl,
+      expiresAt: Date.now() + this.config.stateTtl * 1_000,
       ...(typeof codeVerifier === 'undefined' ? {} : { codeVerifier }),
       data: stateData,
     });

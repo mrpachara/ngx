@@ -1,21 +1,21 @@
+import { ApplicationRef, inputBinding, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { vi } from 'vitest';
-
-import { inputBinding, signal } from '@angular/core';
-import { authorizationCodeCallback } from '../../helpers';
+import { AuthorizationCodeService } from '../../services';
+import { createIdKey } from '../../tokens/common';
 import {
   AuthorizationCodeCallback,
   provideAuthorizationCodeCallbackData,
-} from './autorization-code-callback';
+} from './authorization-code-callback';
 
-// Mock the helper
-vi.mock('../../helpers', () => ({
-  authorizationCodeCallback: vi.fn(),
-}));
+// Mock dependencies
+const mockAuthorizationCodeService = {
+  id: createIdKey('test'),
+  generateUrl: vi.fn(),
+  exchangeCode: vi.fn(),
+  clearState: vi.fn(),
+};
 
-const mockAuthorizationCodeCallback = vi.mocked(authorizationCodeCallback);
-
-describe('AuthorizationCodeCallback', () => {
+describe('AuthorizationCodeCallback - without id', () => {
   let fixture: ComponentFixture<AuthorizationCodeCallback<unknown>>;
   let component: AuthorizationCodeCallback<unknown>;
 
@@ -32,8 +32,10 @@ describe('AuthorizationCodeCallback', () => {
 
   beforeEach(async () => {
     mockData.actionFactory.mockReturnValue(mockAction);
-    mockAuthorizationCodeCallback.mockReset();
     mockAction.mockReset();
+    mockAuthorizationCodeService.generateUrl.mockReset();
+    mockAuthorizationCodeService.exchangeCode.mockReset();
+    mockAuthorizationCodeService.clearState.mockReset();
 
     code.set(undefined);
     state.set(undefined);
@@ -42,7 +44,13 @@ describe('AuthorizationCodeCallback', () => {
 
     await TestBed.configureTestingModule({
       imports: [AuthorizationCodeCallback],
-      providers: provideAuthorizationCodeCallbackData(() => mockData),
+      providers: [
+        {
+          provide: AuthorizationCodeService,
+          useValue: mockAuthorizationCodeService,
+        },
+        provideAuthorizationCodeCallbackData(() => mockData),
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AuthorizationCodeCallback, {
@@ -54,8 +62,6 @@ describe('AuthorizationCodeCallback', () => {
       ],
     });
     component = fixture.componentInstance;
-
-    await fixture.whenStable();
   });
 
   it('should create', () => {
@@ -65,44 +71,59 @@ describe('AuthorizationCodeCallback', () => {
   describe('ngOnInit', () => {
     it('should call authorizationCodeCallback and run action on success', async () => {
       const stateData = { user: 'test' };
-      mockAuthorizationCodeCallback.mockResolvedValue(stateData);
+
+      mockAuthorizationCodeService.exchangeCode.mockResolvedValue(stateData);
 
       state.set('the-state');
       code.set('the-code');
 
       fixture.detectChanges();
-      await component.ngOnInit();
+      // NOTE: Cannot use fixture.whenStable() here because we have to wait for async ngOnInit,
+      // which is not part of Angular's change detection cycle.
+      // Instead, we need to wait for all async operations to complete using ApplicationRef.
+      await TestBed.inject(ApplicationRef).whenStable();
 
-      expect(mockAuthorizationCodeCallback).toHaveBeenCalledWith(
+      expect(mockAuthorizationCodeService.exchangeCode).toHaveBeenCalledTimes(
+        1,
+      );
+
+      expect(mockAuthorizationCodeService.exchangeCode).toHaveBeenCalledWith(
         'the-state',
         'the-code',
-        undefined,
-        undefined,
-        expect.anything(),
       );
+
       expect(mockAction).toHaveBeenCalledWith(stateData);
       expect(component['messageInfo']()).toBeUndefined();
     });
 
     it('should display error message when callback rejects', async () => {
-      const mockError = new Error('failure');
-      mockAuthorizationCodeCallback.mockRejectedValue(mockError);
-
       state.set('state');
       error.set('access_denied');
 
       fixture.detectChanges();
-      await component.ngOnInit();
+      // NOTE: Cannot use fixture.whenStable() here because we have to wait for async ngOnInit,
+      // which is not part of Angular's change detection cycle.
+      // Instead, we need to wait for all async operations to complete using ApplicationRef.
+      await TestBed.inject(ApplicationRef).whenStable();
 
       expect(component['messageInfo']()).toEqual({
         type: 'error',
-        message: 'Error: failure',
+        message: 'access_denied: access_denied',
       });
     });
   });
 
   describe('messageClass', () => {
-    it('should reflect the message type', () => {
+    it('should reflect the message type', async () => {
+      state.set('the-state');
+      code.set('the-code');
+
+      fixture.detectChanges();
+      // NOTE: Cannot use fixture.whenStable() here because we have to wait for async ngOnInit,
+      // which is not part of Angular's change detection cycle.
+      // Instead, we need to wait for all async operations to complete using ApplicationRef.
+      await TestBed.inject(ApplicationRef).whenStable();
+
       component['messageInfo'].set({ type: 'info', message: 'ok' });
       expect(component['messageClass']()).toBe('oat-cl-info');
 
