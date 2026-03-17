@@ -19,9 +19,9 @@ describe('AccessTokenIndexedDbConnection', () => {
   let service: AccessTokenIndexedDbConnection;
 
   beforeEach(async () => {
-    await promisifyRequest(indexedDB.deleteDatabase(expectedDbName));
+    vi.resetAllMocks();
 
-    mockReloader.mockReset();
+    await promisifyRequest(indexedDB.deleteDatabase(expectedDbName));
 
     TestBed.configureTestingModule({
       providers: [

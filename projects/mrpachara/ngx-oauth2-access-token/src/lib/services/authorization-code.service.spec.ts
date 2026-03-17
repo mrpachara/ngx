@@ -33,6 +33,10 @@ describe('AuthorizationCodeService - with PKCE', () => {
   let service: AuthorizationCodeService;
 
   beforeEach(() => {
+    vi.resetAllMocks();
+
+    mockStorage.removeExpired.mockResolvedValue(undefined);
+
     TestBed.configureTestingModule({
       providers: [
         AuthorizationCodeService,
@@ -43,10 +47,6 @@ describe('AuthorizationCodeService - with PKCE', () => {
     });
 
     service = TestBed.inject(AuthorizationCodeService);
-
-    // Reset mocks
-    vi.clearAllMocks();
-    mockStorage.removeExpired.mockResolvedValue(undefined);
   });
 
   it('should be created', () => {

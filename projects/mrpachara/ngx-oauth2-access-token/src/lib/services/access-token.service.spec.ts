@@ -63,13 +63,7 @@ describe('AccessTokenService: simple configuration', () => {
   let service: AccessTokenService;
 
   beforeEach(() => {
-    mockStorage.load.mockReset();
-    mockStorage.store.mockReset();
-    mockStorage.clear.mockReset();
-
-    mockClient.fetchAccessToken.mockReset();
-
-    mockExtractors[0].update.mockReset();
+    vi.resetAllMocks();
 
     TestBed.configureTestingModule({
       providers: [
@@ -83,9 +77,6 @@ describe('AccessTokenService: simple configuration', () => {
     });
 
     service = TestBed.inject(AccessTokenService);
-
-    // Reset mocks (also clears mock implementations)
-    vi.resetAllMocks();
   });
 
   it('should be created', () => {

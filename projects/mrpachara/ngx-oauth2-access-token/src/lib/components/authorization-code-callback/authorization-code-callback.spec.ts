@@ -25,17 +25,15 @@ describe('AuthorizationCodeCallback - without id', () => {
   const error_description = signal<string | undefined>(undefined);
 
   const mockData = {
-    actionFactory: vi.fn(() => vi.fn()),
+    actionFactory: vi.fn(),
   };
 
   const mockAction = vi.fn();
 
   beforeEach(async () => {
+    vi.restoreAllMocks();
+
     mockData.actionFactory.mockReturnValue(mockAction);
-    mockAction.mockReset();
-    mockAuthorizationCodeService.generateUrl.mockReset();
-    mockAuthorizationCodeService.exchangeCode.mockReset();
-    mockAuthorizationCodeService.clearState.mockReset();
 
     code.set(undefined);
     state.set(undefined);
