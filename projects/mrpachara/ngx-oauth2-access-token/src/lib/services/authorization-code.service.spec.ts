@@ -18,7 +18,7 @@ const mockStorage = {
 };
 
 const mockAccessTokenService = {
-  id: createIdKey('test-access-token-service-id'),
+  id: createIdKey('test-authorization-code-service-id'),
   clientId: 'test-client',
   fetch: vi.fn(),
 };

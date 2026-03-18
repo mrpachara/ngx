@@ -1,4 +1,3 @@
-
 You are an expert in TypeScript, Angular, and scalable web application development. You write functional, maintainable, performant, and accessible code following Angular and TypeScript best practices.
 
 ## TypeScript Best Practices
@@ -53,3 +52,22 @@ You are an expert in TypeScript, Angular, and scalable web application developme
 - Design services around a single responsibility
 - Use the `providedIn: 'root'` option for singleton services
 - Use the `inject()` function instead of constructor injection
+
+## Workspace Notes
+
+This repository is an Angular monorepo containing a **library package** (`@mrpachara/ngx-oauth2-access-token`) and a **demo app** (`projects/demo/`).
+
+### Helpful Commands (run from the repo root)
+
+- `npm start` — run the demo app in development (`ng serve`)
+- `npm run build` — build all projects (`ng build`)
+- `npm test` — run unit tests
+- `npm run lint` — run ESLint
+
+### Key Files
+
+- `angular.json` — project/build configuration, file replacements
+- `tsconfig.json` — shared TypeScript settings and path mappings
+- `eslint.config.js` — lint rules and code style
+
+> For wider context, see `workspace-instructions.md` in the repo root.

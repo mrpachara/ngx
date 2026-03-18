@@ -44,11 +44,9 @@ const mockClient = {
   fetchAccessToken: vi.fn(),
 };
 
-const mockExtractors = [
-  {
-    update: vi.fn(),
-  },
-];
+const mockExtractor = {
+  update: vi.fn(),
+};
 
 const id = createIdKey('test-access-token-service-id');
 
@@ -71,7 +69,11 @@ describe('AccessTokenService: simple configuration', () => {
         { provide: APP_ID, useValue: 'test-app' },
         { provide: ACCESS_TOKEN_CONFIG, useValue: testConfig },
         { provide: ACCESS_TOKEN_STORAGE, useValue: mockStorage },
-        { provide: ACCESS_TOKEN_RESPONSE_EXTRACTORS, useValue: mockExtractors },
+        {
+          provide: ACCESS_TOKEN_RESPONSE_EXTRACTORS,
+          multi: true,
+          useValue: mockExtractor,
+        },
         { provide: Oauth2Client, useValue: mockClient },
       ],
     });
@@ -124,7 +126,7 @@ describe('AccessTokenService: simple configuration', () => {
           data: response,
         });
 
-        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+        expect(mockExtractor.update).toHaveBeenCalledWith(testConfig.id, {
           timestamp: expect.any(Number),
           accessTokenResponse: response,
         });
@@ -189,7 +191,7 @@ describe('AccessTokenService: simple configuration', () => {
           data: response.refresh_token,
         });
 
-        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+        expect(mockExtractor.update).toHaveBeenCalledWith(testConfig.id, {
           timestamp: expect.any(Number),
           accessTokenResponse: response,
         });
@@ -240,7 +242,7 @@ describe('AccessTokenService: simple configuration', () => {
           data: response,
         });
 
-        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+        expect(mockExtractor.update).toHaveBeenCalledWith(testConfig.id, {
           timestamp: expect.any(Number),
           accessTokenResponse: response,
         });
@@ -309,7 +311,7 @@ describe('AccessTokenService: simple configuration', () => {
           data: response.refresh_token,
         });
 
-        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+        expect(mockExtractor.update).toHaveBeenCalledWith(testConfig.id, {
           timestamp: expect.any(Number),
           accessTokenResponse: response,
         });
@@ -365,7 +367,7 @@ describe('AccessTokenService: simple configuration', () => {
           data: response,
         });
 
-        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+        expect(mockExtractor.update).toHaveBeenCalledWith(testConfig.id, {
           timestamp: expect.any(Number),
           accessTokenResponse: response,
         });
@@ -439,7 +441,7 @@ describe('AccessTokenService: simple configuration', () => {
           data: response.refresh_token,
         });
 
-        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+        expect(mockExtractor.update).toHaveBeenCalledWith(testConfig.id, {
           timestamp: expect.any(Number),
           accessTokenResponse: response,
         });
@@ -621,7 +623,7 @@ describe('AccessTokenService: simple configuration', () => {
       await service.clearTokens();
 
       expect(mockStorage.clear).toHaveBeenCalled();
-      expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+      expect(mockExtractor.update).toHaveBeenCalledWith(testConfig.id, {
         timestamp: expect.any(Number),
         accessTokenResponse: expect.any(Symbol), // removedData
       });
@@ -651,7 +653,11 @@ describe('AccessTokenService: refreshTokenTtl from response claim configuration'
         { provide: APP_ID, useValue: 'test-app' },
         { provide: ACCESS_TOKEN_CONFIG, useValue: testConfig },
         { provide: ACCESS_TOKEN_STORAGE, useValue: mockStorage },
-        { provide: ACCESS_TOKEN_RESPONSE_EXTRACTORS, useValue: mockExtractors },
+        {
+          provide: ACCESS_TOKEN_RESPONSE_EXTRACTORS,
+          multi: true,
+          useValue: mockExtractor,
+        },
         { provide: Oauth2Client, useValue: mockClient },
       ],
     });
@@ -728,7 +734,7 @@ describe('AccessTokenService: refreshTokenTtl from response claim configuration'
           data: response.refresh_token,
         });
 
-        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+        expect(mockExtractor.update).toHaveBeenCalledWith(testConfig.id, {
           timestamp: expect.any(Number),
           accessTokenResponse: response,
         });
@@ -793,7 +799,7 @@ describe('AccessTokenService: refreshTokenTtl from response claim configuration'
           data: response.refresh_token,
         });
 
-        expect(mockExtractors[0].update).toHaveBeenCalledWith(testConfig.id, {
+        expect(mockExtractor.update).toHaveBeenCalledWith(testConfig.id, {
           timestamp: expect.any(Number),
           accessTokenResponse: response,
         });

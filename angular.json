@@ -17,7 +17,7 @@
         }
       },
       "root": "projects/mrpachara/ngx-oauth2-access-token",
-      "sourceRoot": "projects/mrpachara/ngx-oauth2-access-token/src",
+      "sourceRoot": "projects/mrpachara/ngx-oauth2-access-token",
       "prefix": "oat",
       "architect": {
         "build": {

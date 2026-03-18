@@ -9,13 +9,10 @@ import {
   MatchedJwkNotFoundError,
   SupportedJwkAlgNotFoundError,
 } from '@mrpachara/ngx-oauth2-access-token/standard';
-import { PickOptional } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { firstValueFrom, Observable } from 'rxjs';
 import { JWK_CONFIG, JWT_VERIFIERS } from '../tokens';
-import { JwkConfig } from '../types';
-
-/** Default JWK configuration */
-const defaultJwkConfig: PickOptional<JwkConfig> = {} as const;
+import { JwkConfig, JwkOperations } from '../types';
+import { defaultJwkConfig } from './jwk.service.default';
 
 /**
  * Create the full JWK configuration.
@@ -31,15 +28,12 @@ function configure(config: JwkConfig) {
 }
 
 /** JWK service */
-@Injectable({
-  providedIn: 'root',
-})
-export class JwkService {
+@Injectable()
+export class JwkService implements JwkOperations {
   private readonly config = configure(inject(JWK_CONFIG));
 
   private readonly http = inject(HttpClient);
 
-  /** The issuer for the service */
   get issuer() {
     return this.config.issuer;
   }
@@ -52,17 +46,6 @@ export class JwkService {
     });
   }
 
-  /**
-   * Verify the given JWT over JWS information.
-   *
-   * @param jwtOverJwsInfo The JWT over JWS information
-   * @returns The `Promise` of `boolean`. It will be `true` for approved and
-   *   `false` for refuted
-   * @throws `MatchedJwkNotFoundError` when matched JWKs from the loaded JWK Set
-   *   are not found
-   * @throws `SupportedJwkAlgNotFoundError` when supported algorithm is not
-   *   found
-   */
   async verify(jwtOverJwsInfo: Extract<JwtInfo, JwsInfo>): Promise<boolean> {
     const jwkSet = await firstValueFrom(this.fetchJwkSet());
     const jwks = findJwk(jwtOverJwsInfo.header, jwkSet.keys);
