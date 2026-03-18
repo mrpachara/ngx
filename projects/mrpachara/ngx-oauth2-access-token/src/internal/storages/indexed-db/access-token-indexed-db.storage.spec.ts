@@ -24,7 +24,7 @@ const mockReloader = vi.fn();
 
 async function putData<S extends keyof StoredAccessTokenMap>(
   storeName: S,
-  entries: [key: string, data: StoredAccessTokenMap[S]][],
+  entries: readonly (readonly [key: string, data: StoredAccessTokenMap[S]])[],
 ): Promise<void> {
   const objectStoreName =
     storeName === 'access'
@@ -46,8 +46,8 @@ async function putData<S extends keyof StoredAccessTokenMap>(
 
 async function getData<S extends keyof StoredAccessTokenMap>(
   storeName: S,
-  keys: string[],
-): Promise<(StoredAccessTokenMap[S] | undefined)[]> {
+  keys: readonly string[],
+): Promise<readonly (StoredAccessTokenMap[S] | undefined)[]> {
   const objectStoreName =
     storeName === 'access'
       ? accessTokenObjectStoreName
@@ -73,6 +73,43 @@ async function getData<S extends keyof StoredAccessTokenMap>(
 }
 
 describe('AccessTokenIndexedDbStorage', () => {
+  const existingAccessToken: StoredAccessTokenMap['access'] = {
+    expiresAt: Date.now() + 3_600 * 1_000,
+    data: {
+      access_token: 'test-existing-access-token',
+      token_type: 'Bearer',
+      expires_in: 3600,
+    },
+  };
+
+  const otherAccessToken: StoredAccessTokenMap['access'] = {
+    expiresAt: Date.now() + 3_600 * 1_000,
+    data: {
+      access_token: 'other-access-token',
+      token_type: 'Bearer',
+      expires_in: 3600,
+    },
+  };
+
+  const storingAccessToken: StoredAccessTokenMap['access'] = {
+    expiresAt: Date.now() + 3_600 * 1_000,
+    data: {
+      access_token: 'storing-test-access-token',
+      token_type: 'Bearer',
+      expires_in: 3600,
+    },
+  };
+
+  const existingRefreshToken: StoredAccessTokenMap['refresh'] = {
+    expiresAt: Date.now() + 7_200 * 1_000,
+    data: 'test-existing-refresh-token',
+  };
+
+  const otherRefreshToken: StoredAccessTokenMap['refresh'] = {
+    expiresAt: Date.now() + 7_200 * 1_000,
+    data: 'other-refresh-token',
+  };
+
   let service: AccessTokenIndexedDbStorage;
 
   beforeEach(async () => {
@@ -99,24 +136,6 @@ describe('AccessTokenIndexedDbStorage', () => {
 
   describe('load', () => {
     it('should load correct existing data from IndexedDB', async () => {
-      const existingAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'test-existing-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
-
-      const otherAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'other-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
-
       await putData('access', [
         [`${id}`, existingAccessToken],
         ['other-id', otherAccessToken],
@@ -130,19 +149,10 @@ describe('AccessTokenIndexedDbStorage', () => {
     });
 
     it('should load correct non-existing data from IndexedDB', async () => {
-      const otherAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'other-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
-
       await putData('access', [['other-id', otherAccessToken]]);
 
       const storedAccessToken = await service.load('access');
-      expect(storedAccessToken).toStrictEqual(null);
+      expect(storedAccessToken).toBeNull();
 
       const [storedOtherAccessToken] = await getData('access', ['other-id']);
       expect(storedOtherAccessToken).toStrictEqual(otherAccessToken);
@@ -151,25 +161,7 @@ describe('AccessTokenIndexedDbStorage', () => {
 
   describe('store', () => {
     it('should store a new data to IndexedDB', async () => {
-      const otherAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'other-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
-
       await putData('access', [['other-id', otherAccessToken]]);
-
-      const storingAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'test-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
 
       const result = await service.store('access', storingAccessToken);
       expect(result).toStrictEqual(storingAccessToken);
@@ -183,37 +175,10 @@ describe('AccessTokenIndexedDbStorage', () => {
     });
 
     it('should override correct existing data in IndexedDB', async () => {
-      const existingAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'test-existing-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
-
-      const otherAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'other-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
-
       await putData('access', [
         [`${id}`, existingAccessToken],
         ['other-id', otherAccessToken],
       ]);
-
-      const storingAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'test-new-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
 
       const result = await service.store('access', storingAccessToken);
       expect(result).toStrictEqual(storingAccessToken);
@@ -229,24 +194,6 @@ describe('AccessTokenIndexedDbStorage', () => {
 
   describe('remove', () => {
     it('should remove correct existing data from IndexedDB', async () => {
-      const existingAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'test-existing-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
-
-      const otherAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'other-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
-
       await putData('access', [
         [`${id}`, existingAccessToken],
         ['other-id', otherAccessToken],
@@ -264,15 +211,6 @@ describe('AccessTokenIndexedDbStorage', () => {
     });
 
     it('should remove correct non-existing data from IndexedDB', async () => {
-      const otherAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'other-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
-
       await putData('access', [['other-id', otherAccessToken]]);
 
       const result = await service.remove('access');
@@ -289,34 +227,6 @@ describe('AccessTokenIndexedDbStorage', () => {
 
   describe('clear', () => {
     it('should clear all data from IndexedDB', async () => {
-      const existingAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'test-existing-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
-
-      const existingRefreshToken: StoredAccessTokenMap['refresh'] = {
-        expiresAt: Date.now() + 7_200 * 1_000,
-        data: 'test-existing-refresh-token',
-      };
-
-      const otherAccessToken: StoredAccessTokenMap['access'] = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: {
-          access_token: 'other-access-token',
-          token_type: 'Bearer',
-          expires_in: 3600,
-        },
-      };
-
-      const otherRefreshToken: StoredAccessTokenMap['refresh'] = {
-        expiresAt: Date.now() + 7_200 * 1_000,
-        data: 'other-refresh-token',
-      };
-
       await putData('access', [
         [`${id}`, existingAccessToken],
         ['other-id', otherAccessToken],

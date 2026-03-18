@@ -20,8 +20,7 @@ const id = createIdKey('test-state-indexed-db-storage-id');
 const mockReloader = vi.fn();
 
 async function putData<T>(
-  state: string,
-  data: StoredStateData<T>,
+  entries: readonly (readonly [state: string, data: StoredStateData<T>])[],
 ): Promise<void> {
   const db = await promisifyRequest(indexedDB.open(expectedDbName));
 
@@ -29,36 +28,63 @@ async function putData<T>(
     .transaction(stateObjectStoreName, 'readwrite')
     .objectStore(stateObjectStoreName);
 
-  await promisifyRequest(
-    objectStore.put({
-      name: `${id}`,
-      state,
-      data,
-    }),
+  await Promise.all(
+    entries.map(([state, data]) =>
+      promisifyRequest(
+        objectStore.put({
+          name: `${id}`,
+          state,
+          data,
+        }),
+      ),
+    ),
   );
 
   db.close();
 }
 
 async function getData<T = unknown>(
-  state: string,
-): Promise<StoredStateData<T> | undefined> {
+  states: readonly string[],
+): Promise<readonly (StoredStateData<T> | undefined)[]> {
   const db = await promisifyRequest(indexedDB.open(expectedDbName));
 
   const objectStore = db
     .transaction(stateObjectStoreName, 'readonly')
     .objectStore(stateObjectStoreName);
 
-  const value = await promisifyRequest<IndexedStateData<T> | undefined>(
-    objectStore.get([`${id}`, state]),
+  const result = await Promise.all(
+    states.map(
+      async (state) =>
+        (
+          await promisifyRequest<IndexedStateData<T> | undefined>(
+            objectStore.get([`${id}`, state]),
+          )
+        )?.data,
+    ),
   );
 
   db.close();
 
-  return value?.data;
+  return result;
 }
 
 describe('StateIndexedDbStorage', () => {
+  const existingState: StoredStateData<{ foo: string }> = {
+    expiresAt: Date.now() + 3_600 * 1_000,
+    data: { foo: 'existing' },
+    codeVerifier: 'existing-code-verifier',
+  };
+
+  const otherState: StoredStateData<{ foo: string }> = {
+    expiresAt: Date.now() + 3_600 * 1_000,
+    data: { foo: 'other' },
+  };
+
+  const storingState: StoredStateData<{ foo: string }> = {
+    expiresAt: Date.now() + 3_600 * 1_000,
+    data: { foo: 'storing' },
+  };
+
   let service: StateIndexedDbStorage;
 
   beforeEach(async () => {
@@ -85,80 +111,53 @@ describe('StateIndexedDbStorage', () => {
 
   describe('load', () => {
     it('should load correct existing data from IndexedDB', async () => {
-      const existingState: StoredStateData<{ foo: string }> = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: { foo: 'bar' },
-        codeVerifier: 'existing-code-verifier',
-      };
-
-      const otherState: StoredStateData<{ foo: string }> = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: { foo: 'other' },
-      };
-
-      await putData('state', existingState);
-      await putData('other-state', otherState);
+      await putData([
+        ['state', existingState],
+        ['other-state', otherState],
+      ]);
 
       const storedState = await service.load<{ foo: string }>('state');
       expect(storedState).toStrictEqual(existingState);
 
-      const storedOtherState = await getData<{ foo: string }>('other-state');
+      const [storedOtherState] = await getData<{ foo: string }>([
+        'other-state',
+      ]);
       expect(storedOtherState).toStrictEqual(otherState);
     });
 
     it('should load correct non-existing data from IndexedDB', async () => {
-      const otherState: StoredStateData<{ foo: string }> = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: { foo: 'other' },
-      };
-
-      await putData('other-state', otherState);
+      await putData([['other-state', otherState]]);
 
       const storedState = await service.load('state');
       expect(storedState).toStrictEqual(null);
 
-      const storedOtherState = await getData<{ foo: string }>('other-state');
+      const [storedOtherState] = await getData<{ foo: string }>([
+        'other-state',
+      ]);
       expect(storedOtherState).toStrictEqual(otherState);
     });
   });
 
   describe('store', () => {
     it('should store a new data to IndexedDB', async () => {
-      const otherState: StoredStateData<{ foo: string }> = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: { foo: 'other' },
-      };
-
-      await putData('other-state', otherState);
-
-      const storingState: StoredStateData<{ foo: string }> = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: { foo: 'stored' },
-      };
+      await putData([['other-state', otherState]]);
 
       const result = await service.store('state', storingState);
       expect(result).toStrictEqual(storingState);
 
-      const storedState = await getData<{ foo: string }>('state');
+      const [storedState, storedOtherState] = await getData<{ foo: string }>([
+        'state',
+        'other-state',
+      ]);
       expect(storedState).toStrictEqual(storingState);
-
-      const storedOtherState = await getData<{ foo: string }>('other-state');
       expect(storedOtherState).toStrictEqual(otherState);
     });
 
     it('should override correct existing data in IndexedDB', async () => {
-      const existingState: StoredStateData<{ foo: string }> = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: { foo: 'existing' },
-      };
-
-      const otherState: StoredStateData<{ foo: string }> = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: { foo: 'other' },
-      };
-
-      await putData('state', existingState);
-      await putData('other-state', otherState);
+      await putData([
+        ['state', existingState],
+        ['other-state', otherState],
+      ]);
 
       const storingState: StoredStateData<{ foo: string }> = {
         expiresAt: Date.now() + 3_600 * 1_000,
@@ -168,54 +167,44 @@ describe('StateIndexedDbStorage', () => {
       const result = await service.store('state', storingState);
       expect(result).toStrictEqual(storingState);
 
-      const storedState = await getData<{ foo: string }>('state');
+      const [storedState, storedOtherState] = await getData<{ foo: string }>([
+        'state',
+        'other-state',
+      ]);
       expect(storedState).toStrictEqual(storingState);
-
-      const storedOtherState = await getData<{ foo: string }>('other-state');
       expect(storedOtherState).toStrictEqual(otherState);
     });
   });
 
   describe('remove', () => {
     it('should remove correct existing data from IndexedDB', async () => {
-      const existingState: StoredStateData<{ foo: string }> = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: { foo: 'existing' },
-      };
-
-      const otherState: StoredStateData<{ foo: string }> = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: { foo: 'other' },
-      };
-
-      await putData('state', existingState);
-      await putData('other-state', otherState);
+      await putData([
+        ['state', existingState],
+        ['other-state', otherState],
+      ]);
 
       const result = await service.remove('state');
       expect(result).toStrictEqual(existingState);
 
-      const storedState = await getData<{ foo: string }>('state');
+      const [storedState, storedOtherState] = await getData<{ foo: string }>([
+        'state',
+        'other-state',
+      ]);
       expect(storedState).toBeUndefined();
-
-      const storedOtherState = await getData<{ foo: string }>('other-state');
       expect(storedOtherState).toStrictEqual(otherState);
     });
 
     it('should remove correct non-existing data from IndexedDB', async () => {
-      const otherState: StoredStateData<{ foo: string }> = {
-        expiresAt: Date.now() + 3_600 * 1_000,
-        data: { foo: 'other' },
-      };
-
-      await putData('other-state', otherState);
+      await putData([['other-state', otherState]]);
 
       const result = await service.remove('state');
       expect(result).toBeNull();
 
-      const storedState = await getData<{ foo: string }>('state');
+      const [storedState, storedOtherState] = await getData<{ foo: string }>([
+        'state',
+        'other-state',
+      ]);
       expect(storedState).toBeUndefined();
-
-      const storedOtherState = await getData<{ foo: string }>('other-state');
       expect(storedOtherState).toStrictEqual(otherState);
     });
   });
@@ -234,15 +223,18 @@ describe('StateIndexedDbStorage', () => {
         data: { foo: 'future' },
       };
 
-      await putData('expired', expiredState);
-      await putData('future', futureState);
+      await putData([
+        ['expired', expiredState],
+        ['future', futureState],
+      ]);
 
       await service.removeExpired();
 
-      const storedExpired = await getData<{ foo: string }>('expired');
+      const [storedExpired, storedFuture] = await getData<{ foo: string }>([
+        'expired',
+        'future',
+      ]);
       expect(storedExpired).toBeUndefined();
-
-      const storedFuture = await getData<{ foo: string }>('future');
       expect(storedFuture).toStrictEqual(futureState);
     });
   });

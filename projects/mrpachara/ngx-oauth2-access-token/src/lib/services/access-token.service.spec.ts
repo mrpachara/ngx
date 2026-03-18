@@ -50,7 +50,7 @@ const mockExtractor = {
 
 const id = createIdKey('test-access-token-service-id');
 
-describe('AccessTokenService: simple configuration', () => {
+describe('AccessTokenService - simple configuration', () => {
   const testConfig: AccessTokenConfig = {
     id,
     clientId: 'test-client',
@@ -631,7 +631,7 @@ describe('AccessTokenService: simple configuration', () => {
   });
 });
 
-describe('AccessTokenService: refreshTokenTtl from response claim configuration', () => {
+describe('AccessTokenService - refreshTokenTtl from response claim configuration', () => {
   type AccessTokenResponseWithRefreshTtl = AccessTokenResponse & {
     refresh_token_expires_in?: number;
   };
