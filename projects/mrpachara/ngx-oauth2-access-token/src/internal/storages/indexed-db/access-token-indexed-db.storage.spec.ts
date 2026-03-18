@@ -18,11 +18,9 @@ import { AccessTokenIndexedDbStorage } from './access-token-indexed-db.storage';
 
 const appId = 'test-app';
 const expectedDbName = `${appId}-${libPrefix}-access-token-storage`;
-const id = createIdKey('test-id');
+const id = createIdKey('test-access-token-indexed-db-storage-id');
 
 const mockReloader = vi.fn();
-
-const dbVersion = 1;
 
 async function putData<S extends keyof StoredAccessTokenMap>(
   storeName: S,
@@ -33,7 +31,7 @@ async function putData<S extends keyof StoredAccessTokenMap>(
       ? accessTokenObjectStoreName
       : refreshTokenObjectStoreName;
 
-  const db = await promisifyRequest(indexedDB.open(expectedDbName, dbVersion));
+  const db = await promisifyRequest(indexedDB.open(expectedDbName));
 
   const objectStore = db
     .transaction(objectStoreName, 'readwrite')
@@ -55,7 +53,7 @@ async function getData<S extends keyof StoredAccessTokenMap>(
       ? accessTokenObjectStoreName
       : refreshTokenObjectStoreName;
 
-  const db = await promisifyRequest(indexedDB.open(expectedDbName, dbVersion));
+  const db = await promisifyRequest(indexedDB.open(expectedDbName));
 
   const objectStore = db
     .transaction(objectStoreName, 'readwrite')

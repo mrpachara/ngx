@@ -40,13 +40,20 @@ describe('AccessTokenIndexedDbConnection', () => {
 
   describe('IndexedDB', () => {
     it('should create database with correct name', async () => {
-      const db = await service.db$;
+      const serviceDb = await service.db$;
+
+      const db = await promisifyRequest(indexedDB.open(expectedDbName));
 
       expect(db.name).toBe(expectedDbName);
+
+      db.close();
+      serviceDb.close();
     });
 
     it('should create object stores', async () => {
-      const db = await service.db$;
+      const serviceDb = await service.db$;
+
+      const db = await promisifyRequest(indexedDB.open(expectedDbName));
 
       expect(db.objectStoreNames.length).toBe(2);
       expect(db.objectStoreNames.contains(accessTokenObjectStoreName)).toBe(
@@ -55,25 +62,28 @@ describe('AccessTokenIndexedDbConnection', () => {
       expect(db.objectStoreNames.contains(refreshTokenObjectStoreName)).toBe(
         true,
       );
+
+      db.close();
+      serviceDb.close();
     });
 
     it('should call reloader on version change', async () => {
-      const db = await service.db$;
+      const serviceDb = await service.db$;
 
-      const newVersion = db.version + 1;
-
-      db.dispatchEvent(
-        new IDBVersionChangeEvent('versionchange', {
-          oldVersion: db.version,
-          newVersion,
-        }),
+      const db = await promisifyRequest(
+        indexedDB.open(expectedDbName, serviceDb.version + 1),
       );
+
+      expect(mockReloader).toHaveBeenCalledTimes(1);
 
       expect(mockReloader).toHaveBeenCalledWith({
         serviceName: 'access-token',
-        oldVersion: db.version,
-        newVersion: newVersion,
+        oldVersion: serviceDb.version,
+        newVersion: db.version,
       });
+
+      db.close();
+      serviceDb.close();
     });
   });
 });

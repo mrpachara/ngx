@@ -50,7 +50,7 @@ const mockExtractors = [
   },
 ];
 
-const id = createIdKey('test');
+const id = createIdKey('test-access-token-service-id');
 
 describe('AccessTokenService: simple configuration', () => {
   const testConfig: AccessTokenConfig = {

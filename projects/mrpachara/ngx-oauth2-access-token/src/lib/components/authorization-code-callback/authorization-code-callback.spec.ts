@@ -9,7 +9,7 @@ import {
 
 // Mock dependencies
 const mockAuthorizationCodeService = {
-  id: createIdKey('test'),
+  id: createIdKey('test-authorization-code-callback-id'),
   generateUrl: vi.fn(),
   exchangeCode: vi.fn(),
   clearState: vi.fn(),
