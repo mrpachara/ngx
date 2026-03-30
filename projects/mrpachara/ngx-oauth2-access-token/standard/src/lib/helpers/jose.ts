@@ -133,8 +133,8 @@ export function isJws(joseInfo: JoseInfo): joseInfo is JwsInfo {
   const partialJwsInfo = joseInfo as JoseInfo & Partial<JwsInfo>;
 
   return (
-    partialJwsInfo.protectedContent instanceof Uint8Array &&
-    partialJwsInfo.signature instanceof Uint8Array
+    ArrayBuffer.isView(partialJwsInfo.protectedContent) &&
+    ArrayBuffer.isView(partialJwsInfo.signature)
   );
 }
 
@@ -148,10 +148,10 @@ export function isJwe(joseInfo: JoseInfo): joseInfo is JweInfo {
   const partialJweInfo = joseInfo as JoseInfo & Partial<JweInfo>;
 
   return (
-    partialJweInfo.encryptedKey instanceof Uint8Array &&
-    partialJweInfo.initializationVector instanceof Uint8Array &&
-    partialJweInfo.ciphertext instanceof Uint8Array &&
-    partialJweInfo.authenticationTag instanceof Uint8Array
+    ArrayBuffer.isView(partialJweInfo.encryptedKey) &&
+    ArrayBuffer.isView(partialJweInfo.initializationVector) &&
+    ArrayBuffer.isView(partialJweInfo.ciphertext) &&
+    ArrayBuffer.isView(partialJweInfo.authenticationTag)
   );
 }
 
