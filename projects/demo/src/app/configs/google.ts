@@ -41,6 +41,7 @@ export const appConfig: ApplicationConfig = {
     // NOTE: withComponentInputBinding() will atomatically bind
     //       query strings to component inputs.
     provideRouter(routes, withComponentInputBinding()),
+
     provideHttpClient(withFetch()),
 
     // NOTE: The ngx-oauth2-access-token provide functions
