@@ -4,7 +4,7 @@ import {
   JwtInfo,
 } from '@mrpachara/ngx-oauth2-access-token/standard';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import rsassa from './rsassa';
+import ecdsa from './ecdsa';
 
 describe('Verifiers', () => {
   const mockJwsInfo = {
@@ -13,24 +13,25 @@ describe('Verifiers', () => {
   } as unknown as Extract<JwtInfo, JwsInfo>;
 
   const mockJwk = {
-    kty: 'RSA',
-    alg: 'RS256',
-    n: '...',
-    e: '...',
+    kty: 'EC',
+    alg: 'ES256',
+    crv: 'P-256',
+    x: '...',
+    y: '...',
   } as unknown as Jwk;
 
   const mockCryptoKey = {
-    algorithm: { name: 'RSASSA-PKCS1-v1_5' },
+    algorithm: { name: 'ECDSA' },
   } as unknown as CryptoKey;
 
   beforeEach(() => {
     vi.restoreAllMocks(); // Restore other spies like crypto.subtle
   });
 
-  it('should return undefined if no JWK is an RSASSA key', async () => {
-    const nonRsaJwk = { kty: 'EC' } as unknown as Jwk;
+  it('should return undefined if no JWK is an ECDSA key', async () => {
+    const nonEcJwk = { kty: 'RSA' } as unknown as Jwk;
 
-    const result = await rsassa(mockJwsInfo, [nonRsaJwk]);
+    const result = await ecdsa(mockJwsInfo, [nonEcJwk]);
     expect(result).toBeUndefined();
   });
 
@@ -40,20 +41,23 @@ describe('Verifiers', () => {
       .mockResolvedValue(mockCryptoKey);
     const verifySpy = vi.spyOn(crypto.subtle, 'verify').mockResolvedValue(true);
 
-    const result = await rsassa(mockJwsInfo, [mockJwk]);
+    const result = await ecdsa(mockJwsInfo, [mockJwk]);
 
     expect(importSpy).toHaveBeenCalledWith(
       'jwk',
       mockJwk,
       {
-        name: 'RSASSA-PKCS1-v1_5',
-        hash: { name: 'SHA-256' },
+        name: 'ECDSA',
+        namedCurve: 'P-256',
       },
       true,
       ['verify'],
     );
     expect(verifySpy).toHaveBeenCalledWith(
-      'RSASSA-PKCS1-v1_5',
+      {
+        name: 'ECDSA',
+        hash: { name: 'SHA-256' },
+      },
       mockCryptoKey,
       mockJwsInfo.signature,
       mockJwsInfo.protectedContent,
@@ -65,7 +69,7 @@ describe('Verifiers', () => {
     vi.spyOn(crypto.subtle, 'importKey').mockResolvedValue(mockCryptoKey);
     vi.spyOn(crypto.subtle, 'verify').mockResolvedValue(false);
 
-    const result = await rsassa(mockJwsInfo, [mockJwk]);
+    const result = await ecdsa(mockJwsInfo, [mockJwk]);
 
     expect(result).toBe(false);
   });
@@ -78,7 +82,7 @@ describe('Verifiers', () => {
       /* empty */
     });
 
-    const result = await rsassa(mockJwsInfo, [mockJwk]);
+    const result = await ecdsa(mockJwsInfo, [mockJwk]);
 
     expect(result).toBeUndefined();
     expect(warnSpy).toHaveBeenCalled();
