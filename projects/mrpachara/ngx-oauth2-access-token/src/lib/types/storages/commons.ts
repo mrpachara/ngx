@@ -16,5 +16,5 @@ export interface KeyableDataStorage<M extends object> {
 export type StorageVersionChangedReloader = (info: {
   readonly serviceName: string;
   readonly oldVersion: number;
-  readonly newVersoin: number | null;
+  readonly newVersion: number | null;
 }) => void | Promise<void>;

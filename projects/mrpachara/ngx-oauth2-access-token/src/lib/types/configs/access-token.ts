@@ -21,11 +21,18 @@ export interface AccessTokenConfig<
   readonly clientCredentialsInParams?: boolean;
 
   /**
-   * By usually, the _life-time_ of the access token will be provided by
-   * `expires_in` claim. But if it is not provided, use this TTL instead.
+   * By usually, the _time-to-live_ (seconds) of the access token will be
+   * provided by `expires_in` claim. But if it is not provided, use this TTL
+   * instead. If is omitted, the default TTL from the service will be used.
    */
   readonly accessTokenTtl?: number;
 
-  /** The _life-time_ of refresh token. */
-  readonly refreshTokenTtl?: number;
+  /**
+   * The _time-to-live_ (seconds) of refresh token.
+   *
+   * - If is `number`, it will be used as the TTL in seconds.
+   * - If is `string`, it will be used as the claim name in the response.
+   * - If is omitted, the default TTL from the service will be used.
+   */
+  readonly refreshTokenTtl?: number | string;
 }

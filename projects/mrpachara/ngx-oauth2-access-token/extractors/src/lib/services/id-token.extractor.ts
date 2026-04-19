@@ -3,10 +3,13 @@ import {
   Injectable,
   Injector,
   linkedSignal,
+  Resource,
   resource,
+  resourceFromSnapshots,
   ResourceRef,
-  ResourceStreamItem,
+  ResourceSnapshot,
   signal,
+  untracked,
   WritableSignal,
 } from '@angular/core';
 import {
@@ -28,7 +31,6 @@ import {
 import {
   EncryptedIdTokenError,
   IdTokenClaimsExpiredError,
-  IdTokenClaimsNotFoundError,
   IdTokenExpiredError,
   IdTokenInfoNotFoundError,
   InvalidIdTokenPayloadError,
@@ -190,68 +192,127 @@ export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenRes
     return this.#initializeVersion(id, await this.storage.load(id, 'info'));
   }
 
-  infoResource(id = this.defaultId) {
-    const { infoResource } = this.#getReactiveData(id);
+  /**
+   * Create `IdTokenInfo` _resource_.
+   *
+   * It triggers **_eager_** loading of `IdTokenInfo`, no `idle` _state_, if it
+   * is **uninitialized** and updates whenever the `IdTokenInfo` is updated. It
+   * also provides the current value of `IdTokenInfo` **without** failing to
+   * `loading` _state_ if it is already available in snapshots.
+   *
+   * It uses `resourceFromSnapshots()` internally, so it **does not need**
+   * _injection context_.
+   *
+   * @param id
+   * @returns
+   */
+  infoResource(id = this.defaultId): Resource<IdTokenInfo | undefined> {
+    const { version, infoResource } = this.#getReactiveData(id);
 
-    return resource({
-      stream: async () => {
-        const initializedValue = await this.loadInfo(id);
+    if (typeof untracked(version) === 'undefined') {
+      this.loadInfo(id);
+    }
 
-        return linkedSignal({
-          source: infoResource.snapshot,
-          computation: (source, previous): ResourceStreamItem<IdTokenInfo> => {
-            return source.status === 'error'
-              ? { error: source.error }
-              : typeof source.value !== 'undefined'
-                ? source.value !== null
-                  ? source.value.payload.exp < Date.now() / 1_000
-                    ? { error: new IdTokenExpiredError(id, source.value) }
-                    : { value: source.value }
-                  : { error: new IdTokenInfoNotFoundError(id) }
-                : typeof previous !== 'undefined'
-                  ? previous.value
-                  : initializedValue !== null
-                    ? { value: initializedValue }
-                    : { error: new IdTokenInfoNotFoundError(id) };
-          },
-        });
-      },
-    }).asReadonly();
+    return resourceFromSnapshots(
+      linkedSignal({
+        source: infoResource.snapshot,
+        computation: (
+          source,
+          previous,
+        ): ResourceSnapshot<IdTokenInfo | undefined> => {
+          if (source.status === 'error') {
+            return source;
+          } else {
+            if (typeof source.value === 'undefined') {
+              return typeof previous?.value !== 'undefined'
+                ? previous.value
+                : {
+                    status: 'loading',
+                    value: undefined,
+                  };
+            } else {
+              return source.value === null
+                ? {
+                    status: 'error',
+                    error: new IdTokenInfoNotFoundError(id),
+                  }
+                : source.value.payload.exp < Date.now() / 1_000
+                  ? {
+                      status: 'error',
+                      error: new IdTokenExpiredError(id, source.value),
+                    }
+                  : {
+                      status: 'resolved',
+                      value: source.value,
+                    };
+            }
+          }
+        },
+      }),
+    );
   }
 
   async loadClaims(id = this.defaultId): Promise<IdTokenClaims | null> {
     return this.#initializeVersion(id, await this.storage.load(id, 'claims'));
   }
 
-  claimsResource(id = this.defaultId) {
-    const { claimsResource } = this.#getReactiveData(id);
+  /**
+   * Create `IdTokenClaims` _resource_.
+   *
+   * It triggers **_eager_** loading of `IdTokenClaims`, no `idle` _state_, if
+   * it is **uninitialized** and updates whenever the `IdTokenClaims` is
+   * updated. It also provides the current value of `IdTokenClaims` **without**
+   * failing to `loading` _state_ if it is already available in snapshots.
+   *
+   * It uses `resourceFromSnapshots()` internally, so it **does not need**
+   * _injection context_.
+   *
+   * @param id
+   * @returns
+   */
+  claimsResource(id = this.defaultId): Resource<IdTokenClaims | undefined> {
+    const { version, claimsResource } = this.#getReactiveData(id);
 
-    return resource({
-      stream: async () => {
-        const initializedValue = await this.loadClaims(id);
+    if (typeof untracked(version) === 'undefined') {
+      this.loadClaims(id);
+    }
 
-        return linkedSignal({
-          source: claimsResource.snapshot,
-          computation: (
-            source,
-            previous,
-          ): ResourceStreamItem<IdTokenClaims> => {
-            return source.status === 'error'
-              ? { error: source.error }
-              : typeof source.value !== 'undefined'
-                ? source.value !== null
-                  ? source.value.exp < Date.now() / 1_000
-                    ? { error: new IdTokenClaimsExpiredError(id, source.value) }
-                    : { value: source.value }
-                  : { error: new IdTokenClaimsNotFoundError(id) }
-                : typeof previous !== 'undefined'
-                  ? previous.value
-                  : initializedValue !== null
-                    ? { value: initializedValue }
-                    : { error: new IdTokenClaimsNotFoundError(id) };
-          },
-        });
-      },
-    }).asReadonly();
+    return resourceFromSnapshots(
+      linkedSignal({
+        source: claimsResource.snapshot,
+        computation: (
+          source,
+          previous,
+        ): ResourceSnapshot<IdTokenClaims | undefined> => {
+          if (source.status === 'error') {
+            return source;
+          } else {
+            if (typeof source.value === 'undefined') {
+              return typeof previous?.value !== 'undefined'
+                ? previous.value
+                : {
+                    status: 'loading',
+                    value: undefined,
+                  };
+            } else {
+              return source.value === null
+                ? {
+                    status: 'error',
+                    error: new IdTokenInfoNotFoundError(id),
+                  }
+                : source.value.exp < Date.now() / 1_000
+                  ? {
+                      status: 'error',
+                      error: new IdTokenClaimsExpiredError(id, source.value),
+                    }
+                  : {
+                      status: 'resolved',
+                      value: source.value,
+                    };
+            }
+          }
+        },
+      }),
+    );
   }
 }

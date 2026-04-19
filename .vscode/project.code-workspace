@@ -31,7 +31,6 @@
     "editor.codeActionsOnSave": {
       "source.organizeImports": "always",
     },
-    "javascript.preferences.importModuleSpecifier": "project-relative",
-    "typescript.preferences.importModuleSpecifier": "project-relative",
+    "js/ts.preferences.importModuleSpecifier": "project-relative",
   },
 }

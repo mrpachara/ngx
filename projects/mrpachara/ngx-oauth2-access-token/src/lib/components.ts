@@ -1,1 +1,1 @@
-export * from './components/autorization-code-callback/autorization-code-callback';
+export * from './components/authorization-code-callback/authorization-code-callback';

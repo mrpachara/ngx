@@ -6,7 +6,7 @@ import {
   NonprovidedIssuerError,
 } from '@mrpachara/ngx-oauth2-access-token/standard';
 import { JWK_SERVICES } from '../tokens';
-import { JwkService } from './jwk.service';
+import { JwkOperations } from '../types';
 
 /** JWK Dispatcher */
 @Injectable({
@@ -21,7 +21,7 @@ export class JwkDispatcher {
    * @param issuer The issuer for finding
    * @returns The JWK service or `null` when not found
    */
-  findByIssuer(issuer: string): JwkService | null {
+  findByIssuer(issuer: string): JwkOperations | null {
     for (const jwkService of this.jwkServices) {
       if (jwkService.issuer === issuer) {
         return jwkService;
@@ -38,8 +38,8 @@ export class JwkDispatcher {
    * @param jwtOverJwsInfo The JWT over JWS to be verified
    * @returns The `Promise` of `boolean`. It will be `true` for approved and
    *   `false` for refuted
-   * @throws NonprovidedIssuerError | MatchedIssuerNotFoundError
-   * @throws From JwKService
+   * @throws `NonprovidedIssuerError` | `MatchedIssuerNotFoundError`
+   * @throws From `JwKService`
    */
   async verify(jwtOverJwsInfo: Extract<JwtInfo, JwsInfo>): Promise<boolean> {
     const issuer = jwtOverJwsInfo.header.iss ?? jwtOverJwsInfo.payload.iss;

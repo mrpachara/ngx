@@ -42,8 +42,8 @@ interface MessageInfo {
 @Component({
   selector: 'oat-authorization-code-callback',
   imports: [],
-  templateUrl: './autorization-code-callback.html',
-  styleUrls: ['./autorization-code-callback.scss'],
+  templateUrl: './authorization-code-callback.html',
+  styleUrls: ['./authorization-code-callback.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AuthorizationCodeCallback<T> implements OnInit {
@@ -63,7 +63,7 @@ export class AuthorizationCodeCallback<T> implements OnInit {
 
   readonly error = input<string>();
 
-  readonly errro_description = input<string>();
+  readonly error_description = input<string>();
 
   protected readonly messageInfo = signal<MessageInfo | undefined>(undefined);
 
@@ -77,7 +77,7 @@ export class AuthorizationCodeCallback<T> implements OnInit {
         this.state(),
         this.code(),
         this.error(),
-        this.errro_description(),
+        this.error_description(),
         this.authorizationCodeService,
       );
 

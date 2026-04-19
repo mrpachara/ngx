@@ -3,6 +3,8 @@ import { libPrefix } from '../../../lib/predefined';
 import { STORAGE_VERSION_CHANGED_RELOADER } from '../../../lib/tokens';
 import { stateObjectStoreName } from './state';
 
+const version = 1;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -18,7 +20,7 @@ export class StateIndexedDbConnection {
 
     const dbOpenRequest = indexedDB.open(
       `${inject(APP_ID)}-${libPrefix}-state-storage`,
-      1,
+      version,
     );
 
     this.#db$ = new Promise<IDBDatabase>((resolve, reject) => {
@@ -54,7 +56,7 @@ export class StateIndexedDbConnection {
             await reloader({
               serviceName: 'state',
               oldVersion: ev.oldVersion,
-              newVersoin: ev.newVersion,
+              newVersion: ev.newVersion,
             });
           });
 

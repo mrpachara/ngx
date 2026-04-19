@@ -6,6 +6,8 @@ import {
   refreshTokenObjectStoreName,
 } from './acces-token';
 
+const version = 1;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -21,7 +23,7 @@ export class AccessTokenIndexedDbConnection {
 
     const dbOpenRequest = indexedDB.open(
       `${inject(APP_ID)}-${libPrefix}-access-token-storage`,
-      1,
+      version,
     );
 
     this.#db$ = new Promise<IDBDatabase>((resolve, reject) => {
@@ -54,7 +56,7 @@ export class AccessTokenIndexedDbConnection {
             await reloader({
               serviceName: 'access-token',
               oldVersion: ev.oldVersion,
-              newVersoin: ev.newVersion,
+              newVersion: ev.newVersion,
             });
           });
 

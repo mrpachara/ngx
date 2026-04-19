@@ -11,6 +11,8 @@ import {
 
 const defaultAccessTokenParamName = 'access_token';
 
+// TODO: Add unit tests for this interceptor, but it is not easy to test because of the use of `inject` function. Consider refactoring to make it more testable.
+
 /**
  * Create interceptor for assigning _access token_ to request determined by
  * using `WITH_ACCESS_TOKEN` `HttpContext`.
