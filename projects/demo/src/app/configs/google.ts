@@ -68,7 +68,10 @@ export const appConfig: ApplicationConfig = {
     ),
 
     provideIdTokenExtractor(
+      // NOTE: Use verification from JWK Dispatcher
       withJwkVerification(),
+
+      // NOTE: Google responds only changed claims, so merge them.
       withClaimmsTransformation(() => (oldClaims, newClaims) => {
         if (oldClaims.sub === newClaims.sub) {
           return {
