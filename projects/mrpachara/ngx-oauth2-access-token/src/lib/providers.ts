@@ -3,13 +3,13 @@ import {
   EnvironmentProviders,
   ExistingSansProvider,
   FactorySansProvider,
-  inject,
   InjectionToken,
   Injector,
-  makeEnvironmentProviders,
   Provider,
   Type,
   ValueSansProvider,
+  inject,
+  makeEnvironmentProviders,
 } from '@angular/core';
 import {
   AccessTokenIndexedDbStorage,

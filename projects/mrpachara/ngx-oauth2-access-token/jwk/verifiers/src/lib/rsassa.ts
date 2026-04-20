@@ -1,9 +1,9 @@
 import { JwtVerifier } from '@mrpachara/ngx-oauth2-access-token/jwk';
 import {
-  isJwkRsassa,
   Jwk,
   JwsInfo,
   JwtInfo,
+  isJwkRsassa,
 } from '@mrpachara/ngx-oauth2-access-token/standard';
 import { toJsonWebKey } from './helpers';
 

@@ -32,5 +32,9 @@
       "source.organizeImports": "always",
     },
     "js/ts.preferences.importModuleSpecifier": "project-relative",
+    "js/ts.preferences.organizeImports": {
+      "caseFirst": "upper",
+      "caseSensitivity": "caseSensitive",
+    },
   },
 }

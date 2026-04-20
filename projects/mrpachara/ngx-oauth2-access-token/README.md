@@ -20,15 +20,15 @@ FILE: `src/app/app.routes.ts`
 ```typescript
 import  { Routes } from '@angular/router';
 import  {
-  AuthorizationCodeCallbackComponent,
+  AuthorizationCodeCallback,
   provideAuthorizationCodeCallbackData,
 } from '@mrpachara/ngx-oauth2-access-token';
-import  { HomeComponent } from './core/home/home.component';
+import  { Home } from './core/home/home';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'home', pathMatch: 'full' },
 
-  { path: 'home', component: HomeComponent },
+  { path: 'home', component: Home },
 
   {
     path: 'google/authorization',
@@ -45,7 +45,7 @@ export const routes: Routes = [
         },
       })),
     ],
-    component: AuthorizationCodeCallbackComponent,
+    component: AuthorizationCodeCallback,
   },
 ];
 ```

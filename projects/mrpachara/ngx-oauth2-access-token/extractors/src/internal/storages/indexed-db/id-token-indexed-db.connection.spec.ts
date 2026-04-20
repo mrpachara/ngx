@@ -1,8 +1,8 @@
 import { APP_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
-  libPrefix,
   STORAGE_VERSION_CHANGED_RELOADER,
+  libPrefix,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { promisifyRequest } from '@mrpachara/ngx-oauth2-access-token/utility';
 import 'fake-indexeddb/auto';

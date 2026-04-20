@@ -1,10 +1,10 @@
 import {
   EnvironmentProviders,
-  inject,
   InjectionToken,
   Injector,
-  makeEnvironmentProviders,
   Provider,
+  inject,
+  makeEnvironmentProviders,
 } from '@angular/core';
 import {
   ACCESS_TOKEN_RESPONSE_EXTRACTORS,

@@ -1,4 +1,4 @@
-import { inject, InjectionToken, Provider, Type } from '@angular/core';
+import { InjectionToken, Provider, Type, inject } from '@angular/core';
 
 export function provideHierarchization<T>(
   parentToken: InjectionToken<T[]> | Type<T>,

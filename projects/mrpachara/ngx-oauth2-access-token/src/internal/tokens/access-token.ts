@@ -1,7 +1,7 @@
 import {
-  inject,
-  InjectionToken,
   InjectOptions,
+  InjectionToken,
+  inject,
   isDevMode,
 } from '@angular/core';
 import { AccessTokenService } from '../../lib/services';

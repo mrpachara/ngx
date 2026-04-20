@@ -1,15 +1,15 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { OAT_REQUEST } from '@mrpachara/ngx-oauth2-access-token';
 import {
-  findJwk,
   JwkSet,
   JwsInfo,
   JwtInfo,
   MatchedJwkNotFoundError,
   SupportedJwkAlgNotFoundError,
+  findJwk,
 } from '@mrpachara/ngx-oauth2-access-token/standard';
-import { firstValueFrom, Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { JWK_CONFIG, JWT_VERIFIERS } from '../tokens';
 import { JwkConfig, JwkOperations } from '../types';
 import { defaultJwkConfig } from './jwk.service.default';

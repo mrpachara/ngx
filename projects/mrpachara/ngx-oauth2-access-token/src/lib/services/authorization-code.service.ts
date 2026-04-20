@@ -1,11 +1,11 @@
-import { inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import {
   AuthorizationCodeRequest,
   WithoutCodeChallengeRequest,
 } from '@mrpachara/ngx-oauth2-access-token/standard';
 import {
-  base64UrlEncode,
   PickOptionalExcept,
+  base64UrlEncode,
   randomString,
   sha256,
 } from '@mrpachara/ngx-oauth2-access-token/utility';

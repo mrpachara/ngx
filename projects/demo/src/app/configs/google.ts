@@ -6,9 +6,9 @@ import {
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import {
   AdditionalParams,
+  Scopes,
   createIdKey,
   provideAccessToken,
-  Scopes,
   withAuthorizationCode,
 } from '@mrpachara/ngx-oauth2-access-token';
 import {

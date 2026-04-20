@@ -4,9 +4,9 @@ import { promisifyRequest } from '@mrpachara/ngx-oauth2-access-token/utility';
 import 'fake-indexeddb/auto';
 import { libPrefix } from '../../../lib/predefined';
 import {
-  createIdKey,
   STORAGE_NAME,
   STORAGE_VERSION_CHANGED_RELOADER,
+  createIdKey,
 } from '../../../lib/tokens';
 import { StoredAccessTokenMap } from '../../../lib/types';
 import {

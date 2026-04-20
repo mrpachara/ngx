@@ -1,7 +1,7 @@
 import {
-  inject,
-  InjectionToken,
   InjectOptions,
+  InjectionToken,
+  inject,
   isDevMode,
 } from '@angular/core';
 import { ACCESS_TOKEN_SERVICE_HIERARCHIZED_TOKENS } from '../../internal/tokens';

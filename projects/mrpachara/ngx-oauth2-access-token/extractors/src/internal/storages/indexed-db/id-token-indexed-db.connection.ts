@@ -1,7 +1,7 @@
-import { APP_ID, inject, Injectable } from '@angular/core';
+import { APP_ID, Injectable, inject } from '@angular/core';
 import {
-  libPrefix,
   STORAGE_VERSION_CHANGED_RELOADER,
+  libPrefix,
 } from '@mrpachara/ngx-oauth2-access-token';
 import {
   idTokenClaimsObjectStoreName,

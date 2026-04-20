@@ -1,16 +1,16 @@
 import {
-  inject,
   Injectable,
   Injector,
-  linkedSignal,
   Resource,
-  resource,
-  resourceFromSnapshots,
   ResourceRef,
   ResourceSnapshot,
+  WritableSignal,
+  inject,
+  linkedSignal,
+  resource,
+  resourceFromSnapshots,
   signal,
   untracked,
-  WritableSignal,
 } from '@angular/core';
 import {
   ACCESS_TOKEN_ID,
@@ -22,11 +22,11 @@ import {
 } from '@mrpachara/ngx-oauth2-access-token';
 import {
   AccessTokenResponse,
-  deserializeJose,
   IdTokenClaims,
   IdTokenInfo,
-  isJwt,
   JwtHeader,
+  deserializeJose,
+  isJwt,
 } from '@mrpachara/ngx-oauth2-access-token/standard';
 import {
   EncryptedIdTokenError,

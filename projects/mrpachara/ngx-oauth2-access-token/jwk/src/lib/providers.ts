@@ -1,11 +1,11 @@
 import {
   EnvironmentProviders,
-  inject,
   InjectionToken,
   Injector,
+  inject,
   makeEnvironmentProviders,
 } from '@angular/core';
-import { libPrefix, TypeOfToken } from '@mrpachara/ngx-oauth2-access-token';
+import { TypeOfToken, libPrefix } from '@mrpachara/ngx-oauth2-access-token';
 import { JwkDispatcher, JwkService } from './services';
 import { JWK_CONFIG, JWK_SERVICES, JWT_VERIFIERS } from './tokens';
 import { JwkConfigs, JwtVerifier } from './types';

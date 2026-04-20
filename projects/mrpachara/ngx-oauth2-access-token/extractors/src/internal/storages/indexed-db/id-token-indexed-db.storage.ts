@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { IdKey } from '@mrpachara/ngx-oauth2-access-token';
 import { promisifyRequest } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { IdTokenStorage, StoredIdTokenKeyMap } from '../../../lib/types';

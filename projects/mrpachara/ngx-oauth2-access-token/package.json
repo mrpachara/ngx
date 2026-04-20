@@ -5,6 +5,7 @@
     "angular",
     "oauth 2.0"
   ],
+  "description": "This library is for simply getting access tokens from OAuth 2.0 in the standard scenario.",
   "license": "MIT",
   "repository": {
     "type": "git",

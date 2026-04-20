@@ -1,13 +1,13 @@
 import {
   APP_ID,
   DestroyRef,
-  inject,
   Injectable,
-  linkedSignal,
   Resource,
+  ResourceSnapshot,
+  inject,
+  linkedSignal,
   resource,
   resourceFromSnapshots,
-  ResourceSnapshot,
   signal,
   untracked,
 } from '@angular/core';
@@ -40,8 +40,8 @@ import {
   AccessTokenMessage,
   AdditionalParams,
   Oauth2ClientCredentials,
-  removedData,
   Scopes,
+  removedData,
   storedData,
 } from '../types';
 import {

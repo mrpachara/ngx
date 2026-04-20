@@ -9,7 +9,7 @@
     "type": "git",
     "url": "https://github.com/mrpachara/ngx.git"
   },
-  "description": "Monorepo for Angular libaries",
+  "description": "Monorepo for Angular libaries.",
   "type": "module",
   "scripts": {
     "ng": "ng",
@@ -20,6 +20,7 @@
     "lint": "ng lint"
   },
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "dependencies": {
     "@angular/common": "^21.2.9",
     "@angular/compiler": "^21.2.9",
