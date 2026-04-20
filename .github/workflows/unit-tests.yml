@@ -11,6 +11,9 @@ jobs:
   unit-test:
     name: 'ngx: unit test'
     runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
     strategy:
       matrix:
         node-version: [24]
