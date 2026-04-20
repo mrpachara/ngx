@@ -32,6 +32,8 @@ jobs:
 
       - name: Run unit tests
         run: |
+          npx ng build
+
           mkdir -p test-results
 
           # Using jq to extract project names with a test target
