@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import {
   JwsInfo,
+  JwtCannotBeUsedBeforeError,
+  JwtExpiredError,
   JwtInfo,
   MatchedIssuerNotFoundError,
   NonprovidedIssuerError,
@@ -38,10 +40,38 @@ export class JwkDispatcher {
    * @param jwtOverJwsInfo The JWT over JWS to be verified
    * @returns The `Promise` of `boolean`. It will be `true` for approved and
    *   `false` for refuted
-   * @throws `NonprovidedIssuerError` | `MatchedIssuerNotFoundError`
+   * @throws `JwtCannotBeUsedBeforeError` | `JwtExpiredError` |
+   *   `NonprovidedIssuerError` | `MatchedIssuerNotFoundError`
    * @throws From `JwKService`
    */
   async verify(jwtOverJwsInfo: Extract<JwtInfo, JwsInfo>): Promise<boolean> {
+    const now = Date.now();
+
+    type JwtOverJwsInfo = typeof jwtOverJwsInfo;
+    const cliamProvided = <
+      T extends JwtOverJwsInfo,
+      const C extends keyof JwtOverJwsInfo['payload'],
+    >(
+      info: T,
+      claim: C,
+    ): info is T & { readonly payload: Required<Pick<T['payload'], C>> } => {
+      return typeof info.payload[claim] !== 'undefined';
+    };
+
+    if (
+      cliamProvided(jwtOverJwsInfo, 'nbf') &&
+      jwtOverJwsInfo.payload.nbf * 1_000 > now
+    ) {
+      throw new JwtCannotBeUsedBeforeError(jwtOverJwsInfo);
+    }
+
+    if (
+      cliamProvided(jwtOverJwsInfo, 'exp') &&
+      jwtOverJwsInfo.payload.exp * 1_000 < now
+    ) {
+      throw new JwtExpiredError(jwtOverJwsInfo);
+    }
+
     const issuer = jwtOverJwsInfo.header.iss ?? jwtOverJwsInfo.payload.iss;
 
     if (typeof issuer === 'undefined') {
@@ -52,8 +82,8 @@ export class JwkDispatcher {
 
     if (jwkService !== null) {
       return await jwkService.verify(jwtOverJwsInfo);
+    } else {
+      throw new MatchedIssuerNotFoundError(issuer);
     }
-
-    throw new MatchedIssuerNotFoundError(issuer);
   }
 }

@@ -1,6 +1,8 @@
 import { Jwk, JwsInfo, JwtInfo } from '../types';
 
 export class NonprovidedIssuerError extends Error {
+  override readonly cause!: Extract<JwtInfo, JwsInfo>;
+
   constructor(jwtOverJwsInfo: Extract<JwtInfo, JwsInfo>) {
     const { header, payload } = jwtOverJwsInfo;
 
@@ -15,13 +17,17 @@ export class NonprovidedIssuerError extends Error {
 }
 
 export class MatchedIssuerNotFoundError extends Error {
+  override readonly cause!: string;
+
   constructor(issuer: string) {
-    super(`The JWK Set for '${issuer}' is not found.`);
+    super(`The JWK Set for '${issuer}' is not found.`, { cause: issuer });
     this.name = this.constructor.name;
   }
 }
 
 export class MatchedJwkNotFoundError extends Error {
+  override readonly cause!: JwtInfo;
+
   constructor(jwtInfo: JwtInfo) {
     super(
       `The matched JWK is not found for:\n${JSON.stringify(jwtInfo.header, undefined, 2)}`,
@@ -32,6 +38,8 @@ export class MatchedJwkNotFoundError extends Error {
 }
 
 export class SupportedJwkAlgNotFoundError extends Error {
+  override readonly cause!: readonly Jwk[];
+
   constructor(jwks: Jwk[]) {
     const keyIds = jwks.map((jwk) => `${jwk.kty}:${jwk.kid}`);
 
@@ -43,6 +51,8 @@ export class SupportedJwkAlgNotFoundError extends Error {
 }
 
 export class JwtVerificationFailedError extends Error {
+  override readonly cause!: JwtInfo;
+
   constructor(jwtInfo: JwtInfo) {
     super(
       `Verification falied for:\n${JSON.stringify(jwtInfo.header, undefined, 2)}`,

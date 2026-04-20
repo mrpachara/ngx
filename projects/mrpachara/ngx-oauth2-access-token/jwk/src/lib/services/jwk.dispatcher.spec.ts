@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import {
   JwsInfo,
+  JwtCannotBeUsedBeforeError,
+  JwtExpiredError,
   JwtInfo,
   MatchedIssuerNotFoundError,
   NonprovidedIssuerError,
@@ -81,5 +83,44 @@ describe('JwkDispatcher', () => {
     await expect(service.verify(unmatched)).rejects.toThrow(
       MatchedIssuerNotFoundError,
     );
+  });
+
+  it('should throw JwtCannotBeUsedBeforeError when nbf is in the future', async () => {
+    const future = Math.floor(Date.now() / 1_000) + 1_000;
+    const jwtWithFutureNbf = {
+      ...jwtOverJwsInfo,
+      payload: { ...jwtOverJwsInfo.payload, nbf: future },
+    } as unknown as typeof jwtOverJwsInfo;
+
+    await expect(service.verify(jwtWithFutureNbf)).rejects.toThrow(
+      JwtCannotBeUsedBeforeError,
+    );
+  });
+
+  it('should throw JwtExpiredError when exp is in the past', async () => {
+    const past = Math.floor(Date.now() / 1_000) - 1_000;
+    const jwtWithPastExp = {
+      ...jwtOverJwsInfo,
+      payload: { ...jwtOverJwsInfo.payload, exp: past },
+    } as unknown as typeof jwtOverJwsInfo;
+
+    await expect(service.verify(jwtWithPastExp)).rejects.toThrow(
+      JwtExpiredError,
+    );
+  });
+
+  it('should verify when nbf is in the past and exp is in the future', async () => {
+    mockJwkService.verify.mockResolvedValue(true);
+    const now = Math.floor(Date.now() / 1_000);
+    const validJwt = {
+      ...jwtOverJwsInfo,
+      payload: {
+        ...jwtOverJwsInfo.payload,
+        nbf: now - 1_000,
+        exp: now + 1_000,
+      },
+    } as unknown as typeof jwtOverJwsInfo;
+
+    await expect(service.verify(validJwt)).resolves.toBe(true);
   });
 });
