@@ -32,7 +32,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          npx ng build
+          pnpm run build-all-libs
 
           mkdir -p test-results
 
