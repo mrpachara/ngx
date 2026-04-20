@@ -8,8 +8,8 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import {
-  injectAccessTokenService,
-  injectAuthorizationCodeService,
+  AccessTokenService,
+  AuthorizationCodeService,
 } from '@mrpachara/ngx-oauth2-access-token';
 import { IdTokenExtractor } from '@mrpachara/ngx-oauth2-access-token/extractors';
 import { JwkDispatcher } from '@mrpachara/ngx-oauth2-access-token/jwk';
@@ -17,7 +17,7 @@ import {
   deserializeJose,
   isJwt,
 } from '@mrpachara/ngx-oauth2-access-token/standard';
-import { demoOauth, params, scopes } from '../../app.config';
+import { params, scopes } from '../../app.config';
 
 function extractErrorMessage(error: Error | undefined): string | null {
   if (error) {
@@ -42,11 +42,9 @@ function extractErrorMessage(error: Error | undefined): string | null {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Home {
-  private readonly accessTokenService = injectAccessTokenService(demoOauth);
-  private readonly authorizationCodeService =
-    injectAuthorizationCodeService(demoOauth);
+  private readonly accessTokenService = inject(AccessTokenService);
+  private readonly authorizationCodeService = inject(AuthorizationCodeService);
   private readonly idTokenExtractor = inject(IdTokenExtractor);
-
   private readonly jwkDispatcher = inject(JwkDispatcher);
 
   // AccessToken
@@ -116,7 +114,7 @@ export class Home {
       {
         intendedUrl: this.router.url,
       },
-      { params },
+      params,
     );
 
     location.href = url.toString();
