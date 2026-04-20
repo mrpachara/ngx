@@ -32,6 +32,8 @@ jobs:
 
       - name: Run unit tests
         run: |
+          cp projects/demo/src/secrets/oauth-client.ts projects/demo/src/secrets/oauth-client.private.ts
+
           pnpm run build-all-libs
 
           mkdir -p test-results
