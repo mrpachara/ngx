@@ -1,6 +1,6 @@
 # Ngx
 
-Monorepo for [Angular](https://angular.dev) libaries.
+Monorepo for [Angular](https://angular.dev) libraries.
 
 ## Libraries
 
