@@ -63,7 +63,7 @@ describe('JwkService', () => {
   });
 
   afterEach(() => {
-    httpTestingController.verify();
+    httpTestingController.verify({ ignoreCancelled: true });
   });
 
   it('should be created', () => {
@@ -155,7 +155,11 @@ describe('JwkService - multiple verifiers', () => {
   });
 
   afterEach(() => {
-    httpTestingController.verify();
+    httpTestingController.verify({ ignoreCancelled: true });
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
   });
 
   it('should be created', () => {

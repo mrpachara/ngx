@@ -158,6 +158,10 @@ describe('IdTokenIndexedDbStorage', () => {
     service = TestBed.inject(IdTokenIndexedDbStorage);
   });
 
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
+
   it('should be created', () => {
     expect(service).toBeTruthy();
   });

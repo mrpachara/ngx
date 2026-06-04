@@ -47,7 +47,13 @@
     "strictInputAccessModifiers": true,
     "typeCheckHostBindings": true,
     "strictTemplates": true,
-    "strictStandalone": true
+    "strictStandalone": true,
+    "extendedDiagnostics": {
+      "checks": {
+        "nullishCoalescingNotNullable": "warning",
+        "optionalChainNotNullable": "warning"
+      }
+    }
   },
   "files": [],
   "references": [
