@@ -11,16 +11,17 @@ import {
 import { TestBed } from '@angular/core/testing';
 import { afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 
+import { ApplicationRef } from '@angular/core';
 import { AccessTokenNotFoundError } from '../errors';
 import { AccessTokenService } from '../services';
 import { IdKey, OAT_REQUEST, WITH_ACCESS_TOKEN, createIdKey } from '../tokens';
 import { createAssignAccessTokenInterceptor } from './access-token';
 
-const id = createIdKey('test-service-id');
+const id = createIdKey('test-interceptor');
 
 describe('createAssignAccessTokenInterceptor', () => {
   let httpClient: HttpClient;
-  let httpMock: HttpTestingController;
+  let httpTestingController: HttpTestingController;
   let accessTokenServiceMock: {
     loadAccessTokenInfo: Mock<
       () => Promise<{ type: string; token: string } | null>
@@ -46,18 +47,22 @@ describe('createAssignAccessTokenInterceptor', () => {
     });
 
     httpClient = TestBed.inject(HttpClient);
-    httpMock = TestBed.inject(HttpTestingController);
+    httpTestingController = TestBed.inject(HttpTestingController);
   }
 
   afterEach(() => {
-    httpMock.verify();
+    httpTestingController.verify({ ignoreCancelled: true });
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
   });
 
   it('should not modify the request if WITH_ACCESS_TOKEN context is not present', () => {
     setup();
     httpClient.get('/api/test').subscribe();
 
-    const req = httpMock.expectOne('/api/test');
+    const req = httpTestingController.expectOne('/api/test');
     expect(req.request.headers.has('Authorization')).toBe(false);
     req.flush({});
   });
@@ -69,7 +74,7 @@ describe('createAssignAccessTokenInterceptor', () => {
       .set(OAT_REQUEST, true);
     httpClient.get('/api/test', { context }).subscribe();
 
-    const req = httpMock.expectOne('/api/test');
+    const req = httpTestingController.expectOne('/api/test');
     expect(req.request.headers.has('Authorization')).toBe(false);
     req.flush({});
   });
@@ -84,9 +89,9 @@ describe('createAssignAccessTokenInterceptor', () => {
     const context = new HttpContext().set(WITH_ACCESS_TOKEN, true);
     httpClient.get('/api/test', { context }).subscribe();
 
-    await Promise.resolve(); // Process the async defer microtasks
+    await TestBed.inject(ApplicationRef).whenStable();
 
-    const req = httpMock.expectOne('/api/test');
+    const req = httpTestingController.expectOne('/api/test');
     expect(req.request.headers.get('Authorization')).toBe(
       'Bearer mock-token-data',
     );
@@ -103,9 +108,9 @@ describe('createAssignAccessTokenInterceptor', () => {
     const context = new HttpContext().set(WITH_ACCESS_TOKEN, true);
     httpClient.get('/api/test', { context }).subscribe();
 
-    await Promise.resolve();
+    await TestBed.inject(ApplicationRef).whenStable();
 
-    const req = httpMock.expectOne((r) => r.url === '/api/test');
+    const req = httpTestingController.expectOne((r) => r.url === '/api/test');
     expect(req.request.params.get('access_token')).toBe('query-token');
     req.flush({});
   });
@@ -120,9 +125,9 @@ describe('createAssignAccessTokenInterceptor', () => {
     const context = new HttpContext().set(WITH_ACCESS_TOKEN, true);
     httpClient.get('/api/test', { context }).subscribe();
 
-    await Promise.resolve();
+    await TestBed.inject(ApplicationRef).whenStable();
 
-    const req = httpMock.expectOne((r) => r.url === '/api/test');
+    const req = httpTestingController.expectOne((r) => r.url === '/api/test');
     expect(req.request.params.get('custom_param')).toBe('custom-token');
     req.flush({});
   });
@@ -137,9 +142,8 @@ describe('createAssignAccessTokenInterceptor', () => {
       error: (e: unknown) => (error = e as AccessTokenNotFoundError),
     });
 
-    await Promise.resolve();
+    await TestBed.inject(ApplicationRef).whenStable();
 
     expect(error).toBeInstanceOf(AccessTokenNotFoundError);
-    // expect(error?.serviceId).toBe('test-service-id');
   });
 });

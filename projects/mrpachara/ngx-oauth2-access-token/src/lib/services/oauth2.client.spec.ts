@@ -23,8 +23,11 @@ describe('Oauth2Client', () => {
   });
 
   afterEach(() => {
-    // Some tests may abort requests; the testing controller will consider those cancelled.
     httpTestingController.verify({ ignoreCancelled: true });
+  });
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
   });
 
   it('should be created', () => {
