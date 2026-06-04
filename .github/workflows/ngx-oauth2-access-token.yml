@@ -57,4 +57,4 @@ jobs:
 
       - name: Publish package
         working-directory: ./dist/${{ env.PACKAGE_SCOPE }}/${{ env.PACKAGE_NAME }}
-        run: pnpm publish
+        run: pnpm publish --no-git-checks
