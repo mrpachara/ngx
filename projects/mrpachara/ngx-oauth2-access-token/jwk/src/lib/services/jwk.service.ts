@@ -1,5 +1,5 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import { OAT_REQUEST } from '@mrpachara/ngx-oauth2-access-token';
 import {
   JwkSet,
@@ -28,7 +28,7 @@ function configure(config: JwkConfig) {
 }
 
 /** JWK service */
-@Injectable()
+@Service()
 export class JwkService implements JwkOperations {
   private readonly config = configure(inject(JWK_CONFIG));
 

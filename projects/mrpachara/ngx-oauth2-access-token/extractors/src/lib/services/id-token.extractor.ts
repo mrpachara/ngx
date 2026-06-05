@@ -1,9 +1,9 @@
 import {
-  Injectable,
   Injector,
   Resource,
   ResourceRef,
   ResourceSnapshot,
+  Service,
   WritableSignal,
   inject,
   linkedSignal,
@@ -71,9 +71,7 @@ interface ReactiveData {
   readonly claimsResource: ResourceRef<IdTokenClaims | null | undefined>;
 }
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class IdTokenExtractor implements AccessTokenResponseExtractor<IdTokenResponse> {
   private readonly defaultId = inject(ACCESS_TOKEN_ID);
 

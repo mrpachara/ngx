@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import {
   AuthorizationCodeRequest,
   WithoutCodeChallengeRequest,
@@ -35,9 +35,7 @@ function configure(config: AuthorizationCodeConfig) {
   } as const;
 }
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class AuthorizationCodeService {
   private readonly config = configure(inject(AUTHORIZATION_CODE_CONFIG));
 

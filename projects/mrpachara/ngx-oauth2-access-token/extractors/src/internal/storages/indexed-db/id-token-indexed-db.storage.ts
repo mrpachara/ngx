@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import { IdKey } from '@mrpachara/ngx-oauth2-access-token';
 import { promisifyRequest } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { IdTokenStorage, StoredIdTokenKeyMap } from '../../../lib/types';
@@ -13,9 +13,7 @@ const keys = {
   claims: idTokenClaimsObjectStoreName,
 } as const;
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class IdTokenIndexedDbStorage implements IdTokenStorage {
   readonly #connection = inject(IdTokenIndexedDbConnection);
 

@@ -1,5 +1,5 @@
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import {
   AccessTokenRequest,
   AccessTokenResponse,
@@ -15,9 +15,7 @@ import { assignRequestData } from '../helpers';
 import { OAT_REQUEST } from '../tokens';
 import { AdditionalParams, Oauth2ClientCredentials } from '../types';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class Oauth2Client {
   private readonly http = inject(HttpClient);
 
