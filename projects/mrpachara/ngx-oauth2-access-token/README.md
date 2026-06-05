@@ -317,10 +317,12 @@ class YourClass {
         intendedUrl: this.router.url,
       },
 
-      // additionalParams
       {
-        prompt: 'consent',
-        access_type: 'offline',
+        // additionalParams
+        params: {
+          prompt: 'consent',
+          access_type: 'offline',
+        }
       },
     );
 
