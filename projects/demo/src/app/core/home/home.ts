@@ -114,7 +114,7 @@ export class Home {
       {
         intendedUrl: this.router.url,
       },
-      params,
+      { params },
     );
 
     location.href = url.toString();
