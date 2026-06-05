@@ -1,4 +1,4 @@
-import { APP_ID, Injectable, inject } from '@angular/core';
+import { APP_ID, Service, inject } from '@angular/core';
 import {
   STORAGE_VERSION_CHANGED_RELOADER,
   libPrefix,
@@ -8,9 +8,7 @@ import {
   idTokenInfoObjectStoreName,
 } from './id-tokents';
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class IdTokenIndexedDbConnection {
   readonly #db$: Promise<IDBDatabase>;
 

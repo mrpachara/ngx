@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import {
   JwsInfo,
   JwtCannotBeUsedBeforeError,
@@ -11,9 +11,7 @@ import { JWK_SERVICES } from '../tokens';
 import { JwkOperations } from '../types';
 
 /** JWK Dispatcher */
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class JwkDispatcher {
   private readonly jwkServices = inject(JWK_SERVICES);
 

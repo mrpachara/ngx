@@ -1,13 +1,11 @@
-import { APP_ID, Injectable, inject } from '@angular/core';
+import { APP_ID, Service, inject } from '@angular/core';
 import { libPrefix } from '../../../lib/predefined';
 import { STORAGE_VERSION_CHANGED_RELOADER } from '../../../lib/tokens';
 import { stateObjectStoreName } from './state';
 
 const version = 1;
 
-@Injectable({
-  providedIn: 'root',
-})
+@Service()
 export class StateIndexedDbConnection {
   readonly #db$: Promise<IDBDatabase>;
 

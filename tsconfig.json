@@ -23,7 +23,6 @@
         "./dist/mrpachara/ngx-oauth2-access-token/extractors"
       ]
     },
-    "outDir": "./dist/out-tsc",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
