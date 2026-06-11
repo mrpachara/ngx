@@ -110,6 +110,21 @@ function extractRefreshTokenTtl(
   return defaultRefreshTokenTtl * 1_000;
 }
 
+const standardTokenType = {
+  basic: 'Basic',
+  bearer: 'Bearer',
+  dpop: 'DPoP',
+  mac: 'MAC',
+};
+
+function standardizeTokenType(tokenType: string): string {
+  return (
+    standardTokenType[
+      tokenType.toLocaleLowerCase() as keyof typeof standardTokenType
+    ] ?? tokenType
+  );
+}
+
 @Service()
 export class AccessTokenService {
   private readonly config = configure(inject(ACCESS_TOKEN_CONFIG));
@@ -467,7 +482,7 @@ export class AccessTokenService {
     return accessTokenResponse === null
       ? null
       : {
-          type: accessTokenResponse.token_type,
+          type: standardizeTokenType(accessTokenResponse.token_type),
           token: accessTokenResponse.access_token,
         };
   }

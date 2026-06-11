@@ -537,7 +537,7 @@ describe('AccessTokenService - simple configuration', () => {
 
       const result = await service.loadAccessTokenInfo();
 
-      expect(result).toEqual({ type: 'bearer', token: 'token' });
+      expect(result).toEqual({ type: 'Bearer', token: 'token' });
     });
 
     it('should return null when no access token available', async () => {
