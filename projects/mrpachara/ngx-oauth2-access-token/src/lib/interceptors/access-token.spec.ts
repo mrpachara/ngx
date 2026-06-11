@@ -36,6 +36,7 @@ describe('createAssignAccessTokenInterceptor', () => {
       id,
     };
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(
@@ -52,10 +53,6 @@ describe('createAssignAccessTokenInterceptor', () => {
 
   afterEach(() => {
     httpTestingController.verify({ ignoreCancelled: true });
-  });
-
-  afterEach(() => {
-    TestBed.resetTestingModule();
   });
 
   it('should not modify the request if WITH_ACCESS_TOKEN context is not present', () => {

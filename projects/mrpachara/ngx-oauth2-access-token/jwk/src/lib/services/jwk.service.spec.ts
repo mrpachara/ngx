@@ -48,6 +48,7 @@ describe('JwkService', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -139,6 +140,7 @@ describe('JwkService - multiple verifiers', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -156,10 +158,6 @@ describe('JwkService - multiple verifiers', () => {
 
   afterEach(() => {
     httpTestingController.verify({ ignoreCancelled: true });
-  });
-
-  afterEach(() => {
-    TestBed.resetTestingModule();
   });
 
   it('should be created', () => {

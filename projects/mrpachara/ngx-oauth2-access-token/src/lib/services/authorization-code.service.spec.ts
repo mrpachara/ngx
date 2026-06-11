@@ -37,6 +37,7 @@ describe('AuthorizationCodeService - with PKCE', () => {
 
     mockStorage.removeExpired.mockResolvedValue(undefined);
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         AuthorizationCodeService,
@@ -177,6 +178,8 @@ describe('AuthorizationCodeService - without PKCE', () => {
 
   beforeEach(() => {
     const configWithoutPkce = { ...testConfig, pkce: undefined };
+
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         AuthorizationCodeService,

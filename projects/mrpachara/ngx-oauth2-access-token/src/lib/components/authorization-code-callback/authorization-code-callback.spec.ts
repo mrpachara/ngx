@@ -40,6 +40,7 @@ describe('AuthorizationCodeCallback - without id', () => {
     error.set(undefined);
     error_description.set(undefined);
 
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [AuthorizationCodeCallback],
       providers: [
@@ -60,10 +61,6 @@ describe('AuthorizationCodeCallback - without id', () => {
       ],
     });
     component = fixture.componentInstance;
-  });
-
-  afterEach(() => {
-    TestBed.resetTestingModule();
   });
 
   it('should create', () => {

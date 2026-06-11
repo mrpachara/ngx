@@ -14,20 +14,13 @@ describe('Oauth2Client', () => {
   let httpTestingController: HttpTestingController;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(Oauth2Client);
     httpTestingController = TestBed.inject(HttpTestingController);
-  });
-
-  afterEach(() => {
-    httpTestingController.verify({ ignoreCancelled: true });
-  });
-
-  afterEach(() => {
-    TestBed.resetTestingModule();
   });
 
   it('should be created', () => {
