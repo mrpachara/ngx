@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import {
   promisifyRequest,
   promisifyTransaction,
@@ -8,9 +8,7 @@ import { StateStorage, StoredStateData } from '../../../lib/types';
 import { IndexedStateData, stateObjectStoreName } from './state';
 import { StateIndexedDbConnection } from './state-indexed-db.connection';
 
-Injectable({
-  providedIn: 'root',
-});
+@Service()
 export class StateIndexedDbStorage implements StateStorage {
   readonly #connection = inject(StateIndexedDbConnection);
 

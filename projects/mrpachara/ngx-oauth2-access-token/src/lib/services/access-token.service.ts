@@ -1,9 +1,9 @@
 import {
   APP_ID,
   DestroyRef,
-  Injectable,
   Resource,
   ResourceSnapshot,
+  Service,
   inject,
   linkedSignal,
   resource,
@@ -110,9 +110,7 @@ function extractRefreshTokenTtl(
   return defaultRefreshTokenTtl * 1_000;
 }
 
-Injectable({
-  providedIn: 'root',
-});
+@Service()
 export class AccessTokenService {
   private readonly config = configure(inject(ACCESS_TOKEN_CONFIG));
 
