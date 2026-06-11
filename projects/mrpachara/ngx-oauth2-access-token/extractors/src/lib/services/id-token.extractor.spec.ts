@@ -30,6 +30,7 @@ describe('IdTokenExtractor', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         { provide: ACCESS_TOKEN_ID, useValue: id },

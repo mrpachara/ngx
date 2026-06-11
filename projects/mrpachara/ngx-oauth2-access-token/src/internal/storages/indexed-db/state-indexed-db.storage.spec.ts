@@ -92,6 +92,7 @@ describe('StateIndexedDbStorage', () => {
 
     await promisifyRequest(indexedDB.deleteDatabase(expectedDbName));
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         { provide: APP_ID, useValue: appId },

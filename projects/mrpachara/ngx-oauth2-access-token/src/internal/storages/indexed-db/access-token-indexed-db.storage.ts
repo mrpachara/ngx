@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Service, inject } from '@angular/core';
 import { promisifyRequest } from '@mrpachara/ngx-oauth2-access-token/utility';
 import { STORAGE_NAME } from '../../../lib/tokens';
 import { AccessTokenStorage, StoredAccessTokenMap } from '../../../lib/types';
@@ -13,9 +13,7 @@ const keys = {
   refresh: refreshTokenObjectStoreName,
 } as const;
 
-Injectable({
-  providedIn: 'root',
-});
+@Service()
 export class AccessTokenIndexedDbStorage implements AccessTokenStorage {
   readonly #connection = inject(AccessTokenIndexedDbConnection);
 

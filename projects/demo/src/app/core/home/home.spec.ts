@@ -73,6 +73,7 @@ describe('Home', () => {
       createMockResource(idTokenClaimsValue),
     );
 
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [Home],
       providers: [

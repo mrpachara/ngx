@@ -147,6 +147,7 @@ describe('IdTokenIndexedDbStorage', () => {
 
     await promisifyRequest(indexedDB.deleteDatabase(expectedDbName));
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         { provide: APP_ID, useValue: appId },
@@ -156,10 +157,6 @@ describe('IdTokenIndexedDbStorage', () => {
       ],
     });
     service = TestBed.inject(IdTokenIndexedDbStorage);
-  });
-
-  afterEach(() => {
-    TestBed.resetTestingModule();
   });
 
   it('should be created', () => {

@@ -29,6 +29,7 @@ describe('JwkDispatcher', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         { provide: JWK_SERVICES, multi: true, useValue: mockJwkService },

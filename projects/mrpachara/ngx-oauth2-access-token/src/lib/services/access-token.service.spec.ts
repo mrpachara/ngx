@@ -63,6 +63,7 @@ describe('AccessTokenService - simple configuration', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         AccessTokenService,
@@ -647,6 +648,7 @@ describe('AccessTokenService - refreshTokenTtl from response claim configuration
   let service: AccessTokenService;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         AccessTokenService,
